@@ -1,0 +1,21 @@
+# Server (Django)
+server/venv/
+server/db.sqlite3
+server/__pycache__/
+server/**/__pycache__/
+server/*.pyc
+
+# Agent (Go)
+agent/*.exe
+agent/bin/
+
+# Parent mobile (React Native / Expo)
+parent-mobile/node_modules/
+parent-mobile/.expo/
+parent-mobile/dist/
+
+# Parent web (Next.js)
+parent-web/node_modules/
+parent-web/.next/
+
+.DS_Store
