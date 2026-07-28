@@ -13,6 +13,7 @@ agent/bin/
 parent-mobile/node_modules/
 parent-mobile/.expo/
 parent-mobile/dist/
+parent-mobile/.env
 
 # Parent web (Next.js)
 parent-web/node_modules/

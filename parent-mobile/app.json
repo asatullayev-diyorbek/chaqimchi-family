@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "ChaqimchiAI Family",
+    "slug": "chaqimchi-family-parent",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "plugins": ["expo-asset"],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "QR kod skaner qilish uchun kamera kerak."
+      }
+    },
+    "android": {
+      "permissions": ["CAMERA"]
+    }
+  }
+}
