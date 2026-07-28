@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -110,3 +111,50 @@ class DeviceListView(generics.ListAPIView):
         if not isinstance(user, ParentUser):
             return ChildDevice.objects.none()
         return ChildDevice.objects.filter(family=user.family)
+
+
+class DeviceDetailView(APIView):
+    """PATCH/DELETE /api/devices/<id>/ — parent-authenticated, tenant-isolated.
+
+    PATCH renames (child_name only). DELETE unlinks — sets family=None and
+    status back to "unlinked" — rather than hard-deleting the row, since
+    apps.tracking.Event/EventBatch and apps.alerts.Alert all FK to
+    ChildDevice and their history should survive an unlink (e.g. re-linking
+    the same physical device later, or a parent wanting old records after
+    disconnecting it).
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get_owned_device(self, request, id):
+        if not isinstance(request.user, ParentUser):
+            return None, Response(
+                {"detail": "Parent autentifikatsiyasi talab qilinadi"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        device = get_object_or_404(ChildDevice, id=id)
+        if device.family_id != request.user.family_id:
+            return None, Response(
+                {"detail": "Bu qurilma sizning oilangizga tegishli emas"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return device, None
+
+    def patch(self, request, id):
+        device, error = self._get_owned_device(request, id)
+        if error:
+            return error
+        child_name = request.data.get("child_name")
+        if child_name is not None:
+            device.child_name = child_name
+            device.save(update_fields=["child_name"])
+        return Response(ChildDeviceListSerializer(device).data)
+
+    def delete(self, request, id):
+        device, error = self._get_owned_device(request, id)
+        if error:
+            return error
+        device.family = None
+        device.status = ChildDevice.STATUS_UNLINKED
+        device.save(update_fields=["family", "status"])
+        return Response(status=status.HTTP_204_NO_CONTENT)

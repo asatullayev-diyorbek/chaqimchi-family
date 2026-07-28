@@ -105,8 +105,43 @@ class IngestView(APIView):
         )
 
 
+RANGE_DAYS = {
+    "day": 1,
+    "week": 7,
+    # A calendar month varies in length; "month" here is a trailing
+    # 30-day window ending at the target date, not the actual calendar
+    # month — simpler, and good enough for the desktop Faoliyat screen's
+    # "oy" filter. Documented here since it's a real (small) semantic gap
+    # from what "oy" literally implies.
+    "month": 30,
+}
+
+
+def _app_minutes_for_date(device, target_date):
+    """Returns (minutes_per_app: dict[str, float], total: float) for one day."""
+    events = Event.objects.filter(
+        device=device, event_type="app_usage", occurred_at__date=target_date
+    )
+    minutes_per_app = defaultdict(float)
+    for event in events:
+        payload = event.payload or {}
+        started = parse_datetime(payload.get("started_at") or "")
+        ended = parse_datetime(payload.get("ended_at") or "")
+        if started and ended and ended > started:
+            app = payload.get("app", "unknown")
+            minutes_per_app[app] += (ended - started).total_seconds() / 60
+    return minutes_per_app, sum(minutes_per_app.values())
+
+
 class SummaryView(APIView):
-    """GET /api/tracking/summary/<device_id>/?date=YYYY-MM-DD — parent-authenticated."""
+    """GET /api/tracking/summary/<device_id>/?date=YYYY-MM-DD&range=day|week|month
+    — parent-authenticated.
+
+    range defaults to "day" — the exact single-day shape Bosqich 2 shipped
+    and parent-mobile already relies on is unchanged (same fields, same
+    values) when range is omitted. range=week/month only adds a
+    `breakdown` field on top; nothing existing is removed or renamed.
+    """
 
     permission_classes = [permissions.IsAuthenticated]
 
@@ -135,32 +170,32 @@ class SummaryView(APIView):
         else:
             target_date = timezone.now().date()
 
-        events = Event.objects.filter(
-            device=device, event_type="app_usage", occurred_at__date=target_date
-        )
+        range_param = request.query_params.get("range", "day")
+        if range_param not in RANGE_DAYS:
+            return Response(
+                {"detail": "range 'day', 'week' yoki 'month' bo'lishi kerak"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        num_days = RANGE_DAYS[range_param]
+        dates = [target_date - timedelta(days=offset) for offset in range(num_days - 1, -1, -1)]
 
-        # A simple per-app sum assumes app_usage windows never overlap
-        # (only one foreground app at a time, per the tracker's design —
-        # see agent/internal/tracker/app_usage.go). If the tracker ever
-        # emits overlapping windows, this will over-count; not handled here.
-        minutes_per_app = defaultdict(float)
-        for event in events:
-            payload = event.payload or {}
-            started = parse_datetime(payload.get("started_at") or "")
-            ended = parse_datetime(payload.get("ended_at") or "")
-            if started and ended and ended > started:
-                app = payload.get("app", "unknown")
-                minutes_per_app[app] += (ended - started).total_seconds() / 60
+        combined_minutes_per_app = defaultdict(float)
+        breakdown = []
+        for day in dates:
+            minutes_per_app, day_total = _app_minutes_for_date(device, day)
+            for app, minutes in minutes_per_app.items():
+                combined_minutes_per_app[app] += minutes
+            breakdown.append({"date": day, "total_minutes": round(day_total)})
 
         top_apps = sorted(
             (
                 {"app": app, "minutes": round(minutes)}
-                for app, minutes in minutes_per_app.items()
+                for app, minutes in combined_minutes_per_app.items()
             ),
             key=lambda entry: entry["minutes"],
             reverse=True,
         )
-        total_screen_minutes = round(sum(minutes_per_app.values()))
+        total_screen_minutes = round(sum(combined_minutes_per_app.values()))
 
         if device.last_sync and timezone.now() - device.last_sync <= ONLINE_THRESHOLD:
             device_status = "online"
@@ -175,6 +210,7 @@ class SummaryView(APIView):
                 "top_apps": top_apps,
                 "device_status": device_status,
                 "last_sync": device.last_sync,
+                "breakdown": breakdown,
             }
         ).data
         return Response(data)

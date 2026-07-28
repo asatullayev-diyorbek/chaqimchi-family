@@ -192,3 +192,32 @@ class SummaryTests(TestCase):
         # Omitting ?date should default to server "today", which is exactly
         # where the 90+45 minute fixtures above live.
         self.assertEqual(response.json()["total_screen_minutes"], 135)
+
+    def test_summary_default_range_day_includes_breakdown_of_one(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.url, {"date": self.today_str})
+        self.assertEqual(response.status_code, 200)
+        breakdown = response.json()["breakdown"]
+        self.assertEqual(len(breakdown), 1)
+        self.assertEqual(breakdown[0], {"date": self.today_str, "total_minutes": 135})
+
+    def test_summary_range_week_aggregates_across_days(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.url, {"date": self.today_str, "range": "week"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        # today (135) + yesterday (60) = 195; the other 5 days in the
+        # trailing week have no events.
+        self.assertEqual(data["total_screen_minutes"], 195)
+        self.assertEqual(
+            data["top_apps"],
+            [{"app": "chrome.exe", "minutes": 150}, {"app": "vscode.exe", "minutes": 45}],
+        )
+        self.assertEqual(len(data["breakdown"]), 7)
+        self.assertEqual(data["breakdown"][-1]["total_minutes"], 135)  # today, last entry
+        self.assertEqual(data["breakdown"][-2]["total_minutes"], 60)  # yesterday
+
+    def test_summary_rejects_invalid_range(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.url, {"date": self.today_str, "range": "year"})
+        self.assertEqual(response.status_code, 400)

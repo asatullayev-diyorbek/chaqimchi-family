@@ -11,10 +11,10 @@ type NavItem = {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Bosh sahifa", href: "/overview", enabled: true },
-  { label: "Faoliyat", href: "/activity", enabled: false },
+  { label: "Faoliyat", href: "/activity", enabled: true },
   { label: "Alertlar", href: "/alerts", enabled: false },
   { label: "Qoidalar", href: "/rules", enabled: false },
-  { label: "Qurilmalar", href: "/devices", enabled: false },
+  { label: "Qurilmalar", href: "/devices", enabled: true },
   { label: "Sozlamalar", href: "/settings", enabled: false },
 ];
 

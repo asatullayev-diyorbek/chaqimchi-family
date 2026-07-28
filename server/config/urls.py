@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
 
-from apps.devices.views import DeviceListView
+from apps.devices.views import DeviceDetailView, DeviceListView
 
 
 def health(request):
@@ -17,6 +17,7 @@ urlpatterns = [
     path("api/enroll/", include("apps.devices.urls")),
     path("api/tracking/", include("apps.tracking.urls")),
     path("api/devices/", DeviceListView.as_view(), name="device-list"),
+    path("api/devices/<uuid:id>/", DeviceDetailView.as_view(), name="device-detail"),
     path("api/rules/", include("apps.rules.urls")),
     path("api/alerts/", include("apps.alerts.urls")),
     path("api/deploy/", include("apps.deploy.urls")),

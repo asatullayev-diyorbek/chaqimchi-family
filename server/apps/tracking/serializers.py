@@ -12,6 +12,11 @@ class TopAppSerializer(serializers.Serializer):
     minutes = serializers.IntegerField()
 
 
+class DayBreakdownSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    total_minutes = serializers.IntegerField()
+
+
 class SummarySerializer(serializers.Serializer):
     device_id = serializers.UUIDField()
     date = serializers.DateField()
@@ -19,3 +24,4 @@ class SummarySerializer(serializers.Serializer):
     top_apps = TopAppSerializer(many=True)
     device_status = serializers.CharField()
     last_sync = serializers.DateTimeField(allow_null=True)
+    breakdown = DayBreakdownSerializer(many=True)

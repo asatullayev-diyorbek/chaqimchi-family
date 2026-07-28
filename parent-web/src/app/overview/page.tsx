@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AppShell from "@/components/layout/AppShell";
 import { getAccessToken } from "@/api/client";
 import { Device, DeviceSummary, getDevices, getSummary } from "@/api/tracking";
@@ -91,7 +92,8 @@ export default function OverviewPage() {
 function DeviceCard({ device }: { device: DeviceWithSummary }) {
   const isOnline = device.summary?.device_status === "online";
   return (
-    <div
+    <Link
+      href={`/activity?device=${device.id}`}
       style={{
         border: "1px solid var(--border)",
         borderRadius: 16,
@@ -102,7 +104,9 @@ function DeviceCard({ device }: { device: DeviceWithSummary }) {
         gap: 10,
       }}
     >
-      <div style={{ fontSize: 16, fontWeight: 600 }}>{device.child_name || "Qurilma"}</div>
+      <div style={{ fontSize: 16, fontWeight: 600, color: "var(--foreground)" }}>
+        {device.child_name || "Qurilma"}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--muted)" }}>
         <span
           style={{
@@ -123,16 +127,14 @@ function DeviceCard({ device }: { device: DeviceWithSummary }) {
           </span>
         </div>
       )}
-    </div>
+    </Link>
   );
 }
 
 function AddDeviceCard() {
   return (
-    <button
-      onClick={() =>
-        alert("Qurilma qo'shish keyingi bosqichda (Qurilmalar ekrani) qo'shiladi.")
-      }
+    <Link
+      href="/devices"
       style={{
         border: "1px dashed var(--border)",
         borderRadius: 16,
@@ -144,10 +146,9 @@ function AddDeviceCard() {
         justifyContent: "center",
         color: "var(--muted)",
         fontSize: 14,
-        cursor: "pointer",
       }}
     >
       + Qurilma qo&apos;shish
-    </button>
+    </Link>
   );
 }
