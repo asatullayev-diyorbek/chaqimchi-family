@@ -25,6 +25,7 @@ class ChildDevice(models.Model):
     device_secret = models.CharField(max_length=255, default=secrets.token_hex)
     created_at = models.DateTimeField(auto_now_add=True)
     linked_at = models.DateTimeField(null=True, blank=True)
+    last_sync = models.DateTimeField(null=True, blank=True)
 
 
 class EnrollmentCode(models.Model):

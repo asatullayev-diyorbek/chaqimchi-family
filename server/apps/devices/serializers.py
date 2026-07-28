@@ -18,3 +18,9 @@ class ChildDeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChildDevice
         fields = ["id", "family", "child_name", "status", "created_at", "linked_at"]
+
+
+class ChildDeviceListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChildDevice
+        fields = ["id", "child_name", "status", "last_sync"]

@@ -4,12 +4,15 @@ from datetime import timedelta
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.utils import timezone
-from rest_framework import permissions, status
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.models import ParentUser
+
 from .models import ChildDevice, EnrollmentCode
 from .serializers import (
+    ChildDeviceListSerializer,
     GenerateCodeResponseSerializer,
     VerifyCodeSerializer,
 )
@@ -94,3 +97,16 @@ class VerifyCodeView(APIView):
         )
 
         return Response({"device_id": device.id, "status": device.status})
+
+
+class DeviceListView(generics.ListAPIView):
+    """GET /api/devices/ — the current parent's own family's devices."""
+
+    serializer_class = ChildDeviceListSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not isinstance(user, ParentUser):
+            return ChildDevice.objects.none()
+        return ChildDevice.objects.filter(family=user.family)

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button, Text, TextInput, View } from "react-native";
 import { login } from "../../api/auth";
+import { resolvePostLoginRoute } from "../../api/tracking";
 
 export default function LoginScreen({ navigation }: any) {
   const [email, setEmail] = useState("");
@@ -10,7 +11,7 @@ export default function LoginScreen({ navigation }: any) {
   async function onSubmit() {
     try {
       await login(email, password);
-      navigation.replace("QRScan");
+      navigation.replace(await resolvePostLoginRoute());
     } catch (e: any) {
       setError(e.message);
     }

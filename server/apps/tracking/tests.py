@@ -1,7 +1,11 @@
+from datetime import timedelta
+
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.accounts.models import ParentUser
 from apps.devices.models import ChildDevice
 
 from .models import Event, EventBatch
@@ -105,3 +109,86 @@ class IngestTests(TestCase):
             HTTP_AUTHORIZATION=f"Device {self.linked_device.id}:wrong-secret",
         )
         self.assertEqual(response.status_code, 401)
+
+
+def make_app_usage_event(device, batch, app, started_at, ended_at):
+    return Event.objects.create(
+        batch=batch,
+        device=device,
+        event_type="app_usage",
+        payload={
+            "type": "app_usage",
+            "app": app,
+            "started_at": started_at,
+            "ended_at": ended_at,
+        },
+        occurred_at=started_at,
+    )
+
+
+def iso(dt):
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+class SummaryTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(
+            email="parent@example.com", password="supersecret123"
+        )
+        self.device = ChildDevice.objects.create(
+            family=self.parent.family, status=ChildDevice.STATUS_LINKED
+        )
+        self.batch = EventBatch.objects.create(device=self.device, batch_id="b1")
+
+        today = timezone.now().replace(hour=9, minute=0, second=0, microsecond=0)
+        yesterday = today - timedelta(days=1)
+
+        self.today_str = today.date().isoformat()
+
+        make_app_usage_event(
+            self.device, self.batch, "chrome.exe",
+            iso(today), iso(today + timedelta(minutes=90)),
+        )
+        make_app_usage_event(
+            self.device, self.batch, "vscode.exe",
+            iso(today + timedelta(hours=2)), iso(today + timedelta(hours=2, minutes=45)),
+        )
+        # A different day — must not be counted in today's summary.
+        make_app_usage_event(
+            self.device, self.batch, "chrome.exe",
+            iso(yesterday), iso(yesterday + timedelta(hours=1)),
+        )
+
+        self.url = reverse("summary", kwargs={"device_id": self.device.id})
+
+    def test_summary_computes_total_and_top_apps(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.url, {"date": self.today_str})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["total_screen_minutes"], 135)
+        self.assertEqual(
+            data["top_apps"],
+            [{"app": "chrome.exe", "minutes": 90}, {"app": "vscode.exe", "minutes": 45}],
+        )
+
+    def test_summary_rejects_other_family_device(self):
+        other_parent = ParentUser.objects.create_user(
+            email="other@example.com", password="supersecret123"
+        )
+        self.client.force_authenticate(user=other_parent)
+        response = self.client.get(self.url, {"date": self.today_str})
+        self.assertEqual(response.status_code, 403)
+
+    def test_summary_requires_authentication(self):
+        response = self.client.get(self.url, {"date": self.today_str})
+        self.assertEqual(response.status_code, 401)
+
+    def test_summary_defaults_to_today_when_date_omitted(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        # Omitting ?date should default to server "today", which is exactly
+        # where the 90+45 minute fixtures above live.
+        self.assertEqual(response.json()["total_screen_minutes"], 135)

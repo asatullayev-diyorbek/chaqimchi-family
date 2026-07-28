@@ -9,7 +9,7 @@ function extractCode(qrPayload: string): string {
   return match ? match[1] : qrPayload;
 }
 
-export default function QRScanScreen() {
+export default function QRScanScreen({ navigation }: any) {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [scanned, setScanned] = useState(false);
   const [manualCode, setManualCode] = useState("");
@@ -21,6 +21,12 @@ export default function QRScanScreen() {
       setHasPermission(status === "granted")
     );
   }, []);
+
+  useEffect(() => {
+    if (status !== "linked") return;
+    const timer = setTimeout(() => navigation.replace("Home"), 1200);
+    return () => clearTimeout(timer);
+  }, [status, navigation]);
 
   async function link(code: string) {
     try {
