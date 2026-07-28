@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "channels",
+    "corsheaders",
     "rest_framework",
     "rest_framework_simplejwt",
     "apps.accounts",
@@ -38,12 +39,26 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+]
+
+# parent-web calls this API directly from the browser (unlike parent-mobile,
+# a native app with no CORS concept), so the allowed origin list has to be
+# explicit — never "*", since these are authenticated JWT-bearing requests.
+# CORS_ALLOWED_ORIGINS is a real env var (not hardcoded) so a deployed
+# parent-web's actual origin can be added without touching code.
+CORS_ALLOWED_ORIGINS = [
+    origin
+    for origin in os.environ.get(
+        "CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+    ).split(",")
+    if origin
 ]
 
 ROOT_URLCONF = "config.urls"
