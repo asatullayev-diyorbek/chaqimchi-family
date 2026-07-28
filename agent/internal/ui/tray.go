@@ -27,8 +27,8 @@ func NewTray() *Tray {
 	return &Tray{ready: make(chan struct{})}
 }
 
-// Run blocks until Quit is called from the tray menu — call it in its own
-// goroutine from cmd/agent's main.
+// Run blocks until Quit is called — call it in its own goroutine from
+// cmd/agent's main.
 func (t *Tray) Run() {
 	systray.Run(t.onReady, func() {})
 }
@@ -38,11 +38,22 @@ func (t *Tray) onReady() {
 	systray.SetTooltip(tooltipFor(StatusOK))
 	close(t.ready)
 
-	quitItem := systray.AddMenuItem("Chiqish", "Agentni to'xtatish")
-	go func() {
-		<-quitItem.ClickedCh
-		systray.Quit()
-	}()
+	// Deliberately no "Chiqish"/quit menu item here: the bola-app doc
+	// (chaqimchiai-family-bola-ilova-dizayn-talablari.md, 7-bo'lim) is
+	// explicit that no "stop/quit the app" control may exist anywhere in
+	// this interface — it would defeat the anti-tamper requirement. Quit()
+	// still exists as a method because cmd/agent needs to close the tray
+	// on a graceful SCM stop request, but nothing in this UI exposes it to
+	// whoever is sitting at the keyboard.
+}
+
+// Quit ends the tray's event loop, unblocking Run(). Called only
+// programmatically (from cmd/agent on an SCM stop/shutdown request) —
+// never wire this to a UI element the child can click; see onReady's
+// comment.
+func (t *Tray) Quit() {
+	<-t.ready
+	systray.Quit()
 }
 
 // SetStatus updates the tray icon color and tooltip. Safe to call before

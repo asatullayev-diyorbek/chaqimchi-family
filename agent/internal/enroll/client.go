@@ -28,10 +28,11 @@ func NewClient(baseURL string) *Client {
 }
 
 type Code struct {
-	DeviceID   string    `json:"device_id"`
-	Code       string    `json:"code"`
-	QRPayload  string    `json:"qr_payload"`
-	ExpiresAt  time.Time `json:"expires_at"`
+	DeviceID     string    `json:"device_id"`
+	DeviceSecret string    `json:"device_secret"`
+	Code         string    `json:"code"`
+	QRPayload    string    `json:"qr_payload"`
+	ExpiresAt    time.Time `json:"expires_at"`
 }
 
 // GenerateCode calls POST /api/enroll/generate-code/.

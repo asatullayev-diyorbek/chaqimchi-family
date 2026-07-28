@@ -2,15 +2,20 @@
 
 // cmd/agent is the persistent SYSTEM service binary: it tracks app usage
 // and device state, syncs buffered events to the backend, fetches and
-// caches rules, and enforces them (block screen + tray warnings). Wires
-// together every package built across Bosqich 1-3. Like the rest of the
-// Windows-only code in this repo, this has been cross-compiled but never
-// run on a real Windows machine — see internal/ui/block_screen.go's note.
+// caches rules, and enforces them (block screen + tray warnings), and
+// checks for/applies updates. Wires together every package built across
+// Bosqich 1-4.5. As of Bosqich 4.5 it actually runs under the Windows
+// Service Control Manager (via internal/service.Run) instead of as a bare
+// console process — see internal/service's package doc for why that
+// matters specifically for the updater's restart-on-exit mechanism. Like
+// the rest of the Windows-only code in this repo, this has been
+// cross-compiled but never run on a real Windows machine.
 package main
 
 import (
 	"context"
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,6 +23,7 @@ import (
 
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/rules"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/service"
 	syncpkg "github.com/chaqimchi/chaqimchi-family/agent/internal/sync"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/tracker"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
@@ -28,6 +34,8 @@ import (
 // at "0.0.0-dev" for plain `go build`/`go run`, which always looks
 // "outdated" against any published AgentVersion — expected for local dev.
 var version = "0.0.0-dev"
+
+const serviceName = "ChaqimchiFamilyAgent"
 
 func main() {
 	baseURL := flag.String("server", "http://localhost:8000", "ChaqimchiAI backend base URL")
@@ -40,28 +48,42 @@ func main() {
 		log.Fatal("device-id and device-secret are required (flags or CHAQIMCHI_DEVICE_ID/CHAQIMCHI_DEVICE_SECRET)")
 	}
 
-	if err := os.MkdirAll(*dataDir, 0o755); err != nil {
-		log.Fatalf("creating data dir: %v", err)
+	err := service.Run(serviceName, func(ctx context.Context) error {
+		return run(ctx, *baseURL, *deviceID, *deviceSecret, *dataDir)
+	})
+	if err != nil {
+		log.Fatalf("service: %v", err)
+	}
+}
+
+// run holds everything that used to live directly in main() before
+// Bosqich 4.5. It's now a plain func(ctx) error so internal/service.Run can
+// drive it either directly (interactive/dev) or as an SCM-managed service,
+// identically.
+func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string) error {
+	if err := os.MkdirAll(dataDir, 0o755); err != nil {
+		return fmt.Errorf("creating data dir: %w", err)
 	}
 
-	store, err := buffer.Open(filepath.Join(*dataDir, "buffer.db"))
+	store, err := buffer.Open(filepath.Join(dataDir, "buffer.db"))
 	if err != nil {
-		log.Fatalf("opening buffer: %v", err)
+		return fmt.Errorf("opening buffer: %w", err)
 	}
 	defer store.Close()
 
-	rulesCache, err := rules.OpenCache(filepath.Join(*dataDir, "rules.db"))
+	rulesCache, err := rules.OpenCache(filepath.Join(dataDir, "rules.db"))
 	if err != nil {
-		log.Fatalf("opening rules cache: %v", err)
+		return fmt.Errorf("opening rules cache: %w", err)
 	}
 	defer rulesCache.Close()
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	tray := ui.NewTray()
+	go func() {
+		<-ctx.Done()
+		tray.Quit()
+	}()
 
-	reporter := rules.NewAlertReporter(*baseURL, *deviceID, *deviceSecret)
+	reporter := rules.NewAlertReporter(baseURL, deviceID, deviceSecret)
 	enforcer := rules.NewEnforcer(rulesCache, reporter,
 		func(reason, message string) {
 			tray.SetStatus(ui.StatusWarning)
@@ -73,10 +95,10 @@ func main() {
 		},
 	)
 
-	fetcher := rules.NewFetcher(*baseURL, *deviceID, *deviceSecret, rulesCache)
+	fetcher := rules.NewFetcher(baseURL, deviceID, deviceSecret, rulesCache)
 	go fetcher.Run(ctx, 5*time.Minute)
 
-	uploader := syncpkg.NewUploader(*baseURL, *deviceID, *deviceSecret, store)
+	uploader := syncpkg.NewUploader(baseURL, deviceID, deviceSecret, store)
 	go uploader.Run(ctx, 60*time.Second)
 
 	go tracker.RunDeviceInfo(ctx, store, 60*time.Second)
@@ -85,7 +107,7 @@ func main() {
 	// package doc for why there's no signature check here on purpose, and
 	// why that's explicitly NOT acceptable as-is once this ships to real
 	// families (Bosqich 6 adds verification + safe rollback).
-	versionChecker := updater.NewChecker(*baseURL, *deviceID, *deviceSecret, version)
+	versionChecker := updater.NewChecker(baseURL, deviceID, deviceSecret, version)
 	go versionChecker.Run(ctx, 6*time.Hour,
 		func(latest *updater.LatestVersion) {
 			log.Printf("updater: %s available (current %s), installing", latest.Version, version)
@@ -93,8 +115,11 @@ func main() {
 				log.Printf("updater: install failed, staying on %s: %v", version, err)
 				return
 			}
-			log.Printf("updater: installed %s, exiting so the service can restart into it", latest.Version)
-			os.Exit(0)
+			log.Printf("updater: installed %s, restarting to run it", latest.Version)
+			// Deliberately not a graceful return/ctx-cancel — see
+			// RestartSelf's doc comment for why this has to look like an
+			// unexpected stop to the SCM, not a clean one.
+			service.RestartSelf()
 		},
 		func(err error) { log.Printf("updater: check failed: %v", err) },
 	)
@@ -124,6 +149,8 @@ func main() {
 	})
 
 	// systray wants to own the main thread/goroutine on some platforms —
-	// run it last, blocking, as the process's main loop.
+	// run it last, blocking until either the tray's own "Chiqish" menu
+	// item or ctx cancellation (from an SCM stop request) calls Quit().
 	tray.Run()
+	return nil
 }
