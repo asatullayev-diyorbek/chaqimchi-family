@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.devices",
     "apps.tracking",
+    "apps.rules",
+    "apps.alerts",
 ]
 
 MIDDLEWARE = [

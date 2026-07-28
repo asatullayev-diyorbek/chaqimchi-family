@@ -15,5 +15,7 @@ urlpatterns = [
     path("api/enroll/", include("apps.devices.urls")),
     path("api/tracking/", include("apps.tracking.urls")),
     path("api/devices/", DeviceListView.as_view(), name="device-list"),
+    path("api/rules/", include("apps.rules.urls")),
+    path("api/alerts/", include("apps.alerts.urls")),
     path("api/health/", health, name="health"),
 ]

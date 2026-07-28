@@ -73,8 +73,12 @@ func foregroundProcessName() string {
 
 // RunAppUsage polls the foreground app every pollInterval and appends an
 // "app_usage" event to store whenever the foreground app changes, covering
-// the just-finished [started_at, ended_at) window.
-func RunAppUsage(ctx context.Context, store *buffer.Store, pollInterval time.Duration) {
+// the just-finished [started_at, ended_at) window. If onPoll is non-nil, it
+// is called on every tick with the currently observed foreground app name
+// (possibly "") — this is the hook internal/rules.Enforcer.CheckForegroundApp
+// is wired into from cmd/agent, so blocked-app enforcement reacts on the
+// same cadence as usage tracking rather than needing its own poll loop.
+func RunAppUsage(ctx context.Context, store *buffer.Store, pollInterval time.Duration, onPoll func(app string)) {
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
@@ -110,6 +114,9 @@ func RunAppUsage(ctx context.Context, store *buffer.Store, pollInterval time.Dur
 				flush(now)
 				currentApp = app
 				startedAt = now
+			}
+			if onPoll != nil {
+				onPoll(app)
 			}
 		}
 	}

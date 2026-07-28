@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { RefreshControl, ScrollView, Text, View } from "react-native";
+import { Button, RefreshControl, ScrollView, Text, View } from "react-native";
 import { Device, DeviceSummary, getDevices, getSummary } from "../../api/tracking";
 
 function formatMinutes(minutes: number): string {
@@ -9,7 +9,7 @@ function formatMinutes(minutes: number): string {
   return `${hours} soat ${mins} daq`;
 }
 
-export default function HomeScreen() {
+export default function HomeScreen({ navigation }: any) {
   const [device, setDevice] = useState<Device | null>(null);
   const [summary, setSummary] = useState<DeviceSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,6 +116,15 @@ export default function HomeScreen() {
           </View>
         ))}
         {(summary?.top_apps ?? []).length === 0 && <Text>Bugun ma'lumot yo'q</Text>}
+      </View>
+
+      <View style={{ flexDirection: "row", gap: 12 }}>
+        <View style={{ flex: 1 }}>
+          <Button title="Qoidalar" onPress={() => navigation.navigate("Rules")} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button title="Bildirishnomalar" onPress={() => navigation.navigate("Alerts")} />
+        </View>
       </View>
 
       {error && <Text style={{ color: "red" }}>{error}</Text>}
