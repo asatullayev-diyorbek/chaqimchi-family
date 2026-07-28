@@ -11,6 +11,27 @@
   --sidebar-bg: #123832;
   --sidebar-fg: #d9e8e4;
   --sidebar-disabled: #6f8985;
+
+  /* Liquid Glass tokens — same palette as above, just layered as
+     translucent material instead of flat fills. Opacity is deliberately
+     higher than a typical "0.15-ish" glass mockup: the body gradient
+     behind these panels is intentionally light (see body{} below), so a
+     lighter glass fill would either wash out or fail WCAG AA against
+     --foreground text. Verified with a contrast script, not eyeballed —
+     see the task's Playwright/contrast verification pass. */
+  --glass-bg: rgba(255, 255, 255, 0.68);
+  --glass-bg-strong: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-shadow: 0 8px 32px rgba(18, 56, 50, 0.12);
+
+  /* Dark glass variant for the sidebar — same --sidebar-bg hue, just
+     translucent + blurred rather than flat, kept opaque enough (0.86)
+     that --sidebar-fg text stays readable over the light body gradient
+     showing through. */
+  --glass-sidebar-bg: rgba(18, 56, 50, 0.86);
+  --glass-sidebar-border: rgba(217, 232, 228, 0.14);
+  --glass-sidebar-highlight: rgba(255, 255, 255, 0.16);
 }
 
 * {
@@ -29,7 +50,16 @@ body {
 body {
   min-height: 100%;
   color: var(--foreground);
-  background: var(--background);
+  /* Soft washes of the existing accent hues over the existing background
+     color — same palette values as --accent/--accent-dark/--background,
+     just composited as a gradient so the glass panels above have
+     something visible to blur. A flat single color here would make
+     backdrop-filter invisible. */
+  background:
+    radial-gradient(1100px 620px at 8% -8%, rgba(47, 143, 126, 0.16), transparent 60%),
+    radial-gradient(900px 700px at 100% 100%, rgba(34, 110, 97, 0.12), transparent 55%),
+    var(--background);
+  background-attachment: fixed;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -41,4 +71,44 @@ a {
 
 button {
   font-family: inherit;
+}
+
+/* Liquid Glass panel — cards, form containers, summary panels. */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+}
+
+/* Stronger/less-translucent glass for surfaces with more/smaller text
+   (header bar, form cards) where extra opacity buys extra contrast
+   margin without losing the material's see-through quality. */
+.glass-strong {
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-highlight);
+}
+
+.glass-sidebar {
+  background: var(--glass-sidebar-bg);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border-right: 1px solid var(--glass-sidebar-border);
+  box-shadow: inset -1px 0 0 var(--glass-sidebar-highlight);
+}
+
+/* The explicit "safety measure" both design docs call out: tables and
+   dense text never sit directly on the translucent material — they get
+   a solid, fully opaque well instead, nested inside a glass panel if
+   one wraps them. Kept visually quiet (thin border, no shadow) so it
+   reads as "the readable part" rather than a competing card. */
+.glass-solid-well {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
 }

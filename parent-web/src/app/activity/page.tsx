@@ -85,8 +85,8 @@ function ActivityContent() {
                 key={r}
                 onClick={() => setRange(r)}
                 style={{
-                  border: "1px solid var(--border)",
-                  background: range === r ? "var(--accent)" : "var(--surface)",
+                  border: "1px solid var(--glass-border)",
+                  background: range === r ? "var(--accent-dark)" : "rgba(255, 255, 255, 0.6)",
                   color: range === r ? "#fff" : "var(--foreground)",
                   borderRadius: 8,
                   padding: "6px 14px",
@@ -104,10 +104,8 @@ function ActivityContent() {
           {summary && (
             <>
               <div
+                className="glass"
                 style={{
-                  border: "1px solid var(--border)",
-                  borderRadius: 16,
-                  background: "var(--surface)",
                   padding: 24,
                   marginBottom: 24,
                   maxWidth: 640,
@@ -150,34 +148,36 @@ function ActivityContent() {
               </div>
 
               {tab === "apps" && (
-                <table style={{ width: "100%", maxWidth: 640, borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      <th style={thStyle}>Ilova</th>
-                      <th
-                        style={{ ...thStyle, textAlign: "right", cursor: "pointer" }}
-                        onClick={() => setSortDesc((v) => !v)}
-                      >
-                        Vaqt {sortDesc ? "↓" : "↑"}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedApps.map((app) => (
-                      <tr key={app.app}>
-                        <td style={tdStyle}>{app.app}</td>
-                        <td style={{ ...tdStyle, textAlign: "right" }}>{formatMinutes(app.minutes)}</td>
-                      </tr>
-                    ))}
-                    {sortedApps.length === 0 && (
+                <div className="glass-solid-well" style={{ maxWidth: 640, padding: "4px 16px" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
                       <tr>
-                        <td colSpan={2} style={{ ...tdStyle, color: "var(--muted)" }}>
-                          Bu davrda ma&apos;lumot yo&apos;q
-                        </td>
+                        <th style={thStyle}>Ilova</th>
+                        <th
+                          style={{ ...thStyle, textAlign: "right", cursor: "pointer" }}
+                          onClick={() => setSortDesc((v) => !v)}
+                        >
+                          Vaqt {sortDesc ? "↓" : "↑"}
+                        </th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sortedApps.map((app) => (
+                        <tr key={app.app}>
+                          <td style={tdStyle}>{app.app}</td>
+                          <td style={{ ...tdStyle, textAlign: "right" }}>{formatMinutes(app.minutes)}</td>
+                        </tr>
+                      ))}
+                      {sortedApps.length === 0 && (
+                        <tr>
+                          <td colSpan={2} style={{ ...tdStyle, color: "var(--muted)" }}>
+                            Bu davrda ma&apos;lumot yo&apos;q
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               )}
 
               {tab === "sites" && (

@@ -94,10 +94,8 @@ function DeviceCard({ device }: { device: DeviceWithSummary }) {
   return (
     <Link
       href={`/activity?device=${device.id}`}
+      className="glass"
       style={{
-        border: "1px solid var(--border)",
-        borderRadius: 16,
-        background: "var(--surface)",
         padding: 20,
         display: "flex",
         flexDirection: "column",
@@ -136,9 +134,11 @@ function AddDeviceCard() {
     <Link
       href="/devices"
       style={{
-        border: "1px dashed var(--border)",
-        borderRadius: 16,
-        background: "transparent",
+        border: "1px dashed var(--glass-border)",
+        borderRadius: 20,
+        background: "rgba(255, 255, 255, 0.3)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         padding: 20,
         minHeight: 110,
         display: "flex",

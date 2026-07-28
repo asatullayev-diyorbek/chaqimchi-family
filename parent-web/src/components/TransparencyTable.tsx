@@ -14,11 +14,9 @@ export default function TransparencyTable() {
       </h2>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <div
+          className="glass-solid-well"
           style={{
-            border: "1px solid var(--border)",
-            borderRadius: 12,
             padding: 16,
-            background: "var(--surface)",
           }}
         >
           <div style={{ fontWeight: 600, color: "var(--accent-dark)", marginBottom: 8 }}>
@@ -27,17 +25,15 @@ export default function TransparencyTable() {
           <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
             {WE_SEE.map((item) => (
               <li key={item} style={{ display: "flex", gap: 8, fontSize: 14 }}>
-                <span style={{ color: "var(--accent)" }}>✓</span> {item}
+                <span style={{ color: "var(--accent-dark)" }}>✓</span> {item}
               </li>
             ))}
           </ul>
         </div>
         <div
+          className="glass-solid-well"
           style={{
-            border: "1px solid var(--border)",
-            borderRadius: 12,
             padding: 16,
-            background: "var(--surface)",
           }}
         >
           <div style={{ fontWeight: 600, color: "var(--muted)", marginBottom: 8 }}>

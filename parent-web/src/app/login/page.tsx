@@ -34,17 +34,14 @@ export default function LoginPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "var(--background)",
         padding: 24,
       }}
     >
       <form
         onSubmit={onSubmit}
+        className="glass"
         style={{
           width: 360,
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          borderRadius: 16,
           padding: 32,
           display: "flex",
           flexDirection: "column",

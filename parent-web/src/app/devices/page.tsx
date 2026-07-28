@@ -121,7 +121,8 @@ export default function DevicesPage() {
       )}
 
       {devices && devices.length > 0 && (
-        <table style={{ width: "100%", maxWidth: 760, borderCollapse: "collapse" }}>
+        <div className="glass-solid-well" style={{ maxWidth: 760, padding: "4px 16px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
               <th style={thStyle}>Nomi</th>
@@ -180,6 +181,7 @@ export default function DevicesPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </AppShell>
   );
@@ -200,7 +202,7 @@ const tdStyle: React.CSSProperties = {
 };
 
 const addButtonStyle: React.CSSProperties = {
-  background: "var(--accent)",
+  background: "var(--accent-dark)",
   color: "#fff",
   border: "none",
   borderRadius: 8,

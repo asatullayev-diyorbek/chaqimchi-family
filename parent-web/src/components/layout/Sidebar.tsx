@@ -23,10 +23,10 @@ export default function Sidebar() {
 
   return (
     <nav
+      className="glass-sidebar"
       style={{
         width: 220,
         flexShrink: 0,
-        background: "var(--sidebar-bg)",
         color: "var(--sidebar-fg)",
         minHeight: "100vh",
         padding: "24px 12px",

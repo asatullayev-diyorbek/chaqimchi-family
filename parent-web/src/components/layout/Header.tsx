@@ -13,14 +13,17 @@ export default function Header() {
 
   return (
     <header
+      className="glass-strong"
       style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "flex-end",
         gap: 16,
         padding: "16px 32px",
-        borderBottom: "1px solid var(--border)",
-        background: "var(--surface)",
+        borderRadius: 0,
+        borderTop: "none",
+        borderLeft: "none",
+        borderRight: "none",
       }}
     >
       <button
