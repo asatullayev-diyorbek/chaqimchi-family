@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
 from django.urls import include, path
@@ -17,5 +19,9 @@ urlpatterns = [
     path("api/devices/", DeviceListView.as_view(), name="device-list"),
     path("api/rules/", include("apps.rules.urls")),
     path("api/alerts/", include("apps.alerts.urls")),
+    path("api/deploy/", include("apps.deploy.urls")),
     path("api/health/", health, name="health"),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

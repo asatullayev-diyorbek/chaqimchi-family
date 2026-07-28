@@ -18,14 +18,21 @@ type BlockFunc func(reason, message string)
 // NotifyFunc shows a tray/toast warning, e.g. an upcoming limit.
 type NotifyFunc func(message string)
 
-// Language note: every string here follows the child-app doc's tone rule —
-// no blame, no "taqiqlangan"/"buzildi". These are the only two enforcement
-// messages in this bosqich; keep any future ones held to the same bar.
+// Language note: every string here is checked against
+// docs/chaqimchiai-family-bola-ilova-dizayn-talablari.md 4.3-4.4 va 6-bo'lim
+// (the child-app doc's explicit banned-word list: "taqiqlangan", "buzildi",
+// "ruxsatsiz", "jazo", "kuzatilyapsan" — none of these appear below).
+// MessageAppUnavailable and MessageLimitReached are quoted close to
+// verbatim from 4.4-bo'lim's own examples, including the required second
+// line pointing the child to their parent rather than leaving them stuck.
+// MessageBlockedAppToast is the separate notification 4.3-bo'lim requires
+// alongside (not instead of) the block screen itself.
 const (
-	MessageAppUnavailable = "Bu ilova hozircha mavjud emas"
-	MessageLimitReached   = "Bugungi ekran vaqting tugadi. Ertaga davom etamiz!"
-	MessageWarn15Min      = "15 daqiqadan keyin bugungi ekran vaqting tugaydi"
-	MessageWarn5Min       = "5 daqiqadan keyin bugungi ekran vaqting tugaydi"
+	MessageAppUnavailable  = "Bu ilova hozircha mavjud emas\n\nSavoling bo'lsa, ota-onangga murojaat qil"
+	MessageLimitReached    = "Bugungi ekran vaqting tugadi. Ertaga davom etasan!\n\nSavoling bo'lsa, ota-onangga murojaat qil"
+	MessageBlockedAppToast = "Bu ilova/sayt ota-onang tomonidan cheklangan"
+	MessageWarn15Min       = "15 daqiqadan keyin bugungi ekran vaqting tugaydi"
+	MessageWarn5Min        = "5 daqiqadan keyin bugungi ekran vaqting tugaydi"
 )
 
 type blockedAppValue struct {
@@ -120,6 +127,11 @@ func (e *Enforcer) CheckForegroundApp(ctx context.Context, app string) {
 		return
 	}
 
+	// Doc requires both: an immediate calm toast AND the block screen,
+	// not one or the other.
+	if e.Notify != nil {
+		e.Notify(MessageBlockedAppToast)
+	}
 	if e.Block != nil {
 		e.Block("blocked_app", MessageAppUnavailable)
 	}

@@ -6,7 +6,7 @@ import { Alert, getAlerts, markAlertSeen } from "../../api/alerts";
 function describe(alert: Alert): string {
   if (alert.alert_type === "blocked_app_opened") {
     const app = (alert.payload as any)?.app ?? "ilova";
-    return `${app} ochishga urinildi`;
+    return `${app} — ruxsat etilmagan, ochilishi cheklandi`;
   }
   return "Bugungi ekran vaqti limiti to'ldi";
 }

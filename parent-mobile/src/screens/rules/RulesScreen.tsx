@@ -124,7 +124,7 @@ export default function RulesScreen() {
       </View>
 
       <View style={{ gap: 8, flex: 1 }}>
-        <Text style={{ fontSize: 18, fontWeight: "600" }}>Taqiqlangan ilovalar</Text>
+        <Text style={{ fontSize: 18, fontWeight: "600" }}>Ruxsat etilmagan ilovalar</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
           <TextInput
             placeholder="masalan: steam.exe"
@@ -161,7 +161,7 @@ export default function RulesScreen() {
               <Button title="O'chirish" onPress={() => removeBlockedApp(item)} />
             </View>
           )}
-          ListEmptyComponent={<Text style={{ color: "#666" }}>Hali taqiqlangan ilova yo'q</Text>}
+          ListEmptyComponent={<Text style={{ color: "#666" }}>Hali ruxsat etilmagan ilova yo'q</Text>}
         />
       </View>
 

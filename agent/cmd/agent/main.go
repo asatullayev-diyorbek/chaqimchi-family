@@ -21,7 +21,13 @@ import (
 	syncpkg "github.com/chaqimchi/chaqimchi-family/agent/internal/sync"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/tracker"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/updater"
 )
+
+// version is set at build time via -ldflags "-X main.version=0.4.0". Left
+// at "0.0.0-dev" for plain `go build`/`go run`, which always looks
+// "outdated" against any published AgentVersion — expected for local dev.
+var version = "0.0.0-dev"
 
 func main() {
 	baseURL := flag.String("server", "http://localhost:8000", "ChaqimchiAI backend base URL")
@@ -74,6 +80,24 @@ func main() {
 	go uploader.Run(ctx, 60*time.Second)
 
 	go tracker.RunDeviceInfo(ctx, store, 60*time.Second)
+
+	// Unsigned, internal dev-cycle auto-update — see internal/updater's
+	// package doc for why there's no signature check here on purpose, and
+	// why that's explicitly NOT acceptable as-is once this ships to real
+	// families (Bosqich 6 adds verification + safe rollback).
+	versionChecker := updater.NewChecker(*baseURL, *deviceID, *deviceSecret, version)
+	go versionChecker.Run(ctx, 6*time.Hour,
+		func(latest *updater.LatestVersion) {
+			log.Printf("updater: %s available (current %s), installing", latest.Version, version)
+			if err := updater.Update(ctx, nil, latest.BinaryURL); err != nil {
+				log.Printf("updater: install failed, staying on %s: %v", version, err)
+				return
+			}
+			log.Printf("updater: installed %s, exiting so the service can restart into it", latest.Version)
+			os.Exit(0)
+		},
+		func(err error) { log.Printf("updater: check failed: %v", err) },
+	)
 
 	// Daily total is kept as a simple in-memory counter, incremented by
 	// one poll interval whenever a foreground app was observed, reset at

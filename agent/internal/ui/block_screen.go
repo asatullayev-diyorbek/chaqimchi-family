@@ -59,9 +59,9 @@ const (
 
 	swShow = 5
 
-	dtCenter     = 0x00000001
-	dtVCenter    = 0x00000004
-	dtSingleLine = 0x00000020
+	dtCenter    = 0x00000001
+	dtCalcRect  = 0x00000400
+	dtWordBreak = 0x00000010
 
 	bkModeTransparent = 1
 )
@@ -209,14 +209,34 @@ func blockWndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 		text := currentBlockText
 		blockScreenMu.Unlock()
 		textPtr, _ := syscall.UTF16PtrFromString(text)
+		textLen := uintptr(len([]rune(text)))
 
-		paintRect := ps.rcPaint
+		// DT_VCENTER only applies to single-line text, and this message can
+		// be multi-line (main line + the "ota-onangga murojaat qil"
+		// follow-up) — so vertical centering is done manually: first
+		// measure the wrapped text's height with DT_CALCRECT, then offset
+		// that rect to the middle of the screen before the real paint.
+		screenRect := ps.rcPaint
+		measureRect := rectT{left: screenRect.left, right: screenRect.right}
 		procDrawTextW.Call(
 			hdc,
 			uintptr(unsafe.Pointer(textPtr)),
-			uintptr(len([]rune(text))),
+			textLen,
+			uintptr(unsafe.Pointer(&measureRect)),
+			uintptr(dtCenter|dtWordBreak|dtCalcRect),
+		)
+
+		textHeight := measureRect.bottom - measureRect.top
+		screenHeight := screenRect.bottom - screenRect.top
+		top := screenRect.top + (screenHeight-textHeight)/2
+		paintRect := rectT{left: screenRect.left, top: top, right: screenRect.right, bottom: top + textHeight}
+
+		procDrawTextW.Call(
+			hdc,
+			uintptr(unsafe.Pointer(textPtr)),
+			textLen,
 			uintptr(unsafe.Pointer(&paintRect)),
-			uintptr(dtCenter|dtVCenter|dtSingleLine),
+			uintptr(dtCenter|dtWordBreak),
 		)
 
 		procEndPaint.Call(hwnd, uintptr(unsafe.Pointer(&ps)))

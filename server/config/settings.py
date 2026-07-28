@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "apps.tracking",
     "apps.rules",
     "apps.alerts",
+    "apps.deploy",
 ]
 
 MIDDLEWARE = [
@@ -102,6 +103,12 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+
+# Local static-file serving for agent binaries in this bosqich (Bosqich 4
+# scope explicitly excludes real S3/CDN hosting — AgentVersion.binary_url
+# can point here for local testing, e.g. http://localhost:8000/media/agent-builds/...).
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
