@@ -116,12 +116,14 @@ Bu ekran desktopda **mobildan ancha kengroq** bo'lishi tabiiy, chunki qoida sozl
 
 ---
 
-## 5. Komponent talablari (umumiy)
+## 5. Komponent talablari (umumiy) — Liquid Glass
 
-* **Kartochkalar (cards):** yumshoq soya, katta radius (mobil bilan vizual uzluksizlik uchun bir xil dizayn tili).
-* **Jadvallar:** saralash, sahifalash (pagination) yoki cheksiz skroll — ma'lumot ko'p bo'lsa (masalan alertlar tarixi).
+* **Material — Liquid Glass:** mobil hujjatdagi (`chaqimchiai-family-ota-ona-dizayn-talablari.md`, 5-bo'lim) endi yangilangan Liquid Glass yo'nalishi bu yerda ham **aynan shu** — yarim-shaffof, xira-oynasimon (frosted glass) kartochkalar, tomchisimon yumaloq shakllar, yengil yorug'lik qaytarishi. Rang palitrasi o'zgarmaydi (iliq, tinch, ko'k/yashil-ko'k asosiy).
+* **Kartochkalar (cards):** endi yumshoq soya + blur/shaffoflik + katta radius birgalikda — desktopda ko'proq kartochka bir ekranda ko'rinishi mumkinligi sabab (Overview'dagi bir nechta kartochka), orqadagi kontent xira ko'rinib, chuqurlik hissini kuchaytiradi.
+* **Sidebar:** doimiy sidebar ham glass-material sifatida (xira fon ustida, asosiy kontentdan farqlanadigan yengil shaffoflik) — bu desktop-specific joylashuv, mobilda mos keladigan elementi yo'q.
+* **Jadvallar:** jadval o'zi (qatorlar, matn) glass-effektga majburlanmaydi — o'qilishni qiyinlashtiradi (ma'lumot zichligi yuqori joy). Faqat jadvalni o'rab turgan kartochka/panel shaffof bo'ladi, jadval ichidagi fon esa o'qish uchun yetarlicha qattiq (opaque yoki yuqori-opasity) qoladi.
 * **Grafiklar:** oddiy, ortiqcha texnik bo'lmagan (bar/area/donut) — murakkab dashboard-uslub grafik (masalan ko'p o'qli, zichlashgan) ishlatilmaydi, chunki bu ota-ona uchun mo'ljallangan, tahlilchi uchun emas.
-* **Rang va tipografiya:** mobil hujjatdagi 5-bo'limda belgilangan palitra va shrift yo'nalishi **aynan shu** — ikkala platforma bir xil brend hissini berishi kerak.
+* **Ehtiyot chorasi:** desktopda ma'lumot zichligi yuqoriroq bo'lgani sabab (2-bo'lim), blur/shaffoflik effekti matn kontrastini kamaytirmasligi mobildagidan ham qattiqroq tekshirilishi kerak — ayniqsa jadval va uzun matnlarda.
 
 ---
 
