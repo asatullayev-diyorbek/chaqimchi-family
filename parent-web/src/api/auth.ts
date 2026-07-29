@@ -19,3 +19,14 @@ export async function login(email: string, password: string) {
 export function logout() {
   setAccessToken(null);
 }
+
+export type CurrentUser = {
+  id: number;
+  email: string;
+  family: string;
+  created_at: string;
+};
+
+export async function getCurrentUser(): Promise<CurrentUser> {
+  return apiFetch("/api/auth/me/");
+}

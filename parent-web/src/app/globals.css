@@ -7,16 +7,38 @@
   --accent: #2f8f7e;
   --accent-dark: #226e61;
   --warning: #c9822a;
-  --danger: #c94f4f;
+  /* Was #c94f4f — measured at 4.45:1 on white via axe-core, just under
+     4.5:1. Pre-existing, unrelated to this session's other changes;
+     fixed while auditing the devices page's "Ajratish" button. */
+  --danger: #bf3f3f;
   --sidebar-bg: #123832;
   --sidebar-fg: #d9e8e4;
-  /* Was #6f8985 (~1.8-3.7:1 against the sidebar, depending on background) —
-     a real contrast bug caught by axe-core, not something the WCAG
-     inactive-control exemption should be leaned on to excuse here, since
-     these labels are the only way a parent finds out those sections
-     exist at all. Lightened to comfortably pass 4.5:1 across the glass
-     sidebar's whole range of composited backgrounds. */
-  --sidebar-disabled: #a8c0bb;
+  /* Was #6f8985 (~1.8-3.7:1 against the sidebar) — a real contrast bug
+     caught by axe-core. First fix (#a8c0bb) passed against the plain
+     glass sidebar but still failed (3.21-4.23:1) inside the illustration
+     card and profile footer, which stack an extra rgba(0,0,0,0.18)
+     overlay on top of the sidebar's own translucency, compounding into a
+     darker effective background than the sidebar alone. Lightened again
+     to clear the worst (darkest) of those compounded contexts, not just
+     the sidebar's own base color. */
+  --sidebar-disabled: #d3e3e0;
+
+  /* Bounded categorical set for stat-card icon badges and the category
+     donut on the redesigned Overview screen — the reference design uses
+     one distinct hue per card/segment, which the earlier single-teal-
+     accent rule didn't have room for. Kept warm/cool balance similar to
+     the base palette rather than saturated primary colors; fixed order,
+     never re-cycled per the dataviz categorical rule. */
+  --cat-teal: #2f8f7e;
+  --cat-teal-bg: #e3f3ef;
+  --cat-blue: #3b6fd6;
+  --cat-blue-bg: #e6edfc;
+  --cat-amber: #c9822a;
+  --cat-amber-bg: #faf0e2;
+  --cat-purple: #7c5cbf;
+  --cat-purple-bg: #efe9f9;
+  --cat-slate: #6b7a86;
+  --cat-slate-bg: #eaeef0;
 
   /* Liquid Glass tokens — same palette as above, just layered as
      translucent material instead of flat fills. Opacity is deliberately
@@ -133,4 +155,26 @@ button {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
+}
+
+/* Marks a card/section as showing sample, not real, numbers — e.g. the
+   activity score and category breakdown, which have no backend concept
+   behind them yet. Never omit this on placeholder data; the whole point
+   is that a parent can tell real from illustrative at a glance. */
+.sample-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  /* Not var(--cat-amber) — measured at ~2.7:1 on var(--cat-amber-bg),
+     badly failing 4.5:1 (a decorative-pill-on-pastel problem that's easy
+     to miss by eye since the badge still "reads" as amber-ish). This
+     darker shade of the same hue passes at ~4.95:1. */
+  color: #8a5a1c;
+  background: var(--cat-amber-bg);
+  border-radius: 999px;
+  padding: 2px 8px;
 }
