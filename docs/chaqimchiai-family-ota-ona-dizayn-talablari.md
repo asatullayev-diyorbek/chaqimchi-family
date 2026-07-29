@@ -119,12 +119,17 @@ Farzand haqida yozilgan har qanday matn (masalan alert ichida) hurmatli ohangda 
 
 ---
 
-## 5. Vizual yo'nalish (umumiy)
+## 5. Vizual yo'nalish (umumiy) — Liquid Glass
 
-* **Rang:** iliq, tinch fon (oq/och kulrang), asosiy aksent rang ko'k yoki yashil-ko'k oilasidan (ishonch va xotirjamlik assotsiatsiyasi). Qizil faqat jiddiy alert uchun saqlanadi, kundalik UI elementlarida ishlatilmaydi.
-* **Tipografiya:** katta, o'qish oson shrift o'lchamlari — ota-ona tez ko'z yugurtiradi, kichik matnni o'qimaydi. Muhim raqamlar (ekran vaqti) eng katta o'lchamda.
-* **Ikonografiya:** oddiy, chiziqli (line-style) ikonkalar — rasmiy va texnik emas, do'stona.
-* **Grafiklar:** murakkab dashboard-uslub grafik emas (ko'p chiziqli, texnik). Oddiy bar/donut chart yetarli — ota-ona statistik tahlilchi emas.
+* **Uslub:** "Liquid Glass" — yarim-shaffof, xira-oynasimon (frosted glass) qatlamlar, yumshoq tomchisimon (droplet) shakllar. Kartochkalar va asosiy elementlar orqa fondagi rangni xira (blurred) holda ko'rsatadi (backdrop blur yoki platforma ekvivalenti), ustida yupqa oq/rangli chegara (border) va yengil yorug'lik qaytarishi (specular highlight, yuqori chetda ochroq gradient chizig'i) bilan.
+* **Rang — o'zgarmaydi:** avvalgi palitra (iliq, tinch fon, ko'k yoki yashil-ko'k asosiy aksent, qizil faqat jiddiy alert uchun) shundayligicha saqlanadi. Liquid Glass — bu rang emas, material — shaffoflik/blur/yorug'lik effekti shu ranglarning ustiga qo'shiladi, ularni almashtirmaydi.
+* **Shakllar:** katta radiusli, tomchiga o'xshash yumaloq burchaklar (keskin to'g'ri burchaklar emas) — kartochkalar, tugmalar, modal oynalar barchasi shu uslubda.
+* **Chuqurlik:** yengil, ko'p qatlamli soya (bir nechta yumshoq soya, "elevation" hissi beruvchi) — lekin og'ir/qattiq soyalar emas, materialning o'zi yengil va suyuq (fluid) his qilinishi kerak.
+* **Harakat (ixtiyoriy, agar platforma qo'llasa):** kartochkalar/tugmalar bosilganda yengil "to'lqinlanish" yoki yumshoq scale-animatsiya — suyuqlik metaforasini kuchaytiradi, lekin bezovta qiluvchi darajada emas.
+* **Tipografiya:** o'zgarmaydi — katta, o'qish oson shrift o'lchamlari, muhim raqamlar (ekran vaqti) eng katta o'lchamda.
+* **Ikonografiya:** oddiy, chiziqli (line-style) ikonkalar, lekin endi yumshoq glass-fon ustiga joylashtiriladi (masalan doira shaklidagi shaffof orqa fon bilan).
+* **Grafiklar:** avvalgidek sodda (bar/donut) — grafik chizig'ining o'zi glass-uslubga majburlanmaydi, faqat uni o'rab turgan kartochka shaffof/blur bo'ladi.
+* **Ehtiyot chorasi:** shaffoflik/blur ortiqcha bo'lsa, matn o'qilishi qiyinlashadi — har glass qatlam ostida matn kontrasti (WCAG AA darajasida) alohida tekshirilishi kerak, ayniqsa ota-ona auditoriyasi (2.2-bo'lim: tez o'qiladigan, aniq matn talabi) uchun bu chegara buzilmasin.
 
 ---
 

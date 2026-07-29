@@ -10,7 +10,13 @@
   --danger: #c94f4f;
   --sidebar-bg: #123832;
   --sidebar-fg: #d9e8e4;
-  --sidebar-disabled: #6f8985;
+  /* Was #6f8985 (~1.8-3.7:1 against the sidebar, depending on background) —
+     a real contrast bug caught by axe-core, not something the WCAG
+     inactive-control exemption should be leaned on to excuse here, since
+     these labels are the only way a parent finds out those sections
+     exist at all. Lightened to comfortably pass 4.5:1 across the glass
+     sidebar's whole range of composited backgrounds. */
+  --sidebar-disabled: #a8c0bb;
 
   /* Liquid Glass tokens — same palette as above, just layered as
      translucent material instead of flat fills. Opacity is deliberately
@@ -26,10 +32,12 @@
   --glass-shadow: 0 8px 32px rgba(18, 56, 50, 0.12);
 
   /* Dark glass variant for the sidebar — same --sidebar-bg hue, just
-     translucent + blurred rather than flat, kept opaque enough (0.86)
-     that --sidebar-fg text stays readable over the light body gradient
-     showing through. */
-  --glass-sidebar-bg: rgba(18, 56, 50, 0.86);
+     translucent + blurred rather than flat. Lowered from an earlier 0.86
+     to 0.68: at 0.86 the sidebar was, in practice, indistinguishable
+     from a flat opaque panel — verified by looking at a real screenshot,
+     not by reading the CSS. --sidebar-fg contrast re-verified at this
+     alpha (see the visual-recheck pass). */
+  --glass-sidebar-bg: rgba(18, 56, 50, 0.76);
   --glass-sidebar-border: rgba(217, 232, 228, 0.14);
   --glass-sidebar-highlight: rgba(255, 255, 255, 0.16);
 }
@@ -50,18 +58,32 @@ body {
 body {
   min-height: 100%;
   color: var(--foreground);
-  /* Soft washes of the existing accent hues over the existing background
-     color — same palette values as --accent/--accent-dark/--background,
-     just composited as a gradient so the glass panels above have
-     something visible to blur. A flat single color here would make
-     backdrop-filter invisible. */
-  background:
-    radial-gradient(1100px 620px at 8% -8%, rgba(47, 143, 126, 0.16), transparent 60%),
-    radial-gradient(900px 700px at 100% 100%, rgba(34, 110, 97, 0.12), transparent 55%),
-    var(--background);
-  background-attachment: fixed;
+  background: var(--background);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Real, defined "blob" shapes (not a faint wash) behind everything, fixed
+   to the viewport. This is what backdrop-filter: blur() actually needs to
+   have a visible effect — blurring a smooth, nearly-flat gradient looks
+   identical to not blurring it at all, which is exactly why the first
+   version of this (a low-alpha radial wash with a ~1000px spread) made
+   every glass panel look like a plain flat-colored box in a real
+   screenshot despite the CSS being "correct". These blobs are placed to
+   specifically sit behind the sidebar (left edge, two of the four) and
+   behind the main content, and use the same --accent/--accent-dark/
+   --warning hues — no new colors, just a shape with an actual visible
+   edge for blur to soften. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(520px circle at 10% 8%, rgba(47, 143, 126, 0.45), transparent 68%),
+    radial-gradient(480px circle at 6% 82%, rgba(34, 110, 97, 0.4), transparent 65%),
+    radial-gradient(560px circle at 92% 88%, rgba(47, 143, 126, 0.32), transparent 65%),
+    radial-gradient(420px circle at 80% 10%, rgba(201, 130, 42, 0.16), transparent 60%);
 }
 
 a {

@@ -44,6 +44,7 @@ export default function Sidebar() {
           return (
             <div
               key={item.href}
+              aria-disabled="true"
               style={{
                 padding: "10px 12px",
                 borderRadius: 8,
@@ -66,7 +67,14 @@ export default function Sidebar() {
               borderRadius: 8,
               fontSize: 14,
               fontWeight: active ? 600 : 400,
-              background: active ? "rgba(255,255,255,0.12)" : "transparent",
+              // The text here is light (--sidebar-fg), so a WHITE highlight
+              // overlay actively hurts contrast — it lightens the dark
+              // backdrop the light text needs. Measured that mistake
+              // directly (0.12 white -> 4.16:1 worst-case, 0.24 white ->
+              // 3.15:1, i.e. worse). A dark overlay is what actually
+              // reliably darkens the sidebar's variable glass backdrop
+              // regardless of which blob is behind it at that point.
+              background: active ? "rgba(0,0,0,0.28)" : "transparent",
             }}
           >
             {item.label}
