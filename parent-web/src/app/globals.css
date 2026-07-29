@@ -1,67 +1,54 @@
 :root {
-  --background: #f7faf9;
+  /* Palette below matches the authoritative design source
+     (claude.ai/design project "Design colors and data corrected",
+     file ChaqimchiAI Dashboard.dc.html) verbatim — light glass surfaces
+     on a cool blue/mint gradient page background, blue brand accent,
+     white sidebar. This replaced an earlier dark-green sidebar palette
+     that the user explicitly rejected as not matching the design. */
+  --background: #eef1fb;
   --surface: #ffffff;
-  --foreground: #1c2b2a;
-  --muted: #5c6f6d;
-  --border: #e2e8e6;
-  --accent: #2f8f7e;
-  --accent-dark: #226e61;
-  --warning: #c9822a;
-  /* Was #c94f4f — measured at 4.45:1 on white via axe-core, just under
-     4.5:1. Pre-existing, unrelated to this session's other changes;
-     fixed while auditing the devices page's "Ajratish" button. */
-  --danger: #bf3f3f;
-  --sidebar-bg: #123832;
-  --sidebar-fg: #d9e8e4;
-  /* Was #6f8985 (~1.8-3.7:1 against the sidebar) — a real contrast bug
-     caught by axe-core. First fix (#a8c0bb) passed against the plain
-     glass sidebar but still failed (3.21-4.23:1) inside the illustration
-     card and profile footer, which stack an extra rgba(0,0,0,0.18)
-     overlay on top of the sidebar's own translucency, compounding into a
-     darker effective background than the sidebar alone. Lightened again
-     to clear the worst (darkest) of those compounded contexts, not just
-     the sidebar's own base color. */
-  --sidebar-disabled: #d3e3e0;
+  --foreground: #1f2b3a;
+  --muted: #7a8698;
+  --border: #e7ebf2;
+  --accent: #2fbfa6;
+  --accent-dark: #22a68c;
+  --brand-blue: #3b82f6;
+  --warning: #f28a3a;
+  --danger: #f5455a;
+
+  --sidebar-bg: rgba(255, 255, 255, 0.55);
+  --sidebar-fg: #5a6879;
+  --sidebar-active-fg: #2f6fe0;
+  --sidebar-active-bg: linear-gradient(120deg, rgba(93, 163, 255, 0.22), rgba(120, 150, 255, 0.14));
+  --sidebar-active-border: rgba(120, 160, 255, 0.28);
+  --sidebar-disabled: #aab4c2;
 
   /* Bounded categorical set for stat-card icon badges and the category
-     donut on the redesigned Overview screen — the reference design uses
-     one distinct hue per card/segment, which the earlier single-teal-
-     accent rule didn't have room for. Kept warm/cool balance similar to
-     the base palette rather than saturated primary colors; fixed order,
-     never re-cycled per the dataviz categorical rule. */
-  --cat-teal: #2f8f7e;
-  --cat-teal-bg: #e3f3ef;
-  --cat-blue: #3b6fd6;
-  --cat-blue-bg: #e6edfc;
-  --cat-amber: #c9822a;
-  --cat-amber-bg: #faf0e2;
-  --cat-purple: #7c5cbf;
-  --cat-purple-bg: #efe9f9;
-  --cat-slate: #6b7a86;
+     donut on Overview — fixed hue order, matches the design's per-card
+     hues exactly, never re-cycled per the dataviz categorical rule. */
+  --cat-teal: #2fc8ad;
+  --cat-teal-bg: #d8f5ee;
+  --cat-blue: #6f97f0;
+  --cat-blue-bg: #e2ecfd;
+  --cat-amber: #f5c04e;
+  --cat-amber-bg: #fdeede;
+  --cat-purple: #a78bfa;
+  --cat-purple-bg: #efe9fb;
+  --cat-slate: #c7cfd8;
   --cat-slate-bg: #eaeef0;
 
-  /* Liquid Glass tokens — same palette as above, just layered as
-     translucent material instead of flat fills. Opacity is deliberately
-     higher than a typical "0.15-ish" glass mockup: the body gradient
-     behind these panels is intentionally light (see body{} below), so a
-     lighter glass fill would either wash out or fail WCAG AA against
-     --foreground text. Verified with a contrast script, not eyeballed —
-     see the task's Playwright/contrast verification pass. */
-  --glass-bg: rgba(255, 255, 255, 0.68);
+  /* Liquid Glass tokens — light, warm-white translucent panels over the
+     blue/mint page gradient, matching the design's rgba(255,255,255,.55-
+     .82) card fills. */
+  --glass-bg: rgba(255, 255, 255, 0.62);
   --glass-bg-strong: rgba(255, 255, 255, 0.82);
-  --glass-border: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.8);
   --glass-highlight: rgba(255, 255, 255, 0.9);
-  --glass-shadow: 0 8px 32px rgba(18, 56, 50, 0.12);
+  --glass-shadow: 0 8px 24px rgba(90, 120, 170, 0.08);
 
-  /* Dark glass variant for the sidebar — same --sidebar-bg hue, just
-     translucent + blurred rather than flat. Lowered from an earlier 0.86
-     to 0.68: at 0.86 the sidebar was, in practice, indistinguishable
-     from a flat opaque panel — verified by looking at a real screenshot,
-     not by reading the CSS. --sidebar-fg contrast re-verified at this
-     alpha (see the visual-recheck pass). */
-  --glass-sidebar-bg: rgba(18, 56, 50, 0.76);
-  --glass-sidebar-border: rgba(217, 232, 228, 0.14);
-  --glass-sidebar-highlight: rgba(255, 255, 255, 0.16);
+  --glass-sidebar-bg: rgba(255, 255, 255, 0.55);
+  --glass-sidebar-border: rgba(255, 255, 255, 0.75);
+  --glass-sidebar-highlight: rgba(255, 255, 255, 0.5);
 }
 
 * {
@@ -85,27 +72,15 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Real, defined "blob" shapes (not a faint wash) behind everything, fixed
-   to the viewport. This is what backdrop-filter: blur() actually needs to
-   have a visible effect — blurring a smooth, nearly-flat gradient looks
-   identical to not blurring it at all, which is exactly why the first
-   version of this (a low-alpha radial wash with a ~1000px spread) made
-   every glass panel look like a plain flat-colored box in a real
-   screenshot despite the CSS being "correct". These blobs are placed to
-   specifically sit behind the sidebar (left edge, two of the four) and
-   behind the main content, and use the same --accent/--accent-dark/
-   --warning hues — no new colors, just a shape with an actual visible
-   edge for blur to soften. */
+/* Page background — the diagonal mint-to-lavender gradient from the
+   design source, fixed to the viewport so it stays put under the
+   scrollable main content. */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -1;
-  background:
-    radial-gradient(520px circle at 10% 8%, rgba(47, 143, 126, 0.45), transparent 68%),
-    radial-gradient(480px circle at 6% 82%, rgba(34, 110, 97, 0.4), transparent 65%),
-    radial-gradient(560px circle at 92% 88%, rgba(47, 143, 126, 0.32), transparent 65%),
-    radial-gradient(420px circle at 80% 10%, rgba(201, 130, 42, 0.16), transparent 60%);
+  background: linear-gradient(135deg, #d6f3ee 0%, #e4f0fb 34%, #eef1fb 62%, #f3ecfb 100%);
 }
 
 a {
@@ -142,8 +117,9 @@ button {
   background: var(--glass-sidebar-bg);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border-right: 1px solid var(--glass-sidebar-border);
-  box-shadow: inset -1px 0 0 var(--glass-sidebar-highlight);
+  border: 1px solid var(--glass-sidebar-border);
+  border-radius: 24px;
+  box-shadow: 0 8px 30px rgba(90, 120, 170, 0.08);
 }
 
 /* The explicit "safety measure" both design docs call out: tables and
