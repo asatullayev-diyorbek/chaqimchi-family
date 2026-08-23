@@ -8,7 +8,7 @@ import { login, telegramStart, telegramStatus } from "@/api/auth";
 import { getAccessToken } from "@/api/client";
 import { toast } from "react-hot-toast";
 
-const TELEGRAM_POLL_INTERVAL_MS = 2000;
+const TELEGRAM_POLL_INTERVAL_MS = 800;
 const TELEGRAM_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default function LoginPage() {
@@ -68,13 +68,16 @@ export default function LoginPage() {
       window.open(bot_url, "_blank", "noopener,noreferrer");
 
       const startedAt = Date.now();
+      let polling = false;
       pollTimer.current = setInterval(async () => {
+        if (polling) return;
         if (Date.now() - startedAt > TELEGRAM_POLL_TIMEOUT_MS) {
           if (pollTimer.current) clearInterval(pollTimer.current);
           setTelegramLoading(false);
           toast.error("Vaqt tugadi. Qaytadan urinib ko'ring.");
           return;
         }
+        polling = true;
         try {
           const result = await telegramStatus(token);
           if (result.status === "pending") return;
@@ -99,6 +102,8 @@ export default function LoginPage() {
           }
         } catch {
           // Transient network hiccup during polling — keep trying until timeout.
+        } finally {
+          polling = false;
         }
       }, TELEGRAM_POLL_INTERVAL_MS);
     } catch (err) {
