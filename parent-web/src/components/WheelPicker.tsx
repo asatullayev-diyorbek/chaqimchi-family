@@ -53,24 +53,53 @@ export default function WheelPicker({
     }, 110);
   }
 
+  function step(delta: number) {
+    if (!options.length) return;
+    const index = Math.min(Math.max(selectedIndex + delta, 0), options.length - 1);
+    const option = options[index];
+    if (option) onChange(option.value);
+  }
+
   return (
-    <div className="wheel-picker" aria-label={ariaLabel} role="listbox">
-      <div className="wheel-picker-highlight" aria-hidden="true" />
-      <div className="wheel-picker-scroll" ref={scrollRef} onScroll={handleScroll}>
-        <div style={{ height: WHEEL_PADDING }} aria-hidden="true" />
-        {options.map((option) => (
-          <div
-            key={option.value || "empty"}
-            role="option"
-            aria-selected={option.value === value}
-            className={`wheel-picker-item ${option.value === value ? "selected" : ""}`}
-            onClick={() => onChange(option.value)}
-          >
-            {option.label}
-          </div>
-        ))}
-        <div style={{ height: WHEEL_PADDING }} aria-hidden="true" />
+    <div className="wheel-picker-wrap">
+      <button
+        type="button"
+        className="wheel-picker-step"
+        onClick={() => step(-1)}
+        disabled={selectedIndex <= 0}
+        aria-label={`${ariaLabel}: oldingi`}
+      >
+        <iconify-icon icon="lucide:chevron-up" />
+      </button>
+
+      <div className="wheel-picker" aria-label={ariaLabel} role="listbox">
+        <div className="wheel-picker-highlight" aria-hidden="true" />
+        <div className="wheel-picker-scroll" ref={scrollRef} onScroll={handleScroll}>
+          <div style={{ height: WHEEL_PADDING }} aria-hidden="true" />
+          {options.map((option) => (
+            <div
+              key={option.value || "empty"}
+              role="option"
+              aria-selected={option.value === value}
+              className={`wheel-picker-item ${option.value === value ? "selected" : ""}`}
+              onClick={() => onChange(option.value)}
+            >
+              {option.label}
+            </div>
+          ))}
+          <div style={{ height: WHEEL_PADDING }} aria-hidden="true" />
+        </div>
       </div>
+
+      <button
+        type="button"
+        className="wheel-picker-step"
+        onClick={() => step(1)}
+        disabled={selectedIndex >= options.length - 1}
+        aria-label={`${ariaLabel}: keyingi`}
+      >
+        <iconify-icon icon="lucide:chevron-down" />
+      </button>
     </div>
   );
 }

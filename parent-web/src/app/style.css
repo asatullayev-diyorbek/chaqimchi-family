@@ -6692,6 +6692,46 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     color:#e7ebf5;
 }
 
+.wheel-picker-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:4px;
+}
+
+.wheel-picker-step{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:26px;
+    border:1px solid rgba(37,99,235,.25);
+    border-radius:8px;
+    background:#fff;
+    color:#5b6b84;
+    font-size:15px;
+    cursor:pointer;
+    transition:background .12s ease, opacity .12s ease;
+}
+
+.wheel-picker-step:hover:not(:disabled){
+    background:rgba(37,99,235,.08);
+}
+
+.wheel-picker-step:disabled{
+    opacity:.35;
+    cursor:not-allowed;
+}
+
+[data-theme="dark"] .wheel-picker-step{
+    background:rgba(255,255,255,.06);
+    border-color:rgba(96,165,250,.3);
+    color:#c3cbdb;
+}
+
+[data-theme="dark"] .wheel-picker-step:hover:not(:disabled){
+    background:rgba(96,165,250,.14);
+}
+
 .wheel-picker{
     position:relative;
     height:180px;
