@@ -60,7 +60,8 @@ CORS_ALLOWED_ORIGINS = [
     for origin in os.environ.get(
         "CORS_ALLOWED_ORIGINS",
         "http://localhost:3000,http://127.0.0.1:3000,"
-        "http://192.168.34.235:3000,https://chaqimchi-ai.uz,https://www.chaqimchi-ai.uz",
+        "http://192.168.34.235:3000,https://chaqimchi-ai.uz,https://www.chaqimchi-ai.uz,"
+        "https://guard.chaqimchi-ai.uz",
     ).split(",")
     if origin
 ]
