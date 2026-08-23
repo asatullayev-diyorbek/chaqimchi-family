@@ -20,7 +20,9 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
 - [x] CT-01 va CT-02 checkpointlari shu konfiguratsiya bilan qayta tekshirildi va PASS: barcha client'lar (`parent-web` Vercel env, `parent-mobile/.env`, `parent-web/.env.local`) canonical `https://api.guard.chaqimchi-ai.uz` ga o'tkazildi, eski ngrok qiymatlari olib tashlandi.
 - [ ] PA Free web app 3 oyda bitta qo‘lda "Run until 3 months" bosilishi kerak (dashboard orqali, keyingi muddat: 2026-09-23) — API bu ishni bajara olmaydi.
 - [ ] Vercel loyihasida Root Directory dashboard'da `parent-web` ga qo‘lda o‘rnatilishi kerak (CLI buni sozlay olmaydi) — hali bajarilmagan, keyingi git-triggered build shu sababli muvaffaqiyatsiz bo'lishi mumkin.
-- [ ] PA Free tarif WSGI-only; `apps/devices` dagi enroll WebSocket consumer hozircha hech bir client tomonidan chaqirilmagani uchun bloklovchi emas, lekin kelajakda real-time xususiyat qo'shilsa boshqa hosting yoki PA paid+ASGI kerak bo'ladi.
+- [x] **Muhim tuzatish (2026-08-23):** installer avval enrollment linkni WebSocket (`ws/enroll/<device_id>/`) orqali kutar edi — PA WSGI-only bo'lgani uchun bu har safar darhol xato berardi (foydalanuvchiga xom Go xatosi ko'rinardi) va QR oynasi "ishlamayapti" taassurotini kuchaytirardi. Endi `GET /api/enroll/status/<device_id>/` orqali polling qilinadi (`agent/internal/enroll/client.go`). `apps/devices` dagi eski WS consumer endi hech qayerda ishlatilmaydi (dead code, kelajakda olib tashlanishi mumkin).
+- [x] QR ImageView `ImageViewModeZoom` rejimiga o'tkazildi (`agent/internal/ui/enrollment_wizard.go`) — eski default Ideal rejim DPI-scaling yoki tor fixed-size oynada QR joyini bo'sh qoldirishi mumkin edi. **Bu Windows'da hali sinalmagan — keyingi build/test kerak.**
+- [ ] PA Free tarif WSGI-only; `apps/devices` dagi enroll WebSocket consumer endi to'liq ishlatilmaydigan kod.
 - [ ] Baza hozircha PA'da sqlite (production Postgres emas) — Bosqich 0 uchun yetarli, kattaroq foydalanuvchi bazasida tashqi Postgres (masalan Neon) ulanishi kerak bo'ladi.
 
 ## Eski holat
