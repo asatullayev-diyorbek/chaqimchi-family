@@ -34,3 +34,4 @@ parent-web/node_modules/
 parent-web/.next/
 
 .DS_Store
+agent/agent/
