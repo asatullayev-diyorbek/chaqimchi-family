@@ -7,11 +7,11 @@ import TopbarActions from "./TopbarActions";
 
 export default function Header() {
   const pathname = usePathname();
-  const [parentName, setParentName] = useState("Abdulvosit");
+  const [parentName, setParentName] = useState("Foydalanuvchi");
 
   useEffect(() => {
     getCurrentUser()
-      .then((user) => setParentName(user.full_name || user.username || user.email?.split("@")[0] || "Abdulvosit"))
+      .then((user) => setParentName(user.full_name || user.username || user.email?.split("@")[0] || "Foydalanuvchi"))
       .catch(() => undefined);
   }, []);
 

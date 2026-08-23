@@ -19,10 +19,13 @@ const NAV_ITEMS: NavItem[] = [
 export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
+  const [name, setName] = useState("Foydalanuvchi");
 
-  useEffect(() => { getCurrentUser().then((user) => setEmail(user.email)).catch(() => setEmail(null)); }, []);
-  const name = email?.split("@")[0] || "Abdulvosit";
+  useEffect(() => {
+    getCurrentUser()
+      .then((user) => setName(user.full_name || user.username || user.email?.split("@")[0] || "Foydalanuvchi"))
+      .catch(() => undefined);
+  }, []);
 
   function onLogout(e: React.MouseEvent) {
     e.preventDefault();
