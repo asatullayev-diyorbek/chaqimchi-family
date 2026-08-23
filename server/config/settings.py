@@ -134,6 +134,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = os.environ.get("DJANGO_STATIC_ROOT", BASE_DIR / "staticfiles")
 
 # Local static-file serving for agent binaries in this bosqich (Bosqich 4
 # scope explicitly excludes real S3/CDN hosting — AgentVersion.binary_url

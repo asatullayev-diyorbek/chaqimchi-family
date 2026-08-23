@@ -12,7 +12,15 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
 - Agent, bootstrap yoki boshqa ichki `.exe` fayllar public tarqatilmaydi. Foydalanuvchiga faqat `ChaqimchiAI Guard Setup.exe` beriladi.
 - Production’da faqat HTTPS ishlatiladi. Defender, SmartScreen, Firewall yoki UAC’ni o‘chirish tavsiya qilinmaydi.
 
-## Hozirgi holat
+## Hozirgi holat — 2026-08-23 yangilanishi
+
+- [x] Backend PythonAnywhere Free tarifda joylashtirildi: `https://apiguard.pythonanywhere.com` (health check PASS, CORS PASS).
+- [x] Frontend (parent-web) GitHub'ga push qilindi va Vercel'ga ulandi: `https://chaqimchi-family-parent-web.vercel.app` (production, git auto-deploy yoqilgan).
+- [~] Custom domen (`api.guard.chaqimchi-ai.uz`) hali PA Free tarifga ulanmagan — Cloudflare Worker orqali Host-rewrite proxy rejalashtirilgan, keyingi qadam.
+- [ ] PA Free web app 3 oyda bitta qo‘lda "Run until 3 months" bosilishi kerak (dashboard orqali) — API bu ishni bajara olmaydi.
+- [ ] Vercel loyihasida Root Directory dashboard'da `parent-web` ga qo‘lda o‘rnatilishi kerak (CLI buni sozlay olmaydi).
+
+## Eski holat
 
 - [x] Eski console-subsystem installerlar `releases/windows/archive/` ichiga ko‘chirildi.
 - [x] GUI bootstrap test build yaratildi.
