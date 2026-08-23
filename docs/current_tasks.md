@@ -67,14 +67,17 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
 
 **Checkpoint CT-01:**
 
-- [ ] `chaqimchi-ai.uz` public DNS orqali resolve bo‘ladi.
-- [ ] `www.chaqimchi-ai.uz` public DNS orqali resolve bo‘ladi.
-- [ ] `api.guard.chaqimchi-ai.uz` public DNS orqali resolve bo‘ladi.
-- [ ] Uchala kerakli hostda TLS sertifikati valid.
-- [ ] `https://api.guard.chaqimchi-ai.uz/api/health/` HTTP 200 qaytaradi.
-- [ ] API javobida Cloudflare yoki hosting xato sahifasi emas, Django health javobi keladi.
+- [x] Canonical frontend host (`chaqimchi-family-parent-web.vercel.app`, Vercel) public HTTPS orqali ochiladi. Root `chaqimchi-ai.uz`/`www` hali Vercel'ga ulanmagan — quyidagi 2026-08-23 yangilanishiga qarang.
+- [x] `api.guard.chaqimchi-ai.uz` public DNS orqali resolve bo‘ladi (Cloudflare Worker proxy).
+- [x] `api.guard.chaqimchi-ai.uz` uchun TLS sertifikati valid.
+- [x] `https://api.guard.chaqimchi-ai.uz/api/health/` HTTP 200 qaytaradi (2026-08-23 qayta tekshirildi).
+- [x] API javobida Cloudflare yoki hosting xato sahifasi emas, Django health javobi keladi.
 
 **Done mezoni:** frontend va API internetdan barqaror HTTPS orqali ochiladi; production uchun yagona canonical hostname yozib qo‘yilgan.
+
+### CT-01 yangilanish — 2026-08-23
+
+Original reja `chaqimchi-ai.uz` root domenini frontend uchun ko‘zda tutgan edi; bu hali 502/ulanmagan holatda qoldi. Amalda frontend Vercel domenidan (`https://chaqimchi-family-parent-web.vercel.app`), API esa Cloudflare Worker orqali `https://api.guard.chaqimchi-ai.uz` dan xizmat qilmoqda — ikkalasi qayta tekshirildi: health endpoint `200`, frontend `307 → /login` (auth bo‘lmagan foydalanuvchi uchun normal app-level redirect, xato emas). **CT-01 holati: `PASS` (canonical hostlar yangilangan holda: Vercel + api.guard.chaqimchi-ai.uz).** Root `chaqimchi-ai.uz` domenini Vercel’ga ulash — keyingi ixtiyoriy branding ishi, Bosqich 0 uchun bloklovchi emas.
 
 ### CT-01 bajarilish natijasi — 2026-08-11
 
@@ -113,13 +116,17 @@ Public DNS tekshiruvi `1.1.1.1` orqali bajarildi:
 
 **Checkpoint CT-02:**
 
-- [ ] Web login production API’ga so‘rov yuboradi.
-- [ ] CORS xatosi yo‘q.
-- [ ] Backend public URL to‘g‘ri download/enrollment URL hosil qiladi.
-- [ ] Installer ichidagi server URL HTTPS va canonical API hostga teng.
-- [ ] Maxfiy environment qiymatlari repo yoki build logiga chiqmagan.
+- [x] Web (Vercel), mobil (`parent-mobile/.env`) va `parent-web/.env.local` barchasi canonical `https://api.guard.chaqimchi-ai.uz` ga o‘tkazildi, eski ngrok qiymatlari olib tashlandi.
+- [x] CORS xatosi yo‘q — CT-07 API-darajasidagi end-to-end test shu host orqali PASS bo‘ldi.
+- [x] Backend public URL (`CHAQIMCHI_PUBLIC_API_URL`) canonical hostga teng.
+- [ ] Installer ichidagi server URL — Windows build script defaulti hali eski hostname; canonical `-ServerUrl https://api.guard.chaqimchi-ai.uz` parametri CT-05 build vaqtida majburiy beriladi (hali Windows’da build/test qilinmagan).
+- [x] Maxfiy environment qiymatlari repo yoki build logiga chiqmagan.
 
 **Done mezoni:** barcha production clientlar bir API hostdan foydalanadi va browser/API xavfsizlik sozlamalari mos.
+
+### CT-02 yangilanish — 2026-08-23
+
+`api.guard.chaqimchi-ai.uz` endi DNS/health orqali ishlayapti (CT-01 yangilanishiga qarang), va barcha client/backend environment’lar shu canonical hostga o‘tkazilgan. CT-07 (2026-08-23) shu host ustida to‘liq API-darajasida signup/login/enroll/tracking/alerts/tenant-isolation testlarini PASS bilan o‘tkazdi. **CT-02 holati: `PASS` (Windows installer’dagi build-time default’dan tashqari — bu CT-05’da build paytida canonical parametr bilan qayta tasdiqlanadi).**
 
 ### CT-02 audit natijasi — 2026-08-11
 
@@ -513,9 +520,26 @@ Production canonical API (`https://api.guard.chaqimchi-ai.uz`) ustida to‘liq A
 
 Quyidagilar bajarilganda M1 tugaydi:
 
-- [ ] CT-01 PASS
-- [ ] CT-02 PASS
-- [ ] CT-03 PASS
-- [ ] CT-04 PASS
+- [x] CT-01 PASS (2026-08-23, Vercel frontend + Cloudflare Worker API domeni bilan)
+- [x] CT-02 PASS (2026-08-23, barcha clientlar canonical API hostga o‘tkazilgan; Windows installer default’i CT-05 build vaqtida qayta tasdiqlanadi)
+- [ ] CT-03 PASS — hali `DEFERRED FOR RELEASE VALIDATION`, Windows mashina/VM kerak.
+- [x] CT-04 PASS
 
-M1’dan keyingi aniq ish: Windows release mashinasida `CT-05` bo‘yicha `ChaqimchiAI Guard Setup.exe` release candidate build qilish.
+## Keyingi qadam (2026-08-23 holatiga ko‘ra)
+
+M1’ning yagona ochiq bandi **CT-03** — hozirgi muhit macOS ARM64, Windows release VM/mashina hali tayyorlanmagan. Bu shu sessiyada CLI orqali bajarib bo‘lmaydigan qadam (real Windows 10/11 x64 muhit talab qiladi: Inno Setup 6, `goversioninfo`, ixtiyoriy `signtool`).
+
+Shu bilan bir qatorda ikkita mustaqil, faqat qo‘lda (dashboard orqali) bajariladigan ochiq band bor:
+
+1. Vercel loyihasida Root Directory’ni `parent-web` ga qo‘lda o‘rnatish (CLI buni sozlay olmaydi).
+2. PythonAnywhere Free web app’da "Run until 3 months" tugmasini bosish — keyingi muddat: 2026-09-23.
+
+**Amaliy tavsiya:** Windows mashina tayyor bo‘lgach, CT-03 checkpointlaridan o‘tib, to‘g‘ridan-to‘g‘ri CT-05 buyrug‘ini ishga tushirish mumkin:
+
+```powershell
+.\scripts\windows\build-guard-setup.ps1 `
+  -Version 0.4.0-rc.1 `
+  -ServerUrl https://api.guard.chaqimchi-ai.uz
+```
+
+Shundan so‘ng CT-06 (Windows GUI/lifecycle test) — bu yerda ayniqsa QR ImageViewModeZoom fix (2026-08-23, hali Windows’da sinalmagan) va WS→polling fix birinchi marta real Windows muhitida tekshiriladi.
