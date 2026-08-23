@@ -88,11 +88,15 @@ Public DNS tekshiruvi `1.1.1.1` orqali bajarildi:
 - `https://www.chaqimchi-ai.uz` → HTTP `502`.
 - `https://api.guard.chaqimchi-ai.uz/api/health/` → DNS resolve bo‘lmadi.
 
-**CT-01 holati:** `BLOCKED`.
+**CT-01 holati (eski, 2026-08-11):** `BLOCKED`.
 
-**Blocker:** Cloudflare zone faol, lekin frontend uchun origin hozir javob bermayapti; `api.guard` subdomain recordi public DNS’da ko‘rinmayapti yoki unga mos backend origin hali ulanmagan.
+**Blocker (eski):** Cloudflare zone faol, lekin frontend uchun origin hozir javob bermayapti; `api.guard` subdomain recordi public DNS’da ko‘rinmayapti yoki unga mos backend origin hali ulanmagan.
 
-**Keyingi amaliy ish:** Cloudflare DNS’da `api.guard` recordini backend server/proxy’ga qo‘shish, root/`www` originni ishlaydigan frontend hostingga ulash va keyin CT-01 checkpointlarini qayta tekshirish.
+### CT-01 qayta tekshiruvi — 2026-08-23
+
+`api.guard.chaqimchi-ai.uz` Cloudflare Worker (`apiguard-proxy`) orqali `apiguard.pythonanywhere.com`'ga ulandi. Health check PASS: `https://api.guard.chaqimchi-ai.uz/api/health/` → `200 {"status":"ok"}`. Frontend Vercel'da (`https://chaqimchi-family-parent-web.vercel.app`) production'da ishlayapti; `chaqimchi-ai.uz`/`www` root domenlarining Vercel'ga ulanishi hali alohida tasdiqlanmagan (hozircha Vercel default domenidan foydalanilmoqda).
+
+**CT-01 holati:** `PASS` (API health-check va custom domen bo‘yicha). Root/`www` domenini Vercel'ga ulash hali ochiq — bu alohida DNS ishi, kod ishiga bog‘liq emas.
 
 ---
 
@@ -130,11 +134,17 @@ Public DNS tekshiruvi `1.1.1.1` orqali bajarildi:
 - Django CORS default ro‘yxatida `https://chaqimchi-ai.uz` va `https://www.chaqimchi-ai.uz` mavjud.
 - `api.guard.chaqimchi-ai.uz` public DNS’da hali resolve bo‘lmagani sabab API health va production login tekshiruvi bajarilmadi.
 
-**CT-02 holati:** `IN PROGRESS / BLOCKED`.
+**CT-02 holati (eski, 2026-08-11):** `IN PROGRESS / BLOCKED`.
 
-**Blocker:** `api.guard.chaqimchi-ai.uz` DNS va backend origin tayyor emas; mavjud client/backend environment’lar production canonical hostga o‘tkazilmagan.
+**Blocker (eski):** `api.guard.chaqimchi-ai.uz` DNS va backend origin tayyor emas; mavjud client/backend environment’lar production canonical hostga o‘tkazilmagan.
 
-**Keyingi amaliy ish:** Cloudflare’da `api.guard` record targetini ulash, keyin web/mobile/backend production environment’larini `https://api.guard.chaqimchi-ai.uz` ga almashtirish va CT-02 checkpointlarini qayta tekshirish.
+### CT-02 qayta tekshiruvi — 2026-08-23
+
+`parent-web` (Vercel env), `parent-mobile/.env` va `parent-web/.env.local` barchasi canonical `https://api.guard.chaqimchi-ai.uz` ga o‘tkazildi, eski ngrok qiymatlari olib tashlandi. CT-07 API-darajasidagi end-to-end test (login, enroll, tracking, alerts, tenant isolation) shu host orqali PASS bo‘ldi.
+
+Hali tekshirilmagan: Windows build script defaultidagi eski `https://api.chaqimchiai.uz` qiymati (CT-05/CT-06 doirasida, Windows muhitida tekshiriladi) va installer parametri sifatida canonical host berilishi.
+
+**CT-02 holati:** `PASS` (web/mobile/backend production environment’lari uchun). Installer build parametri PASS holati Windows release bosqichida (CT-05/CT-06) tasdiqlanadi.
 
 ---
 
