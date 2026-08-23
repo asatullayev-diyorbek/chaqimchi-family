@@ -6054,6 +6054,19 @@ tbody td:first-child{
     background:#e2e8f2;
 }
 
+.social-login-row{
+    display:flex;
+    gap:12px;
+    width:min(100%, 620px);
+    margin:0 auto;
+}
+
+.social-login-row .google-login-button{
+    width:auto;
+    flex:1 1 0;
+    margin:0;
+}
+
 .google-login-button{
     width:min(100%, 620px);
     min-height:50px;

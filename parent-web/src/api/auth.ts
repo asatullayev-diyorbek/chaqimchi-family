@@ -43,6 +43,7 @@ export async function telegramStart(): Promise<{ token: string; bot_url: string 
 export type TelegramStatus =
   | { status: "pending" }
   | { status: "expired" }
+  | { status: "rejected" }
   | {
       status: "linked";
       is_new_user: boolean;

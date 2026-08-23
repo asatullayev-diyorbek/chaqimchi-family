@@ -78,3 +78,4 @@ class TelegramLoginToken(models.Model):
     telegram_id = models.BigIntegerField(null=True, blank=True)
     telegram_username = models.CharField(max_length=150, blank=True, default="")
     consumed = models.BooleanField(default=False)
+    rejected = models.BooleanField(default=False)
