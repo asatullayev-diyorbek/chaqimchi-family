@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Image from "next/image";
 import { login, telegramStart, telegramStatus } from "@/api/auth";
 import { getAccessToken } from "@/api/client";
@@ -174,7 +173,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <p className="auth-signup">Hisobingiz yo'qmi? <Link href="/signup">Ro'yxatdan o'ting</Link></p>
         </form>
       </div>
     </div>
