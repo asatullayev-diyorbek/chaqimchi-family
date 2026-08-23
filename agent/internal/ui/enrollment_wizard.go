@@ -63,8 +63,16 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 		mw.Dispose()
 		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
 	}
-	iv.SetImage(bmp)
+	// ImageViewModeIdeal (the default) sizes itself from the bitmap's native
+	// pixel dimensions reinterpreted at the widget's DPI, and isn't
+	// growable/shrinkable in the surrounding VBoxLayout — on a scaled
+	// display, or when the fixed-size dialog's content doesn't fit, that
+	// leaves the QR blank. Zoom mode always fits the image into whatever
+	// bounds the layout actually gives the widget, which is what
+	// SetMinMaxSize below reserves.
+	iv.SetMode(walk.ImageViewModeZoom)
 	iv.SetMinMaxSize(walk.Size{Width: 240, Height: 240}, walk.Size{Width: 240, Height: 240})
+	iv.SetImage(bmp)
 	codeLabel := add("Bog‘lash kodi: " + code)
 	status := add("")
 	if controlErr != nil {

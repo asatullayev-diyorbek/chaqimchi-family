@@ -13,7 +13,7 @@ publishing it.
 [CmdletBinding()]
 param(
   [string]$Version = "0.1.0",
-  [string]$ServerUrl = "https://ora-splittable-illuminatedly.ngrok-free.dev",
+  [string]$ServerUrl = "https://api.guard.chaqimchi-ai.uz",
   [string]$ISCC = "iscc.exe",
   [string]$GoVersionInfo = "goversioninfo.exe"
 )

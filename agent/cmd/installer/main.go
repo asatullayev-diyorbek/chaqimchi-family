@@ -26,9 +26,9 @@ import (
 const installDir = `C:\Program Files\ChaqimchiAI`
 
 // defaultServerURL is injected by the release build with -ldflags. The
-// checked-in fallback points at the current shared E2E tunnel; production or
-// local builds should override it with -server.
-var defaultServerURL = "https://ora-splittable-illuminatedly.ngrok-free.dev"
+// checked-in fallback points at the canonical production API; local builds
+// should override it with -server.
+var defaultServerURL = "https://api.guard.chaqimchi-ai.uz"
 
 // embeddedAgent is built into installer.exe, so a parent downloads one file
 // only. The release build script places the freshly cross-compiled agent in

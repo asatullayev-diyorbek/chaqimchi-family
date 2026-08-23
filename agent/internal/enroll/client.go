@@ -11,8 +11,6 @@ import (
 	"io"
 	"net/http"
 	"time"
-
-	"github.com/gorilla/websocket"
 )
 
 type Client struct {
@@ -63,39 +61,54 @@ func (c *Client) GenerateCode(ctx context.Context, deviceHint string) (*Code, er
 	return &code, nil
 }
 
-// WaitForLink opens ws/enroll/<device_id>/ and blocks until the server
-// pushes {"event": "linked"} or ctx is cancelled.
+// WaitForLink polls GET /api/enroll/status/<device_id>/ until the device
+// shows as linked or ctx is cancelled.
+//
+// This used to open a WebSocket (ws/enroll/<device_id>/) and wait for a
+// server-pushed {"event": "linked"} message. Plain WSGI hosts (e.g.
+// PythonAnywhere, where this backend now runs) cannot serve WebSockets at
+// all, so that dial failed immediately on every real enrollment attempt —
+// polling a REST endpoint works on any host the backend is deployed to.
 func (c *Client) WaitForLink(ctx context.Context, deviceID string) error {
-	wsURL := wsBaseURL(c.BaseURL) + "/ws/enroll/" + deviceID + "/"
+	const pollInterval = 2 * time.Second
 
-	conn, _, err := websocket.DefaultDialer.DialContext(ctx, wsURL, nil)
-	if err != nil {
-		return fmt.Errorf("ws dial failed: %w", err)
-	}
-	defer conn.Close()
-
-	type event struct {
-		Event string `json:"event"`
-	}
+	statusURL := c.BaseURL + "/api/enroll/status/" + deviceID + "/"
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
 
 	for {
-		var e event
-		if err := conn.ReadJSON(&e); err != nil {
-			return err
-		}
-		if e.Event == "linked" {
+		linked, err := c.checkLinked(ctx, statusURL)
+		if err == nil && linked {
 			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-ticker.C:
 		}
 	}
 }
 
-func wsBaseURL(baseURL string) string {
-	switch {
-	case len(baseURL) >= 5 && baseURL[:5] == "https":
-		return "wss" + baseURL[5:]
-	case len(baseURL) >= 4 && baseURL[:4] == "http":
-		return "ws" + baseURL[4:]
-	default:
-		return baseURL
+func (c *Client) checkLinked(ctx context.Context, statusURL string) (bool, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, statusURL, nil)
+	if err != nil {
+		return false, err
 	}
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Errorf("enroll status check failed: %s", resp.Status)
+	}
+
+	var status struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
+		return false, err
+	}
+	return status.Status == "linked", nil
 }

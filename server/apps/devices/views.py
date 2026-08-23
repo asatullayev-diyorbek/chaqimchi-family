@@ -136,6 +136,24 @@ class VerifyCodeView(APIView):
         return Response({"device_id": device.id, "status": device.status})
 
 
+class EnrollmentStatusView(APIView):
+    """GET /api/enroll/status/<device_id>/ — polled by the installer while it
+    waits for the parent app to link the device.
+
+    No auth: same trust model as generate-code (the installer holds only the
+    device_id it was just handed, not a parent credential). This exists
+    because the installer previously waited on a WebSocket
+    (ws/enroll/<device_id>/), which PythonAnywhere's WSGI-only hosting
+    cannot serve — polling this REST endpoint works on any WSGI host.
+    """
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, device_id):
+        device = get_object_or_404(ChildDevice, id=device_id)
+        return Response({"status": device.status})
+
+
 class DeviceListView(generics.ListAPIView):
     """GET /api/devices/ — the current parent's own family's devices."""
 
