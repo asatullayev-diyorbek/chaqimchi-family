@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
-export const WHEEL_ITEM_HEIGHT = 36;
-const WHEEL_VISIBLE_ITEMS = 5;
+export const WHEEL_ITEM_HEIGHT = 28;
+const WHEEL_VISIBLE_ITEMS = 3;
 const WHEEL_PADDING = WHEEL_ITEM_HEIGHT * Math.floor(WHEEL_VISIBLE_ITEMS / 2);
 
 export type WheelPickerOption = { value: string; label: string };
