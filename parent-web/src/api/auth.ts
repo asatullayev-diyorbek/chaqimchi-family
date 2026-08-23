@@ -8,10 +8,10 @@ export async function signup(email: string, password: string) {
   });
 }
 
-export async function login(email: string, password: string) {
+export async function login(username: string, password: string) {
   const tokens = await apiFetch("/api/auth/login/", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username, password }),
     skipAuth: true,
   });
   const typedTokens = tokens as { access: string; refresh: string };

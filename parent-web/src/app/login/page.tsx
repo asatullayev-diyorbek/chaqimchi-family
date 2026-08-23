@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { telegramStart, telegramStatus } from "@/api/auth";
+import { login, telegramStart, telegramStatus } from "@/api/auth";
 import { getAccessToken } from "@/api/client";
 import { toast } from "react-hot-toast";
 
@@ -13,6 +13,10 @@ const TELEGRAM_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default function LoginPage() {
   const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [telegramLoading, setTelegramLoading] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -28,6 +32,28 @@ export default function LoginPage() {
       if (pollTimer.current) clearInterval(pollTimer.current);
     };
   }, []);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (loading) return;
+    setError("");
+    setLoading(true);
+    try {
+      await login(username, password);
+      router.replace("/overview");
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("401")) {
+        setError("Foydalanuvchi nomi yoki parol noto'g'ri.");
+        toast.error("Foydalanuvchi nomi yoki parol noto'g'ri.");
+      } else {
+        const message = err instanceof Error ? err.message : "Xatolik yuz berdi";
+        setError(message);
+        toast.error(message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function onGoogleLogin() {
     toast("Google orqali kirish tez orada mavjud bo‘ladi.");
@@ -106,14 +132,31 @@ export default function LoginPage() {
           </div>
         </section>
 
-        <div className="auth-card">
+        <form onSubmit={onSubmit} className="auth-card">
           <div className="auth-form-heading">
             <h2>Tizimga kirish</h2>
-            <p>Hisobingizga kirish uchun quyidagilardan birini tanlang</p>
+            <p>Hisobingizga kirish uchun ma'lumotlaringizni kiriting</p>
+          </div>
+
+          <div className="edit-field">
+            <label htmlFor="login-username">Foydalanuvchi nomi</label>
+            <div className="auth-input-wrap"><iconify-icon icon="lucide:user" />
+              <input id="login-username" type="text" required autoFocus autoComplete="username" placeholder="username" value={username} onChange={(e) => setUsername(e.target.value)} />
+            </div>
+          </div>
+
+          <div className="edit-field">
+            <div className="auth-field-heading"><label htmlFor="login-password">Parol</label><span className="auth-help-text">Parolni tiklash</span></div>
+            <div className="auth-input-wrap"><iconify-icon icon="lucide:lock-keyhole" />
+              <input id="login-password" type={showPassword ? "text" : "password"} required autoComplete="current-password" placeholder="Parolingizni kiriting" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <button type="button" className="password-toggle" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}><iconify-icon icon={showPassword ? "lucide:eye-off" : "lucide:eye"} /></button>
+            </div>
           </div>
 
           {error && <div className="auth-error" role="alert">{error}</div>}
+          <button type="submit" className="btn-primary auth-submit" disabled={loading} aria-busy={loading}>{loading && <span className="auth-spinner" aria-hidden="true" />}{loading ? "Kirilmoqda..." : "Kirish"}<iconify-icon icon="lucide:arrow-right" /></button>
 
+          <div className="auth-divider"><span>yoki</span></div>
           <div className="social-login-row">
             <button type="button" className="google-login-button" onClick={onGoogleLogin}>
               <svg className="google-mark" aria-hidden="true" viewBox="0 0 24 24" role="img">
@@ -132,7 +175,7 @@ export default function LoginPage() {
           </div>
 
           <p className="auth-signup">Hisobingiz yo'qmi? <Link href="/signup">Ro'yxatdan o'ting</Link></p>
-        </div>
+        </form>
       </div>
     </div>
   );
