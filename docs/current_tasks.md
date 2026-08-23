@@ -322,15 +322,31 @@ Public DNS tekshiruvi `1.1.1.1` orqali bajarildi:
 
 **Checkpoint CT-07:**
 
-- [ ] Signup/login ishlaydi.
-- [ ] Enrollment code API’dan olinadi.
-- [ ] Parent qurilmani bog‘laydi.
-- [ ] Qurilma dashboard’da to‘g‘ri family ostida ko‘rinadi.
-- [ ] Tracking ma’lumoti serverga keladi.
-- [ ] Parent faqat o‘z qurilmasini ko‘radi.
-- [ ] Rules/alerts uchun minimal smoke test o‘tadi.
+- [x] Signup/login ishlaydi.
+- [x] Enrollment code API’dan olinadi.
+- [x] Parent qurilmani bog‘laydi.
+- [x] Qurilma dashboard’da to‘g‘ri family ostida ko‘rinadi.
+- [x] Tracking ma’lumoti serverga keladi.
+- [x] Parent faqat o‘z qurilmasini ko‘radi.
+- [x] Rules/alerts uchun minimal smoke test o‘tadi.
 
 **Done mezoni:** real foydalanuvchi yo‘li installer’dan dashboard’gacha uzilmasdan ishlaydi.
+
+### CT-07 bajarilish natijasi — 2026-08-23
+
+Production canonical API (`https://api.guard.chaqimchi-ai.uz`) ustida to‘liq API-darajasidagi end-to-end test o‘tkazildi (haqiqiy Windows installer o‘rniga — bu CT-06’ga tegishli va hali bajarilmagan — `generate-code`/`ingest`/`report` endpointlari to‘g‘ridan-to‘g‘ri chaqirib, installer va agentning real xatti-harakati simulyatsiya qilindi):
+
+1. Parent A signup + login — `PASS`.
+2. `POST /api/enroll/generate-code/` (installer, auth yo‘q) — device_id, device_secret, 6 xonali kod qaytardi — `PASS`.
+3. Parent A `POST /api/enroll/verify-code/` orqali qurilmani bog‘ladi — status `linked` — `PASS`.
+4. `GET /api/devices/` — qurilma Parent A oilasi ostida ko‘rindi — `PASS`.
+5. Agent simulyatsiyasi: `POST /api/tracking/ingest/` (`Authorization: Device <id>:<secret>`) — event saqlandi — `PASS`.
+6. `GET /api/tracking/summary/<device_id>/` — screen-time to‘g‘ri hisoblandi (10 daqiqa, `chrome`) — `PASS`.
+7. Agent simulyatsiyasi: `POST /api/alerts/report/` — alert yaratildi — `PASS`.
+8. Parent A `GET /api/alerts/<device_id>/` va `POST /api/rules/<device_id>/` — ikkalasi ham ishladi — `PASS`.
+9. **Tenant isolation:** Parent B (yangi hisob) yaratildi; Parent B uchun `GET /api/devices/` bo‘sh qaytdi; Parent A qurilmasiga `summary`, `alerts` va `PATCH /api/devices/` orqali kirishga urinish uchtalasida ham `403 Forbidden` bilan rad etildi — `PASS`.
+
+**CT-07 holati:** `PASS (API-darajasida)`. Haqiqiy Windows installer orqali fizik qurilmada enrollment (QR-kod skanerlash, real agent binary) hali sinalmagan — bu CT-06 doirasida, Windows muhitida bajariladi.
 
 ---
 
