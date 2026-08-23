@@ -7,6 +7,7 @@ import { getAlerts, Alert } from "@/api/alerts";
 import { Device, getDevices } from "@/api/tracking";
 import { Child, createChild, getChildren } from "@/api/children";
 import { mediaUrl } from "@/api/client";
+import WheelPicker from "@/components/WheelPicker";
 import toast from "react-hot-toast";
 
 const MONTH_NAMES = [
@@ -256,44 +257,42 @@ export default function TopbarActions() {
                   <div className="edit-field" style={{ marginTop: 14 }}>
                     <label>Tug'ilgan sana</label>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr 1fr", gap: 8 }}>
-                      <select
+                      <WheelPicker
+                        ariaLabel="Kun"
                         value={birthDay}
-                        onChange={(e) => setBirthDay(e.target.value)}
-                        aria-label="Kun"
-                      >
-                        <option value="">Kun</option>
-                        {Array.from({ length: daysInMonth(birthMonth, birthYear) }, (_, i) => i + 1).map((day) => (
-                          <option key={day} value={day}>{day}</option>
-                        ))}
-                      </select>
-                      <select
+                        onChange={setBirthDay}
+                        options={[
+                          { value: "", label: "–" },
+                          ...Array.from({ length: daysInMonth(birthMonth, birthYear) }, (_, i) => {
+                            const day = String(i + 1);
+                            return { value: day, label: day };
+                          }),
+                        ]}
+                      />
+                      <WheelPicker
+                        ariaLabel="Oy"
                         value={birthMonth}
-                        onChange={(e) => {
-                          const month = e.target.value;
+                        onChange={(month) => {
                           setBirthMonth(month);
                           if (birthDay && Number(birthDay) > daysInMonth(month, birthYear)) setBirthDay("");
                         }}
-                        aria-label="Oy"
-                      >
-                        <option value="">Oy</option>
-                        {MONTH_NAMES.map((name, index) => (
-                          <option key={name} value={index + 1}>{name}</option>
-                        ))}
-                      </select>
-                      <select
+                        options={[
+                          { value: "", label: "–" },
+                          ...MONTH_NAMES.map((name, index) => ({ value: String(index + 1), label: name })),
+                        ]}
+                      />
+                      <WheelPicker
+                        ariaLabel="Yil"
                         value={birthYear}
-                        onChange={(e) => {
-                          const year = e.target.value;
+                        onChange={(year) => {
                           setBirthYear(year);
                           if (birthDay && Number(birthDay) > daysInMonth(birthMonth, year)) setBirthDay("");
                         }}
-                        aria-label="Yil"
-                      >
-                        <option value="">Yil</option>
-                        {BIRTH_YEARS.map((year) => (
-                          <option key={year} value={year}>{year}</option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: "", label: "–" },
+                          ...BIRTH_YEARS.map((year) => ({ value: String(year), label: String(year) })),
+                        ]}
+                      />
                     </div>
                   </div>
                   

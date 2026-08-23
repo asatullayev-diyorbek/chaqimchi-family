@@ -6692,6 +6692,81 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     color:#e7ebf5;
 }
 
+.wheel-picker{
+    position:relative;
+    height:180px;
+    border:1px solid rgba(37,99,235,.3);
+    border-radius:10px;
+    background:#fff;
+    overflow:hidden;
+}
+
+.wheel-picker-scroll{
+    height:100%;
+    overflow-y:scroll;
+    scroll-snap-type:y mandatory;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
+    mask-image:linear-gradient(to bottom, transparent 0, #000 30%, #000 70%, transparent 100%);
+    -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 30%, #000 70%, transparent 100%);
+}
+
+.wheel-picker-scroll::-webkit-scrollbar{
+    display:none;
+}
+
+.wheel-picker-item{
+    height:36px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    scroll-snap-align:center;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:600;
+    color:#93a1b4;
+    cursor:pointer;
+    user-select:none;
+    transition:color .12s ease, font-size .12s ease;
+}
+
+.wheel-picker-item.selected{
+    color:#2b3849;
+    font-size:16px;
+    font-weight:800;
+}
+
+.wheel-picker-highlight{
+    position:absolute;
+    top:50%;
+    left:0;
+    right:0;
+    height:36px;
+    transform:translateY(-50%);
+    border-top:1px solid rgba(37,99,235,.25);
+    border-bottom:1px solid rgba(37,99,235,.25);
+    background:rgba(37,99,235,.06);
+    pointer-events:none;
+}
+
+[data-theme="dark"] .wheel-picker{
+    background:rgba(255,255,255,.06);
+    border-color:rgba(96,165,250,.3);
+}
+
+[data-theme="dark"] .wheel-picker-item{
+    color:#7c8aa3;
+}
+
+[data-theme="dark"] .wheel-picker-item.selected{
+    color:#e7ebf5;
+}
+
+[data-theme="dark"] .wheel-picker-highlight{
+    border-color:rgba(96,165,250,.3);
+    background:rgba(96,165,250,.1);
+}
+
 /* ========================================= */
 /* ADD DEVICE CARD (4th stat-grid slot) */
 /* ========================================= */
