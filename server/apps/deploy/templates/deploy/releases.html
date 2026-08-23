@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="uz">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ChaqimchiAI — Windows yuklab olish</title>
+    <style>
+      :root { color: #1f2b3a; font-family: Inter, system-ui, sans-serif; background: #eef5ff; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: radial-gradient(circle at 10% 10%, #d7f7ed, transparent 28%), radial-gradient(circle at 90% 15%, #dbe9fe, transparent 30%), #eef5ff; }
+      main { width: min(620px, calc(100% - 32px)); }
+      .card { padding: 34px; border: 1px solid rgba(255,255,255,.9); border-radius: 26px; background: rgba(255,255,255,.78); box-shadow: 0 18px 48px rgba(37,99,235,.13); }
+      .brand { color: #2563eb; font-size: 15px; font-weight: 800; } h1 { margin: 12px 0 8px; font-size: 29px; } p { color: #64748b; line-height: 1.55; }
+      .download { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 14px; padding: 16px; border: 1px solid #e5ecf5; border-radius: 17px; background: #fff; }
+      .download b { display: block; } .download small { color: #718096; } a { display: inline-flex; align-items: center; min-height: 42px; padding: 0 15px; border-radius: 12px; background: #2563eb; color: #fff; text-decoration: none; font-weight: 800; white-space: nowrap; }
+      .build-box { margin-top: 22px; padding: 16px; border: 1px solid #dbe7f5; border-radius: 17px; background: #f8fbff; } .build-box b { display: block; margin-bottom: 9px; } .build-box pre { margin: 0; padding: 12px; overflow-x: auto; border-radius: 10px; background: #172033; color: #e8f0ff; font: 12px/1.55 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; } .copy { margin-top: 10px; min-height: 36px; border: 0; border-radius: 9px; padding: 0 12px; background: #e6efff; color: #1d4ed8; font-weight: 800; cursor: pointer; }
+      .note { margin-top: 21px; font-size: 13px; } @media (max-width: 520px) { .card { padding: 24px; } .download { align-items: flex-start; flex-direction: column; } }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="brand">ChaqimchiAI Family</div>
+      <h1>Windows uchun yuklab olish</h1>
+      <p>Faqat installer faylini yuklab oling. U agentni avtomatik o‘rnatadi va sozlaydi.</p>
+      {% if installer %}
+        <section class="download">
+          <div><b>Installer · v{{ installer.version }}</b><small>{{ installer.path.name }} · {{ installer.size|filesizeformat }} · Yangilangan: {{ installer.updated_at|date:"d.m.Y H:i" }}</small></div>
+          <a href="{% url 'release-download' kind='installer' %}">Yuklab olish</a>
+        </section>
+      {% else %}
+        <p>Hozircha Windows build joylanmagan.</p>
+      {% endif %}
+      <section class="build-box">
+        <b>Test installer build qilish</b>
+        <pre id="build-command">{{ build_command }}</pre>
+        <button class="copy" type="button" onclick="copyBuildCommand()">Command’ni nusxalash</button>
+      </section>
+      <p class="note">Sinov uchun: installer va agentni bir papkaga joylab, administrator sifatida installer’ni ishga tushiring.</p>
+    </main>
+    <script>
+      async function copyBuildCommand() {
+        const command = document.getElementById("build-command").innerText;
+        const button = document.querySelector(".copy");
+        try {
+          await navigator.clipboard.writeText(command);
+          button.textContent = "Nusxalandi ✓";
+          setTimeout(() => { button.textContent = "Command’ni nusxalash"; }, 1800);
+        } catch {
+          button.textContent = "Qo‘lda belgilang va nusxalang";
+        }
+      }
+    </script>
+  </body>
+</html>

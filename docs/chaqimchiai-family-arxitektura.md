@@ -1,6 +1,8 @@
-# ChaqimchiAI Family — To'liq Fayllar Tuzilmasi
+# ChaqimchiAI Family — Arxitektura va Fayllar Tuzilmasi
 
-> Bu hujjat butun repo bo'yicha (`chaqimchi-family`) barcha komponentlarning papka/fayl tuzilmasini bir joyga jamlaydi: backend (server), agent (Windows, Go), installer va parent tomoni (mobil + web). Monorepo tamoyili `chaqimchi-guard`dagi bilan bir xil — faqat ichidagi komponentlar boshqacha.
+> Ushbu hujjat repo komponentlarini jamlaydi. Mahsulot roli, dizayn tizimi,
+> sahifalar va funksional chegaralarning yangilangan manbasi
+> `chaqimchiai-family-loyiha-konsepsiyasi.md`dir.
 
 ---
 
@@ -16,6 +18,7 @@ chaqimchi-family/
 │       ├── agent-ci.yml
 │       └── parent-mobile-ci.yml
 ├── docs/
+│   ├── chaqimchiai-family-loyiha-konsepsiyasi.md
 │   ├── chaqimchiai-family-arxitektura.md
 │   ├── chaqimchiai-family-ota-ona-dizayn-talablari.md
 │   ├── chaqimchiai-family-desktop-dizayn-talablari.md
@@ -25,7 +28,9 @@ chaqimchi-family/
 ├── server/
 ├── agent/
 ├── parent-mobile/
-└── parent-web/
+├── parent-web/
+├── parent-ui/              # parent dashboard visual prototype
+└── child-ui/               # Child installer/status/block design pages
 ```
 
 ## 2. `server/` — Django backend
@@ -42,11 +47,19 @@ Apps: `accounts` (Family, ParentUser), `devices` (ChildDevice, EnrollmentCode, c
 
 Bosqich 0 uchun kerak: `screens/auth/`, `screens/enroll/QRScanScreen.tsx`, `api/auth.ts`, `api/enroll.ts`.
 
-## 5. `parent-web/` — Desktop/web dashboard
+## 5. `parent-web/` va `parent-ui/` — Desktop/web parent dashboard
 
-Bosqich 2'da qurila boshlaydi, Bosqich 0'da yo'q.
+`parent-web/` — Next.js asosidagi real web ilova. `parent-ui/` esa undan
+oldin/yonma-yon ishlatiladigan HTML/CSS vizual prototip: u production API'ga
+ulanmaydi, ammo Liquid Glass design system va responsive layout manbasi.
 
-## 6. Bosqich 0 uchun kerakli fayllar
+## 6. `child-ui/` — ChaqimchiAI Child dizayn manbasi
+
+Installerning 5 qadamli oqimi, tray status oynasi, privacy oynasi va ikkita
+block holati alohida HTML sahifalarda berilgan. Ular Windows Go agentining
+`internal/ui/` implementatsiyasi uchun UX manba hisoblanadi.
+
+## 7. Bosqich 0 uchun kerakli fayllar
 
 **Server:** `config/`, `apps/accounts/`, `apps/devices/` (to'liq).
 **Agent:** `cmd/installer/main.go`, `internal/enroll/client.go`.

@@ -14,7 +14,7 @@ from apps.accounts.models import ParentUser
 from apps.devices.models import ChildDevice
 
 from .models import EVENT_TYPES, Event, EventBatch
-from .serializers import IngestSerializer, SummarySerializer
+from .serializers import ActivityHistorySerializer, IngestSerializer, SummarySerializer
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ class IngestView(APIView):
         # Idempotency: a batch we've already stored is a no-op success —
         # the agent retries whenever it didn't see our ack, not just on error.
         if EventBatch.objects.filter(batch_id=batch_id).exists():
-            return Response({"status": "ok", "duplicate": True})
+            return Response({"status": "ok", "batch_id": batch_id, "acknowledged": True, "duplicate": True})
 
         try:
             with transaction.atomic():
@@ -97,10 +97,10 @@ class IngestView(APIView):
                     created += 1
         except IntegrityError:
             # Concurrent retry raced us and inserted the same batch_id first.
-            return Response({"status": "ok", "duplicate": True})
+            return Response({"status": "ok", "batch_id": batch_id, "acknowledged": True, "duplicate": True})
 
         return Response(
-            {"status": "ok", "events_saved": created, "events_skipped": skipped},
+            {"status": "ok", "batch_id": batch_id, "acknowledged": True, "events_saved": created, "events_skipped": skipped},
             status=status.HTTP_201_CREATED,
         )
 
@@ -127,8 +127,10 @@ def _app_minutes_for_date(device, target_date):
         payload = event.payload or {}
         started = parse_datetime(payload.get("started_at") or "")
         ended = parse_datetime(payload.get("ended_at") or "")
-        if started and ended and ended > started:
-            app = payload.get("app", "unknown")
+        app = payload.get("app_id") or payload.get("app") or "unknown"
+        if isinstance(payload.get("duration_seconds"), (int, float)) and payload["duration_seconds"] >= 0:
+            minutes_per_app[app] += payload["duration_seconds"] / 60
+        elif started and ended and ended > started:
             minutes_per_app[app] += (ended - started).total_seconds() / 60
     return minutes_per_app, sum(minutes_per_app.values())
 
@@ -179,22 +181,39 @@ class SummaryView(APIView):
         num_days = RANGE_DAYS[range_param]
         dates = [target_date - timedelta(days=offset) for offset in range(num_days - 1, -1, -1)]
 
+        # Fetch the whole requested range once. The previous implementation
+        # performed one query per day plus one query per application for
+        # last_used_at, which became expensive as the dashboard grew.
         combined_minutes_per_app = defaultdict(float)
-        breakdown = []
-        for day in dates:
-            minutes_per_app, day_total = _app_minutes_for_date(device, day)
-            for app, minutes in minutes_per_app.items():
-                combined_minutes_per_app[app] += minutes
-            breakdown.append({"date": day, "total_minutes": round(day_total)})
+        daily_minutes = defaultdict(float)
+        last_used_at = {}
+        events = Event.objects.filter(
+            device=device,
+            event_type="app_usage",
+            occurred_at__date__gte=dates[0],
+            occurred_at__date__lte=target_date,
+        ).only("payload", "occurred_at")
+        for event in events:
+            payload = event.payload or {}
+            app = payload.get("app_id") or payload.get("app") or "unknown"
+            duration_seconds = payload.get("duration_seconds")
+            if isinstance(duration_seconds, (int, float)) and duration_seconds >= 0:
+                minutes = duration_seconds / 60
+            else:
+                started = parse_datetime(payload.get("started_at") or "")
+                ended = parse_datetime(payload.get("ended_at") or "")
+                minutes = (ended - started).total_seconds() / 60 if started and ended and ended > started else 0
+            combined_minutes_per_app[app] += minutes
+            daily_minutes[event.occurred_at.date()] += minutes
+            if app not in last_used_at or event.occurred_at > last_used_at[app]:
+                last_used_at[app] = event.occurred_at
 
-        top_apps = sorted(
-            (
-                {"app": app, "minutes": round(minutes)}
-                for app, minutes in combined_minutes_per_app.items()
-            ),
-            key=lambda entry: entry["minutes"],
-            reverse=True,
-        )
+        breakdown = [{"date": day, "total_minutes": round(daily_minutes[day])} for day in dates]
+        top_apps = [
+            {"app": app, "minutes": round(minutes), "last_used_at": last_used_at.get(app)}
+            for app, minutes in combined_minutes_per_app.items()
+        ]
+        top_apps.sort(key=lambda entry: entry["minutes"], reverse=True)
         total_screen_minutes = round(sum(combined_minutes_per_app.values()))
 
         if device.last_sync and timezone.now() - device.last_sync <= ONLINE_THRESHOLD:
@@ -205,6 +224,9 @@ class SummaryView(APIView):
         data = SummarySerializer(
             {
                 "device_id": device.id,
+                "child_name": device.child.name if device.child else "",
+                "child_birth_date": device.child.birth_date if device.child else None,
+                "child_photo_url": device.child.photo.url if device.child and device.child.photo else "",
                 "date": target_date,
                 "total_screen_minutes": total_screen_minutes,
                 "top_apps": top_apps,
@@ -214,3 +236,72 @@ class SummaryView(APIView):
             }
         ).data
         return Response(data)
+
+
+class ActivityHistoryView(APIView):
+    """GET /api/tracking/history/<device_id>/ — parent app-usage timeline."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, device_id):
+        if not isinstance(request.user, ParentUser):
+            return Response(
+                {"detail": "Parent autentifikatsiyasi talab qilinadi"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        device = get_object_or_404(ChildDevice, id=device_id)
+        if device.family_id != request.user.family_id:
+            return Response(
+                {"detail": "Bu qurilma sizning oilangizga tegishli emas"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            limit = int(request.query_params.get("limit", 50))
+            offset = int(request.query_params.get("offset", 0))
+        except (TypeError, ValueError):
+            return Response({"detail": "limit va offset son bo‘lishi kerak"}, status=status.HTTP_400_BAD_REQUEST)
+        if limit < 1 or limit > 100:
+            return Response({"detail": "limit 1 dan 100 gacha bo‘lishi kerak"}, status=status.HTTP_400_BAD_REQUEST)
+        if offset < 0:
+            return Response({"detail": "offset manfiy bo‘lishi mumkin emas"}, status=status.HTTP_400_BAD_REQUEST)
+
+        queryset = Event.objects.filter(device=device, event_type="app_usage")
+        date_param = request.query_params.get("date")
+        if date_param:
+            target_date = parse_date(date_param)
+            if target_date is None:
+                return Response({"detail": "Noto‘g‘ri sana formati (YYYY-MM-DD kerak)"}, status=status.HTTP_400_BAD_REQUEST)
+            queryset = queryset.filter(occurred_at__date=target_date)
+
+        total = queryset.count()
+        events = queryset.select_related("batch").order_by("-occurred_at", "-batch__received_at")[offset : offset + limit]
+        results = []
+        for event in events:
+            payload = event.payload or {}
+            duration = payload.get("duration_seconds")
+            if not isinstance(duration, int) or duration < 0:
+                duration = None
+            results.append(
+                {
+                    "id": event.id,
+                    "event_type": event.event_type,
+                    "app_name": payload.get("app_name") or payload.get("app") or payload.get("app_id") or "",
+                    "app_id": payload.get("app_id") or payload.get("app") or "",
+                    "started_at": parse_datetime(payload.get("started_at") or "") if payload.get("started_at") else None,
+                    "ended_at": parse_datetime(payload.get("ended_at") or "") if payload.get("ended_at") else None,
+                    "duration_seconds": duration,
+                    "created_at": event.batch.received_at,
+                }
+            )
+
+        return Response(
+            {
+                "results": ActivityHistorySerializer(results, many=True).data,
+                "count": total,
+                "limit": limit,
+                "offset": offset,
+                "next_offset": offset + limit if offset + limit < total else None,
+            }
+        )

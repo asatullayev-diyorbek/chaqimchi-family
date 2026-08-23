@@ -111,6 +111,77 @@ func TestSyncOnce_RetriesWithSameBatchIDAfterFailure(t *testing.T) {
 	}
 }
 
+func TestSyncOnce_ReusesPersistedBatchAfterRestart(t *testing.T) {
+	store := newTestStore(t)
+	appendEvent(t, store, "evt-crash-window")
+
+	// A reservation left by a stopped process must survive and keep the same
+	// server idempotency key when a new Uploader instance starts.
+	if err := store.ReserveBatch("persisted-batch-id", []string{"evt-crash-window"}); err != nil {
+		t.Fatalf("ReserveBatch: %v", err)
+	}
+
+	var receivedBatchID string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/health/" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		var body map[string]any
+		json.NewDecoder(r.Body).Decode(&body)
+		receivedBatchID, _ = body["batch_id"].(string)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	uploader := NewUploader(server.URL, "device-1", "secret", store)
+	if err := uploader.SyncOnce(context.Background()); err != nil {
+		t.Fatalf("SyncOnce after restart: %v", err)
+	}
+	if receivedBatchID != "persisted-batch-id" {
+		t.Fatalf("expected persisted batch ID, got %q", receivedBatchID)
+	}
+	if pending, err := store.LoadPendingBatch(); err != nil || pending != nil {
+		t.Fatalf("expected pending batch cleared, pending=%v err=%v", pending, err)
+	}
+	unsynced, _ := store.GetUnsynced(10)
+	if len(unsynced) != 0 {
+		t.Fatalf("expected event synced after retry, got %d unsynced", len(unsynced))
+	}
+}
+
+func TestSyncOnce_KeepsEventsWhenAcknowledgementDoesNotMatch(t *testing.T) {
+	store := newTestStore(t)
+	appendEvent(t, store, "evt-invalid-ack")
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/health/" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		_, _ = w.Write([]byte(`{"batch_id":"another-batch","acknowledged":true}`))
+	}))
+	defer server.Close()
+
+	uploader := NewUploader(server.URL, "device-1", "secret", store)
+	if err := uploader.SyncOnce(context.Background()); err == nil {
+		t.Fatal("expected an error for a mismatched acknowledgement")
+	}
+
+	unsynced, err := store.GetUnsynced(10)
+	if err != nil {
+		t.Fatalf("GetUnsynced: %v", err)
+	}
+	if len(unsynced) != 1 {
+		t.Fatalf("event must stay unsynced after an invalid acknowledgement, got %d", len(unsynced))
+	}
+	if pending, err := store.LoadPendingBatch(); err != nil || pending == nil {
+		t.Fatalf("batch reservation must remain for retry, pending=%v err=%v", pending, err)
+	}
+}
+
 func TestSyncOnce_SkipsWhenBackendUnhealthy(t *testing.T) {
 	store := newTestStore(t)
 	appendEvent(t, store, "evt-1")

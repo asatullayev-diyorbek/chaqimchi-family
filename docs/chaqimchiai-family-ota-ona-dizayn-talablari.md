@@ -1,6 +1,11 @@
 # ChaqimchiAI Family — Ota-ona Paneli Dizayn Talablari
 
 > Bu hujjat ota-ona foydalanadigan dashboard/mobil interfeys uchun dizayn talablarini belgilaydi. Texnik arxitektura `docs/chaqimchiai-family-arxitektura.md` faylida, bu hujjat esa **UX/UI talablariga** qaratilgan — dizayner yoki frontend AI agent shu asosda ishlaydi.
+>
+> **Yangilangan yo'nalish:** umumiy brend tizimi, funksional qamrov va
+> `parent-ui/`ning prototip sifatidagi roli
+> `chaqimchiai-family-loyiha-konsepsiyasi.md`da belgilangan. Ushbu hujjatdagi
+> ekran talablari o'sha yagona konsepsiya bilan birga qo'llanadi.
 
 ---
 

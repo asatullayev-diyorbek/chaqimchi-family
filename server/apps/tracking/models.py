@@ -23,3 +23,8 @@ class Event(models.Model):
     event_type = models.CharField(max_length=30)
     payload = models.JSONField()
     occurred_at = models.DateTimeField()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["device", "event_type", "occurred_at"], name="event_device_type_time_idx"),
+        ]

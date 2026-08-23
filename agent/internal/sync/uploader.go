@@ -24,14 +24,7 @@ type Uploader struct {
 	Health       *HealthChecker
 	HTTPClient   *http.Client
 	BatchSize    int
-
-	// pendingBatchID/pendingEvents hold the in-flight batch across retries:
-	// if an upload fails, the *next* SyncOnce call must resend the exact
-	// same events under the exact same batch_id, so the server's
-	// batch_id-uniqueness idempotency can recognize "this already landed,
-	// you just didn't see the ack" instead of creating a duplicate batch.
-	pendingBatchID string
-	pendingEvents  []buffer.Event
+	SessionID    string
 }
 
 func NewUploader(baseURL, deviceID, deviceSecret string, store *buffer.Store) *Uploader {
@@ -43,6 +36,7 @@ func NewUploader(baseURL, deviceID, deviceSecret string, store *buffer.Store) *U
 		Health:       NewHealthChecker(baseURL),
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
 		BatchSize:    defaultBatchSize,
+		SessionID:    uuid.NewString(),
 	}
 }
 
@@ -72,10 +66,20 @@ func (u *Uploader) SyncOnce(ctx context.Context) error {
 		return fmt.Errorf("backend unreachable, skipping this cycle")
 	}
 
-	events := u.pendingEvents
-	batchID := u.pendingBatchID
+	pending, err := u.Store.LoadPendingBatch()
+	if err != nil {
+		return fmt.Errorf("loading pending batch: %w", err)
+	}
 
-	if len(events) == 0 {
+	var events []buffer.Event
+	var batchID string
+	if pending != nil {
+		batchID = pending.BatchID
+		events, err = u.Store.EventsByID(pending.EventIDs)
+		if err != nil {
+			return fmt.Errorf("loading pending batch events: %w", err)
+		}
+	} else {
 		batchSize := u.BatchSize
 		if batchSize <= 0 {
 			batchSize = defaultBatchSize
@@ -90,19 +94,43 @@ func (u *Uploader) SyncOnce(ctx context.Context) error {
 		}
 		events = fetched
 		batchID = uuid.NewString()
+		ids := make([]string, len(events))
+		for i, event := range events {
+			ids[i] = event.ID
+		}
+		if err := u.Store.ReserveBatch(batchID, ids); err != nil {
+			return fmt.Errorf("reserving batch: %w", err)
+		}
 	}
 
 	rawEvents := make([]json.RawMessage, len(events))
 	ids := make([]string, len(events))
 	for i, e := range events {
-		rawEvents[i] = json.RawMessage(e.Payload)
+		// The buffer stores the original tracker payload. Add transport/audit
+		// fields at upload time so old queued records become v1-compatible too.
+		var event map[string]any
+		if err := json.Unmarshal(e.Payload, &event); err != nil {
+			return fmt.Errorf("decoding event %s: %w", e.ID, err)
+		}
+		event["event_id"] = e.ID
+		if _, ok := event["occurred_at"]; !ok {
+			event["occurred_at"] = e.CreatedAt.UTC().Format(time.RFC3339)
+		}
+		encoded, err := json.Marshal(event)
+		if err != nil {
+			return fmt.Errorf("encoding event %s: %w", e.ID, err)
+		}
+		rawEvents[i] = encoded
 		ids[i] = e.ID
 	}
 
 	body, err := json.Marshal(map[string]any{
-		"device_id": u.DeviceID,
-		"batch_id":  batchID,
-		"events":    rawEvents,
+		"schema_version": 1,
+		"device_id":      u.DeviceID,
+		"batch_id":       batchID,
+		"sent_at":        time.Now().UTC().Format(time.RFC3339),
+		"agent":          map[string]any{"version": "1.0.0", "platform": "windows", "session_id": u.SessionID},
+		"events":         rawEvents,
 	})
 	if err != nil {
 		return fmt.Errorf("encoding batch: %w", err)
@@ -117,25 +145,28 @@ func (u *Uploader) SyncOnce(ctx context.Context) error {
 
 	resp, err := u.HTTPClient.Do(req)
 	if err != nil {
-		// Network-level failure: keep this batch pending so the next
-		// cycle retries it under the same batch_id.
-		u.pendingBatchID = batchID
-		u.pendingEvents = events
+		// The durable reservation already preserves this exact batch ID for
+		// the next cycle, including after a process restart.
 		return fmt.Errorf("uploading batch: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
-		u.pendingBatchID = batchID
-		u.pendingEvents = events
 		return fmt.Errorf("server rejected batch: %s", resp.Status)
 	}
-
-	if err := u.Store.MarkSynced(ids); err != nil {
-		return fmt.Errorf("marking events synced: %w", err)
+	// A v1 backend echoes the committed batch ID. Do not clear the durable
+	// queue if an intermediary ever responds with an acknowledgement for a
+	// different batch. Empty bodies remain accepted for older dev backends.
+	var ack struct {
+		BatchID      string `json:"batch_id"`
+		Acknowledged bool   `json:"acknowledged"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&ack); err == nil && ack.BatchID != "" && (ack.BatchID != batchID || !ack.Acknowledged) {
+		return fmt.Errorf("invalid sync acknowledgement for batch %s", batchID)
 	}
 
-	u.pendingBatchID = ""
-	u.pendingEvents = nil
+	if err := u.Store.CompleteBatch(batchID, ids); err != nil {
+		return fmt.Errorf("completing batch: %w", err)
+	}
 	return nil
 }

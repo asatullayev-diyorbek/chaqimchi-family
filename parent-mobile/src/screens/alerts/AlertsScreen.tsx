@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Button, FlatList, RefreshControl, Text, View } from "react-native";
+import { FlatList, RefreshControl, Text, View } from "react-native";
 import { getDevices } from "../../api/tracking";
 import { Alert, getAlerts, markAlertSeen } from "../../api/alerts";
+import { Card, colors, Screen, SecondaryButton } from "../../ui";
 
 function describe(alert: Alert): string {
   if (alert.alert_type === "blocked_app_opened") {
@@ -56,42 +57,32 @@ export default function AlertsScreen() {
   }
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text>Yuklanmoqda...</Text>
-      </View>
-    );
+    return <Screen><View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><Text style={{ color: colors.muted }}>Yuklanmoqda...</Text></View></Screen>;
   }
 
   if (!deviceId) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
-        <Text>Hali bog'langan qurilma yo'q</Text>
-      </View>
-    );
+    return <Screen><View style={{ flex: 1, justifyContent: "center" }}><Card><Text style={{ color: colors.text }}>Hali bog‘langan qurilma yo‘q.</Text></Card></View></Screen>;
   }
 
   return (
-    <View style={{ flex: 1, padding: 24, gap: 16 }}>
+    <Screen>
+    <View style={{ flex: 1, gap: 16 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <Text style={{ fontSize: 20, fontWeight: "600" }}>Bildirishnomalar</Text>
-        <Button title="Barchasini ko'rilgan deb belgilash" onPress={markAllSeen} />
+        <View><Text style={{ fontSize: 26, fontWeight: "800", color: colors.text }}>Alertlar</Text><Text style={{ color: colors.muted, marginTop: 3 }}>Muhim holatlar va eslatmalar</Text></View>
       </View>
+
+      <SecondaryButton title="Barchasini ko‘rilgan deb belgilash" onPress={markAllSeen} disabled={!alerts.some((alert) => !alert.seen)} />
 
       <FlatList
         data={alerts}
         keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         renderItem={({ item }) => (
-          <View
+          <Card
             style={{
               flexDirection: "row",
               alignItems: "center",
               gap: 12,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: "#eee",
-              borderRadius: 12,
               marginBottom: 8,
               opacity: item.seen ? 0.5 : 1,
             }}
@@ -100,15 +91,16 @@ export default function AlertsScreen() {
               {item.alert_type === "blocked_app_opened" ? "🚫" : "⏰"}
             </Text>
             <View style={{ flex: 1 }}>
-              <Text>{describe(item)}</Text>
-              <Text style={{ color: "#666", fontSize: 12 }}>{formatTime(item.triggered_at)}</Text>
+              <Text style={{ color: colors.text, fontWeight: "700", lineHeight: 20 }}>{describe(item)}</Text>
+              <Text style={{ color: colors.muted, fontSize: 12, marginTop: 3 }}>{formatTime(item.triggered_at)}</Text>
             </View>
-          </View>
+          </Card>
         )}
-        ListEmptyComponent={<Text style={{ color: "#666" }}>Hozircha bildirishnoma yo'q</Text>}
+        ListEmptyComponent={<Card><Text style={{ color: colors.muted }}>Hozircha bildirishnoma yo‘q.</Text></Card>}
       />
 
-      {error && <Text style={{ color: "red" }}>{error}</Text>}
+      {error && <Text style={{ color: colors.danger }}>{error}</Text>}
     </View>
+    </Screen>
   );
 }

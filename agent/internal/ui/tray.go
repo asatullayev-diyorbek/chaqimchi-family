@@ -7,6 +7,8 @@
 package ui
 
 import (
+	"sync"
+
 	"github.com/getlantern/systray"
 )
 
@@ -15,12 +17,17 @@ type Status int
 const (
 	StatusOK      Status = iota // green — everything normal
 	StatusWarning               // yellow — a limit warning is currently active
-	StatusOffline                // gray — agent can't reach the server
+	StatusOffline               // gray — agent can't reach the server
 )
 
 // Tray owns the Windows system tray icon and its tooltip.
 type Tray struct {
-	ready chan struct{}
+	ready      chan struct{}
+	mu         sync.RWMutex
+	status     Status
+	statusItem *systray.MenuItem
+	details    string
+	logs       string
 }
 
 func NewTray() *Tray {
@@ -34,9 +41,48 @@ func (t *Tray) Run() {
 }
 
 func (t *Tray) onReady() {
-	systray.SetIcon(iconFor(StatusOK))
-	systray.SetTooltip(tooltipFor(StatusOK))
+	t.mu.RLock()
+	status := t.status
+	t.mu.RUnlock()
+	systray.SetIcon(iconFor(status))
+	systray.SetTooltip(tooltipFor(status))
+	t.statusItem = systray.AddMenuItem(statusLabel(status), "ChaqimchiAI Child holati")
+	t.statusItem.Disable()
+	systray.AddSeparator()
+	statusMenu := systray.AddMenuItem("Bugungi holat", "Agentning joriy holati")
+	privacyMenu := systray.AddMenuItem("Nima kuzatiladi?", "Shaffoflik ma’lumoti")
 	close(t.ready)
+
+	go func() {
+		for range statusMenu.ClickedCh {
+			t.mu.RLock()
+			current := t.status
+			details := t.details
+			t.mu.RUnlock()
+			if details != "" {
+				showInfoDialog("ChaqimchiAI Guard — Holat", details)
+			} else {
+				ShowChildStatus(current)
+			}
+		}
+	}()
+	logsMenu := systray.AddMenuItem("Oxirgi amallar", "Guard Service loglari")
+	go func() {
+		for range logsMenu.ClickedCh {
+			t.mu.RLock()
+			logs := t.logs
+			t.mu.RUnlock()
+			if logs == "" {
+				logs = "Hali log mavjud emas."
+			}
+			showInfoDialog("ChaqimchiAI Guard — Oxirgi amallar", logs)
+		}
+	}()
+	go func() {
+		for range privacyMenu.ClickedCh {
+			ShowPrivacyNotice()
+		}
+	}()
 
 	// Deliberately no "Chiqish"/quit menu item here: the bola-app doc
 	// (chaqimchiai-family-bola-ilova-dizayn-talablari.md, 7-bo'lim) is
@@ -45,6 +91,13 @@ func (t *Tray) onReady() {
 	// still exists as a method because cmd/agent needs to close the tray
 	// on a graceful SCM stop request, but nothing in this UI exposes it to
 	// whoever is sitting at the keyboard.
+}
+
+// SetDetails updates the read-only Service information shown from the Desktop UI.
+func (t *Tray) SetDetails(details, logs string) {
+	t.mu.Lock()
+	t.details, t.logs = details, logs
+	t.mu.Unlock()
 }
 
 // Quit ends the tray's event loop, unblocking Run(). Called only
@@ -60,8 +113,15 @@ func (t *Tray) Quit() {
 // Run's onReady has fired — it just waits for it.
 func (t *Tray) SetStatus(status Status) {
 	<-t.ready
+	t.mu.Lock()
+	t.status = status
+	item := t.statusItem
+	t.mu.Unlock()
 	systray.SetIcon(iconFor(status))
 	systray.SetTooltip(tooltipFor(status))
+	if item != nil {
+		item.SetTitle(statusLabel(status))
+	}
 }
 
 // Notify surfaces a message via the tray tooltip (e.g. an upcoming
@@ -83,5 +143,16 @@ func tooltipFor(status Status) string {
 		return "ChaqimchiAI — offline"
 	default:
 		return "ChaqimchiAI — faol"
+	}
+}
+
+func statusLabel(status Status) string {
+	switch status {
+	case StatusWarning:
+		return "Holat: ogohlantirish"
+	case StatusOffline:
+		return "Holat: internet aloqasi yo‘q"
+	default:
+		return "Holat: faol"
 	}
 }

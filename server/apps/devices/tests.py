@@ -1,10 +1,13 @@
+from datetime import timedelta
+
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import ParentUser
 
-from .models import ChildDevice
+from .models import Child, ChildDevice, EnrollmentCode
 
 
 class DeviceDetailTests(TestCase):
@@ -59,3 +62,36 @@ class DeviceDetailTests(TestCase):
     def test_requires_authentication(self):
         response = self.client.patch(self.url, {"child_name": "x"}, format="json")
         self.assertEqual(response.status_code, 401)
+
+
+class VerifyCodeDeviceReplacementTests(TestCase):
+    def test_new_pairing_retires_previous_device_for_same_child(self):
+        parent = ParentUser.objects.create_user(
+            email="pairing@example.com", password="supersecret123"
+        )
+        child = Child.objects.create(family=parent.family, name="Ali")
+        previous = ChildDevice.objects.create(
+            family=parent.family,
+            child=child,
+            child_name=child.name,
+            status=ChildDevice.STATUS_LINKED,
+        )
+        current = ChildDevice.objects.create()
+        EnrollmentCode.objects.create(
+            device=current,
+            code="123456",
+            qr_payload="chaqimchi://enroll?token=123456",
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+
+        client = APIClient()
+        client.force_authenticate(user=parent)
+        response = client.post(
+            reverse("verify-code"), {"code": "123456", "child_id": str(child.id)}, format="json"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        previous.refresh_from_db()
+        current.refresh_from_db()
+        self.assertEqual(previous.status, ChildDevice.STATUS_UNLINKED)
+        self.assertEqual(current.status, ChildDevice.STATUS_LINKED)

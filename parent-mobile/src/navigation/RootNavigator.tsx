@@ -20,10 +20,10 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
   return (
-    <Stack.Navigator initialRouteName="Login">
-      <Stack.Screen name="Login" component={LoginScreen} options={{ title: "Kirish" }} />
-      <Stack.Screen name="Signup" component={SignupScreen} options={{ title: "Ro'yxatdan o'tish" }} />
-      <Stack.Screen name="QRScan" component={QRScanScreen} options={{ title: "Qurilma qo'shish" }} />
+    <Stack.Navigator initialRouteName="Login" screenOptions={{ headerStyle: { backgroundColor: "#eef1fb" }, headerShadowVisible: false, headerTintColor: "#1f2b3a", headerTitleStyle: { fontWeight: "700" }, contentStyle: { backgroundColor: "#eef1fb" } }}>
+      <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="Signup" component={SignupScreen} options={{ title: "Ro‘yxatdan o‘tish" }} />
+      <Stack.Screen name="QRScan" component={QRScanScreen} options={{ title: "Qurilma qo‘shish" }} />
       <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Bosh sahifa" }} />
       <Stack.Screen name="Rules" component={RulesScreen} options={{ title: "Qoidalar" }} />
       <Stack.Screen name="Alerts" component={AlertsScreen} options={{ title: "Bildirishnomalar" }} />

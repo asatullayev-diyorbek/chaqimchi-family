@@ -50,6 +50,8 @@ class IngestTests(TestCase):
             **auth_header(self.linked_device),
         )
         self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["batch_id"], "batch-1")
+        self.assertTrue(response.json()["acknowledged"])
         self.assertEqual(EventBatch.objects.count(), 1)
         self.assertEqual(Event.objects.count(), 2)
         types = set(Event.objects.values_list("event_type", flat=True))
@@ -69,6 +71,8 @@ class IngestTests(TestCase):
         )
         self.assertEqual(second.status_code, 200)
         self.assertTrue(second.json()["duplicate"])
+        self.assertEqual(second.json()["batch_id"], "dup-batch")
+        self.assertTrue(second.json()["acknowledged"])
         # No new rows were created — DB state unchanged.
         self.assertEqual(EventBatch.objects.count(), 1)
         self.assertEqual(Event.objects.count(), 2)
@@ -169,9 +173,10 @@ class SummaryTests(TestCase):
         data = response.json()
         self.assertEqual(data["total_screen_minutes"], 135)
         self.assertEqual(
-            data["top_apps"],
+            [{"app": app["app"], "minutes": app["minutes"]} for app in data["top_apps"]],
             [{"app": "chrome.exe", "minutes": 90}, {"app": "vscode.exe", "minutes": 45}],
         )
+        self.assertTrue(data["top_apps"][0]["last_used_at"])
 
     def test_summary_rejects_other_family_device(self):
         other_parent = ParentUser.objects.create_user(
@@ -210,7 +215,7 @@ class SummaryTests(TestCase):
         # trailing week have no events.
         self.assertEqual(data["total_screen_minutes"], 195)
         self.assertEqual(
-            data["top_apps"],
+            [{"app": app["app"], "minutes": app["minutes"]} for app in data["top_apps"]],
             [{"app": "chrome.exe", "minutes": 150}, {"app": "vscode.exe", "minutes": 45}],
         )
         self.assertEqual(len(data["breakdown"]), 7)
@@ -221,3 +226,60 @@ class SummaryTests(TestCase):
         self.client.force_authenticate(user=self.parent)
         response = self.client.get(self.url, {"date": self.today_str, "range": "year"})
         self.assertEqual(response.status_code, 400)
+
+
+class ActivityHistoryTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(
+            email="history-parent@example.com", password="supersecret123"
+        )
+        self.device = ChildDevice.objects.create(
+            family=self.parent.family, status=ChildDevice.STATUS_LINKED
+        )
+        self.batch = EventBatch.objects.create(device=self.device, batch_id="history-b1")
+        today = timezone.now().replace(hour=10, minute=0, second=0, microsecond=0)
+        self.today = today.date().isoformat()
+        for index in range(3):
+            started = today + timedelta(minutes=index * 10)
+            event = make_app_usage_event(
+                self.device, self.batch, f"app-{index}.exe", iso(started), iso(started + timedelta(minutes=2))
+            )
+            event.payload["duration_seconds"] = 120
+            event.save(update_fields=["payload"])
+        self.url = reverse("history", kwargs={"device_id": self.device.id})
+
+    def test_history_returns_app_usage_with_pagination(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.url, {"date": self.today, "limit": 2})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["count"], 3)
+        self.assertEqual(len(data["results"]), 2)
+        self.assertEqual(data["results"][0]["app_name"], "app-2.exe")
+        self.assertEqual(data["results"][0]["duration_seconds"], 120)
+        self.assertEqual(data["next_offset"], 2)
+
+    def test_history_date_filter_and_empty_result(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.url, {"date": "2000-01-01"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["results"], [])
+        self.assertEqual(response.json()["count"], 0)
+
+    def test_history_rejects_other_family(self):
+        other_parent = ParentUser.objects.create_user(
+            email="other-history@example.com", password="supersecret123"
+        )
+        self.client.force_authenticate(user=other_parent)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_history_requires_authentication(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 401)
+
+    def test_history_rejects_invalid_pagination(self):
+        self.client.force_authenticate(user=self.parent)
+        self.assertEqual(self.client.get(self.url, {"limit": 0}).status_code, 400)
+        self.assertEqual(self.client.get(self.url, {"offset": -1}).status_code, 400)

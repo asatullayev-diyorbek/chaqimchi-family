@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Button, FlatList, Text, TextInput, View } from "react-native";
+import { FlatList, Text, View } from "react-native";
 import { getDevices } from "../../api/tracking";
 import { Rule, createRule, deleteRule, getRules } from "../../api/rules";
+import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, colors, Screen } from "../../ui";
 
 export default function RulesScreen() {
   const [deviceId, setDeviceId] = useState<string | null>(null);
@@ -81,65 +82,53 @@ export default function RulesScreen() {
   }
 
   if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text>Yuklanmoqda...</Text>
-      </View>
-    );
+    return <Screen><View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><Text style={{ color: colors.muted }}>Yuklanmoqda...</Text></View></Screen>;
   }
 
   if (!deviceId) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
-        <Text>Hali bog'langan qurilma yo'q</Text>
-      </View>
-    );
+    return <Screen><View style={{ flex: 1, justifyContent: "center" }}><Card><Text style={{ color: colors.text }}>Hali bog‘langan qurilma yo‘q.</Text></Card></View></Screen>;
   }
 
   return (
-    <View style={{ flex: 1, padding: 24, gap: 24 }}>
-      <View style={{ gap: 8 }}>
-        <Text style={{ fontSize: 18, fontWeight: "600" }}>Kunlik ekran vaqti limiti</Text>
+    <Screen>
+      <View style={{ gap: 16, flex: 1 }}>
+      <View style={{ gap: 4 }}><Text style={{ fontSize: 26, fontWeight: "800", color: colors.text }}>Qoidalar</Text><Text style={{ color: colors.muted }}>Ekran vaqtini bolangiz bilan kelishib boshqaring.</Text></View>
+      <Card style={{ gap: 12 }}>
+        <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>Kunlik ekran vaqti limiti</Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <TextInput
+          <Field
             placeholder="soat"
             keyboardType="number-pad"
             value={limitHours}
             onChangeText={setLimitHours}
             onBlur={() => applyDailyLimit(limitHours, limitMinutes)}
-            style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12, width: 70 }}
+            style={{ width: 76, textAlign: "center" }}
           />
           <Text>soat</Text>
-          <TextInput
+          <Field
             placeholder="daqiqa"
             keyboardType="number-pad"
             value={limitMinutes}
             onChangeText={setLimitMinutes}
             onBlur={() => applyDailyLimit(limitHours, limitMinutes)}
-            style={{ borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12, width: 70 }}
+            style={{ width: 76, textAlign: "center" }}
           />
           <Text>daqiqa</Text>
         </View>
-        <Text style={{ color: "#666", fontSize: 12 }}>0 qoldirsangiz, limit o'chiriladi</Text>
-      </View>
+        <Text style={{ color: colors.muted, fontSize: 12 }}>0 qoldirsangiz, limit o‘chiriladi.</Text>
+      </Card>
 
-      <View style={{ gap: 8, flex: 1 }}>
-        <Text style={{ fontSize: 18, fontWeight: "600" }}>Ruxsat etilmagan ilovalar</Text>
+      <Card style={{ gap: 12, flex: 1 }}>
+        <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>Ruxsat etilmagan ilovalar</Text>
         <View style={{ flexDirection: "row", gap: 8 }}>
-          <TextInput
+          <Field
             placeholder="masalan: steam.exe"
             autoCapitalize="none"
             value={newApp}
             onChangeText={setNewApp}
-            style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: "#ccc",
-              borderRadius: 8,
-              padding: 12,
-            }}
+            style={{ flex: 1 }}
           />
-          <Button title="Qo'shish" onPress={addBlockedApp} />
+          <View style={{ width: 106 }}><PrimaryButton title="Qo‘shish" onPress={addBlockedApp} /></View>
         </View>
         <FlatList
           data={blockedAppRules}
@@ -151,21 +140,21 @@ export default function RulesScreen() {
                 alignItems: "center",
                 justifyContent: "space-between",
                 padding: 12,
-                borderWidth: 1,
-                borderColor: "#eee",
-                borderRadius: 12,
+                borderTopWidth: 1,
+                borderColor: "#edf0f5",
                 marginTop: 8,
               }}
             >
-              <Text>{"app" in item.value ? item.value.app : ""}</Text>
-              <Button title="O'chirish" onPress={() => removeBlockedApp(item)} />
+              <Text style={{ color: colors.text, fontWeight: "700" }}>{"app" in item.value ? item.value.app : ""}</Text>
+              <SecondaryButton title="O‘chirish" onPress={() => removeBlockedApp(item)} />
             </View>
           )}
-          ListEmptyComponent={<Text style={{ color: "#666" }}>Hali ruxsat etilmagan ilova yo'q</Text>}
+          ListEmptyComponent={<Text style={{ color: colors.muted }}>Hali ruxsat etilmagan ilova yo‘q.</Text>}
         />
-      </View>
+      </Card>
 
-      {error && <Text style={{ color: "red" }}>{error}</Text>}
-    </View>
+      <ErrorText message={error} />
+      </View>
+    </Screen>
   );
 }

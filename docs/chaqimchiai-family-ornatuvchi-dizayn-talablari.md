@@ -1,6 +1,11 @@
 # ChaqimchiAI Family — O'rnatuvchi (Installer) va Lokal Sozlamalar Dizayn Talablari
 
 > Bu hujjat Guard Agent'ni bolaning kompyuteriga **o'rnatish jarayoni** (installer wizard) va o'rnatilgandan keyin qurilmada qoladigan **lokal sozlamalar paneli** uchun talablarni belgilaydi. Bu — to'rtinchi va oxirgi interfeys qatlami: mobil panel, desktop panel, bola tomoni va endi shu — o'rnatuvchi.
+>
+> Installerning yangilangan sahifa dizaynlari `child-ui/welcome.html`dan
+> `child-ui/complete.html`gacha joylashgan. Ular
+> `chaqimchiai-family-loyiha-konsepsiyasi.md`dagi umumiy loyiha tizimiga mos
+> holda implementatsiya qilinadi.
 
 ---
 
@@ -103,11 +108,12 @@ Bu — kompyuterda agent o'rnatilgandan keyin **parolla himoyalangan** kichik pa
 
 * Agar qurilma boshqa oila hisobiga o'tkazilishi kerak bo'lsa (masalan kompyuter sotilsa yoki oila ichida qayta taqsimlansa) — yangi kod bilan qayta bog'lash imkoniyati.
 
-### 4.3. O'chirish (Uninstall) — ataylab qiyinlashtirilgan
+### 4.3. O'chirish (Uninstall) — ochiq va standart Windows oqimi
 
-* Oddiy Windows "Dasturlar va imkoniyatlar" ro'yxatidan o'chirib bo'lmaydi (SYSTEM service sifatida himoyalangan) — bu anti-tamper talabiga mos.
-* O'chirish faqat shu lokal sozlamalar paneli **ichidagi maxsus tugma orqali**, va u ham **oila hisobi paroli** bilan tasdiqlangan holatda amalga oshiriladi.
-* O'chirish so'ralganda, oila hisobidagi ota-onaga (mobil push orqali) xabar boradi — bu ota-ona bilmagan holatda uskuna o'chirilib qolmasligi uchun qo'shimcha himoya.
+* Dastur Windows "Installed apps / Apps & features" ro'yxatida aniq publisher va nom bilan ko'rinadi; standart uninstall ishlaydi.
+* Lokal paneldagi "O'chirish" tugmasi ham xuddi shu ko'rinadigan uninstall oqimini ochadi. Tasdiqlash dialogi service, autostart va lokal monitoring ma'lumotlari olib tashlanishini aniq aytadi.
+* O'chirish tugagach, bog'langan oila hisobiga ota-onani xabardor qilish mumkin, ammo o'chirishni yashirin bloklash yoki Windows'ning normal uninstall imkoniyatini cheklash mumkin emas.
+* Batafsil majburiy siyosat: [Windows Security & Trust](windows-security-trust-guideline.md).
 
 ### 4.4. Yordam
 

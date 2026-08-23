@@ -62,10 +62,13 @@ func RunDeviceInfo(ctx context.Context, store *buffer.Store, pollInterval time.D
 
 	emit := func(now time.Time) {
 		payload, _ := json.Marshal(map[string]any{
-			"type":        "device_state",
-			"battery":     batteryPercent(),
-			"online":      hasActiveNetworkInterface(),
-			"occurred_at": now.UTC().Format(time.RFC3339),
+			"type":                "device_state",
+			"battery_percent":     batteryPercent(),
+			"online":              hasActiveNetworkInterface(),
+			"power_source":        "unknown",
+			"screen_locked":       false,
+			"active_user_session": true,
+			"occurred_at":         now.UTC().Format(time.RFC3339),
 		})
 		store.Append(buffer.Event{
 			ID:        uuid.NewString(),

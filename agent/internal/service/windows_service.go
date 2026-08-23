@@ -15,6 +15,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"syscall"
 	"time"
 
 	"golang.org/x/sys/windows/svc"
@@ -28,10 +29,9 @@ import (
 // deliberately triggers after installing a new binary — and starts it
 // immediately rather than waiting for the next reboot (StartAutomatic
 // alone only governs boot-time startup). If a service with this name
-// already exists, its recovery actions are refreshed and it's left running
-// rather than failing (so re-running the installer after an upgrade is
-// safe); it is not restarted, since args/exePath may have changed and
-// that's an update job, not an install job.
+// already exists, its executable path and arguments are updated and the
+// service is restarted so a re-install can switch it to the newly enrolled
+// device instead of silently continuing with stale credentials.
 func Install(name, displayName, exePath string, args []string) error {
 	m, err := mgr.Connect()
 	if err != nil {
@@ -42,13 +42,32 @@ func Install(name, displayName, exePath string, args []string) error {
 	s, err := m.OpenService(name)
 	if err == nil {
 		defer s.Close()
-		return applyRecoveryConfig(s)
+		// Keep upgrades visible under the current product name without
+		// creating a second service beside an older development install.
+		current, configErr := s.Config()
+		if configErr != nil {
+			return fmt.Errorf("reading existing service config: %w", configErr)
+		}
+		current.BinaryPathName = serviceCommandLine(exePath, args)
+		current.StartType = mgr.StartAutomatic
+		current.DisplayName = displayName
+		current.Description = "ChaqimchiAI Guard — bola qurilmasi monitoring agenti"
+		if err := s.UpdateConfig(current); err != nil {
+			return fmt.Errorf("updating existing service config: %w", err)
+		}
+		if err := applyRecoveryConfig(s); err != nil {
+			return err
+		}
+		if err := restart(s); err != nil {
+			return fmt.Errorf("restarting existing service: %w", err)
+		}
+		return nil
 	}
 
 	s, err = m.CreateService(name, exePath, mgr.Config{
 		DisplayName: displayName,
 		StartType:   mgr.StartAutomatic,
-		Description: "ChaqimchiAI Family — bola qurilmasi monitoring agenti",
+		Description: "ChaqimchiAI Guard — bola qurilmasi monitoring agenti",
 	}, args...)
 	if err != nil {
 		return fmt.Errorf("creating service: %w", err)
@@ -57,6 +76,44 @@ func Install(name, displayName, exePath string, args []string) error {
 
 	if err := applyRecoveryConfig(s); err != nil {
 		return err
+	}
+	if err := s.Start(); err != nil {
+		return fmt.Errorf("starting service: %w", err)
+	}
+	return nil
+}
+
+func serviceCommandLine(exePath string, args []string) string {
+	command := syscall.EscapeArg(exePath)
+	for _, arg := range args {
+		command += " " + syscall.EscapeArg(arg)
+	}
+	return command
+}
+
+func restart(s *mgr.Service) error {
+	status, err := s.Query()
+	if err != nil {
+		return fmt.Errorf("querying service status: %w", err)
+	}
+	if status.State != svc.Stopped {
+		if _, err := s.Control(svc.Stop); err != nil {
+			return fmt.Errorf("stopping service: %w", err)
+		}
+		deadline := time.Now().Add(30 * time.Second)
+		for time.Now().Before(deadline) {
+			status, err = s.Query()
+			if err != nil {
+				return fmt.Errorf("waiting for service stop: %w", err)
+			}
+			if status.State == svc.Stopped {
+				break
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+		if status.State != svc.Stopped {
+			return fmt.Errorf("service did not stop within 30 seconds")
+		}
 	}
 	if err := s.Start(); err != nil {
 		return fmt.Errorf("starting service: %w", err)

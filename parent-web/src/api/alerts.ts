@@ -14,3 +14,7 @@ export type Alert = {
 export async function getAlerts(deviceId: string): Promise<Alert[]> {
   return apiFetch(`/api/alerts/${deviceId}/`);
 }
+
+export async function markAlertSeen(alertId: string): Promise<Alert> {
+  return apiFetch(`/api/alerts/${alertId}/mark-seen/`, { method: "POST" });
+}

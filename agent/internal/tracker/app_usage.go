@@ -19,13 +19,13 @@ import (
 )
 
 var (
-	user32                       = syscall.NewLazyDLL("user32.dll")
-	kernel32                     = syscall.NewLazyDLL("kernel32.dll")
-	procGetForegroundWindow      = user32.NewProc("GetForegroundWindow")
-	procGetWindowThreadProcessId = user32.NewProc("GetWindowThreadProcessId")
-	procOpenProcess              = kernel32.NewProc("OpenProcess")
+	user32                        = syscall.NewLazyDLL("user32.dll")
+	kernel32                      = syscall.NewLazyDLL("kernel32.dll")
+	procGetForegroundWindow       = user32.NewProc("GetForegroundWindow")
+	procGetWindowThreadProcessId  = user32.NewProc("GetWindowThreadProcessId")
+	procOpenProcess               = kernel32.NewProc("OpenProcess")
 	procQueryFullProcessImageName = kernel32.NewProc("QueryFullProcessImageNameW")
-	procCloseHandle              = kernel32.NewProc("CloseHandle")
+	procCloseHandle               = kernel32.NewProc("CloseHandle")
 )
 
 const (
@@ -90,10 +90,13 @@ func RunAppUsage(ctx context.Context, store *buffer.Store, pollInterval time.Dur
 			return
 		}
 		payload, _ := json.Marshal(map[string]any{
-			"type":       "app_usage",
-			"app":        currentApp,
-			"started_at": startedAt.UTC().Format(time.RFC3339),
-			"ended_at":   endedAt.UTC().Format(time.RFC3339),
+			"type":             "app_usage",
+			"app":              currentApp, // legacy alias during server transition
+			"app_id":           currentApp,
+			"app_name":         currentApp,
+			"started_at":       startedAt.UTC().Format(time.RFC3339),
+			"ended_at":         endedAt.UTC().Format(time.RFC3339),
+			"duration_seconds": int(endedAt.Sub(startedAt).Seconds()),
 		})
 		store.Append(buffer.Event{
 			ID:        uuid.NewString(),

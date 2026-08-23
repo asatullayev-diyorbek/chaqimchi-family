@@ -1,13 +1,27 @@
+# Secrets
+DNS/.env
+
 # Server (Django)
 server/venv/
 server/db.sqlite3
 server/__pycache__/
 server/**/__pycache__/
 server/*.pyc
+server/media/
 
 # Agent (Go)
 agent/*.exe
 agent/bin/
+agent/build/
+agent/cmd/**/resource.syso
+agent/cmd/installer/payload/*.exe
+agent/releases/
+
+# Build artifacts (large binaries — not for GitHub)
+releases/
+
+# Legacy standalone prototype with its own git/Vercel config — not part of this monorepo
+parent-ui/
 
 # Parent mobile (React Native / Expo)
 parent-mobile/node_modules/

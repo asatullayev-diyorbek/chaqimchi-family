@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.db import models, transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
@@ -11,14 +12,34 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import ParentUser
 
-from .models import ChildDevice, EnrollmentCode
+from .models import Child, ChildDevice, EnrollmentCode
 from .serializers import (
     ChildDeviceListSerializer,
+    ChildSerializer,
     GenerateCodeResponseSerializer,
     VerifyCodeSerializer,
 )
 
 CODE_TTL_MINUTES = 10
+
+
+class ChildListCreateView(generics.ListCreateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChildSerializer
+    def get_queryset(self):
+        if not isinstance(self.request.user, ParentUser): return Child.objects.none()
+        return Child.objects.filter(family=self.request.user.family).annotate(device_count=models.Count("devices"))
+    def perform_create(self, serializer):
+        serializer.save(family=self.request.user.family)
+
+
+class ChildDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = ChildSerializer
+    lookup_field = "id"
+    def get_queryset(self):
+        if not isinstance(self.request.user, ParentUser): return Child.objects.none()
+        return Child.objects.filter(family=self.request.user.family).annotate(device_count=models.Count("devices"))
 
 
 def _generate_unique_code():
@@ -83,13 +104,28 @@ class VerifyCodeView(APIView):
             )
 
         device = enrollment_code.device
-        device.family = request.user.family
-        device.status = ChildDevice.STATUS_LINKED
-        device.linked_at = timezone.now()
-        device.save()
+        child_id = request.data.get("child_id")
+        with transaction.atomic():
+            child = get_object_or_404(Child, id=child_id, family=request.user.family) if child_id else Child.objects.create(family=request.user.family, name=device.child_name or "Farzand")
 
-        enrollment_code.used = True
-        enrollment_code.save()
+            # A child has one active Guard in the MVP. Keep historical rows and
+            # their activity data, but retire older linked devices before the
+            # newly paired device becomes active.
+            ChildDevice.objects.filter(
+                family=request.user.family,
+                child=child,
+                status=ChildDevice.STATUS_LINKED,
+            ).exclude(id=device.id).update(status=ChildDevice.STATUS_UNLINKED)
+
+            device.family = request.user.family
+            device.child = child
+            device.child_name = child.name
+            device.status = ChildDevice.STATUS_LINKED
+            device.linked_at = timezone.now()
+            device.save(update_fields=["family", "child", "child_name", "status", "linked_at"])
+
+            enrollment_code.used = True
+            enrollment_code.save(update_fields=["used"])
 
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
@@ -110,7 +146,7 @@ class DeviceListView(generics.ListAPIView):
         user = self.request.user
         if not isinstance(user, ParentUser):
             return ChildDevice.objects.none()
-        return ChildDevice.objects.filter(family=user.family)
+        return ChildDevice.objects.filter(family=user.family).select_related("child")
 
 
 class DeviceDetailView(APIView):

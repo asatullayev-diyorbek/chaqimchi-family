@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Button, RefreshControl, ScrollView, Text, View } from "react-native";
+import { RefreshControl, Text, View } from "react-native";
 import { Device, DeviceSummary, getDevices, getSummary } from "../../api/tracking";
+import { Card, colors, PrimaryButton, Screen } from "../../ui";
 
 function formatMinutes(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  if (hours === 0) return `${mins} daq`;
-  return `${hours} soat ${mins} daq`;
+  return hours === 0 ? `${mins} min` : `${hours} soat ${mins} min`;
 }
 
 export default function HomeScreen({ navigation }: any) {
@@ -22,112 +22,48 @@ export default function HomeScreen({ navigation }: any) {
       const devices = await getDevices();
       const linked = devices.find((d) => d.status === "linked") ?? devices[0] ?? null;
       setDevice(linked);
-      if (linked) {
-        setSummary(await getSummary(linked.id));
-      }
+      setSummary(linked ? await getSummary(linked.id) : null);
     } catch (e: any) {
       setError(e.message);
     }
   }, []);
 
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
+  useEffect(() => { load().finally(() => setLoading(false)); }, [load]);
+  async function onRefresh() { setRefreshing(true); await load(); setRefreshing(false); }
 
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
-
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text>Yuklanmoqda...</Text>
-      </View>
-    );
-  }
+  if (loading) return <Screen><View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><Text style={{ color: colors.muted }}>Yuklanmoqda...</Text></View></Screen>;
 
   if (!device) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", padding: 24 }}>
-        <Text>Hali bog'langan qurilma yo'q</Text>
-      </View>
-    );
+    return <Screen><View style={{ flex: 1, justifyContent: "center" }}><Card style={{ gap: 12 }}><Text style={{ fontSize: 22, fontWeight: "800", color: colors.text }}>Qurilma ulanmagan</Text><Text style={{ color: colors.muted, lineHeight: 22 }}>Child ilovadagi olti xonali kodni skanerlang yoki qo‘lda kiriting.</Text><PrimaryButton title="Qurilma qo‘shish" onPress={() => navigation.navigate("QRScan")} /></Card></View></Screen>;
   }
 
   const isOnline = summary?.device_status === "online";
-
+  const topApps = (summary?.top_apps ?? []).slice(0, 4);
   return (
-    <ScrollView
-      contentContainerStyle={{ padding: 24, gap: 24 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <View
-          style={{
-            width: 14,
-            height: 14,
-            borderRadius: 7,
-            backgroundColor: isOnline ? "#34c759" : "#8e8e93",
-          }}
-        />
-        <Text style={{ fontSize: 18, fontWeight: "600" }}>
-          {device.child_name || "Qurilma"} — {isOnline ? "Onlayn" : "Oflayn"}
-        </Text>
-      </View>
-
-      <View style={{ alignItems: "center", gap: 4 }}>
-        <Text style={{ fontSize: 56, fontWeight: "700" }}>
-          {formatMinutes(summary?.total_screen_minutes ?? 0)}
-        </Text>
-        <Text style={{ fontSize: 16, color: "#666" }}>Bugungi ekran vaqti</Text>
-      </View>
-
-      <View style={{ gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "600" }}>Eng ko'p ishlatilgan</Text>
-        {(summary?.top_apps ?? []).slice(0, 4).map((app) => (
-          <View
-            key={app.app}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
-              padding: 12,
-              borderWidth: 1,
-              borderColor: "#eee",
-              borderRadius: 12,
-            }}
-          >
-            <View
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 8,
-                backgroundColor: "#e5e5ea",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text>📱</Text>
-            </View>
-            <Text style={{ flex: 1 }}>{app.app}</Text>
-            <Text style={{ color: "#666" }}>{formatMinutes(app.minutes)}</Text>
+    <Screen scroll refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.blue} />}>
+      <View style={{ gap: 16 }}>
+        <View style={{ gap: 4 }}>
+          <Text style={{ color: colors.text, fontSize: 27, fontWeight: "800" }}>Bosh sahifa</Text>
+          <Text style={{ color: colors.muted, fontSize: 15 }}>Bugungi qisqa ko‘rinish</Text>
+        </View>
+        <Card style={{ gap: 14, backgroundColor: "#f8fbff" }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 9 }}>
+            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: isOnline ? colors.mint : "#aab4c2" }} />
+            <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>{device.child_name || "Qurilma"} · {isOnline ? "Onlayn" : "Oflayn"}</Text>
           </View>
-        ))}
-        {(summary?.top_apps ?? []).length === 0 && <Text>Bugun ma'lumot yo'q</Text>}
+          <View style={{ alignItems: "center", paddingVertical: 9 }}>
+            <Text style={{ fontSize: 36, lineHeight: 44, fontWeight: "800", color: colors.text }}>{formatMinutes(summary?.total_screen_minutes ?? 0)}</Text>
+            <Text style={{ color: colors.muted, marginTop: 4 }}>Bugungi ekran vaqti</Text>
+          </View>
+        </Card>
+        <Card style={{ gap: 8 }}>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}><Text style={{ color: colors.text, fontSize: 18, fontWeight: "800" }}>Eng ko‘p ishlatilgan</Text><Text style={{ color: colors.blue, fontWeight: "700" }}>Bugun</Text></View>
+          {topApps.map((app, index) => <View key={app.app} style={{ flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 10, borderTopWidth: index ? 1 : 0, borderColor: "#edf0f5" }}><View style={{ width: 36, height: 36, borderRadius: 11, alignItems: "center", justifyContent: "center", backgroundColor: index % 2 ? "#e8f0ff" : "#d8f5ee" }}><Text style={{ color: index % 2 ? colors.blue : colors.mint, fontWeight: "800" }}>{app.app[0]?.toUpperCase()}</Text></View><Text numberOfLines={1} style={{ flex: 1, color: colors.text, fontWeight: "700" }}>{app.app}</Text><Text style={{ color: colors.muted, fontSize: 13 }}>{formatMinutes(app.minutes)}</Text></View>)}
+          {topApps.length === 0 && <Text style={{ color: colors.muted }}>Bugun ma’lumot yo‘q.</Text>}
+        </Card>
+        <View style={{ flexDirection: "row", gap: 12 }}><View style={{ flex: 1 }}><PrimaryButton title="Qoidalar" onPress={() => navigation.navigate("Rules")} /></View><View style={{ flex: 1 }}><PrimaryButton title="Alertlar" onPress={() => navigation.navigate("Alerts")} /></View></View>
+        {error && <Text style={{ color: colors.danger }}>{error}</Text>}
       </View>
-
-      <View style={{ flexDirection: "row", gap: 12 }}>
-        <View style={{ flex: 1 }}>
-          <Button title="Qoidalar" onPress={() => navigation.navigate("Rules")} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Button title="Bildirishnomalar" onPress={() => navigation.navigate("Alerts")} />
-        </View>
-      </View>
-
-      {error && <Text style={{ color: "red" }}>{error}</Text>}
-    </ScrollView>
+    </Screen>
   );
 }

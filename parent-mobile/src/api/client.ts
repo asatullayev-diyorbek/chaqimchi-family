@@ -14,6 +14,9 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
+  if (BASE_URL.includes("ngrok-free.dev") || BASE_URL.includes("ngrok-free.app")) {
+    headers["ngrok-skip-browser-warning"] = "true";
+  }
 
   const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
   if (!response.ok) {

@@ -1,9 +1,10 @@
-import { apiFetch, setAccessToken } from "./client";
+import { apiFetch, clearTokens, setTokens } from "./client";
 
 export async function signup(email: string, password: string) {
   return apiFetch("/api/auth/signup/", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+    skipAuth: true,
   });
 }
 
@@ -11,13 +12,15 @@ export async function login(email: string, password: string) {
   const tokens = await apiFetch("/api/auth/login/", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+    skipAuth: true,
   });
-  setAccessToken(tokens.access);
-  return tokens as { access: string; refresh: string };
+  const typedTokens = tokens as { access: string; refresh: string };
+  setTokens(typedTokens.access, typedTokens.refresh);
+  return typedTokens;
 }
 
 export function logout() {
-  setAccessToken(null);
+  clearTokens();
 }
 
 export type CurrentUser = {

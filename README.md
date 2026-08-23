@@ -1,15 +1,26 @@
 # ChaqimchiAI Family
 
-Parental-control monorepo. Bosqich 0 (current): device enrollment flow only —
-installer shows a code/QR, parent app scans it, both sides see "linked".
+Shaffof va oilaviy parental-control monorepo. Mahsulot ota-ona uchun boshqaruv
+paneli, bola uchun ko'rinadigan Windows status qatlami hamda ochiq installer
+oqimidan iborat. Asosiy mahsulot va dizayn yo'nalishi
+[`docs/chaqimchiai-family-loyiha-konsepsiyasi.md`](docs/chaqimchiai-family-loyiha-konsepsiyasi.md)
+faylida jamlangan.
 
 ## Components
 
 - `server/` — Django + DRF + Channels backend
 - `agent/` — Go Windows agent + installer
 - `parent-mobile/` — React Native (Expo) parent app
-- `parent-web/` — Next.js dashboard (not built until Bosqich 2)
+- `parent-web/` — Next.js parent dashboard (real web implementation)
+- `parent-ui/` — parent dashboard static visual prototype
+- `child-ui/` — ChaqimchiAI Child installer va desktop holatlari static dizayni
 - `docs/` — architecture and phase specs
+
+## Product principle
+
+ChaqimchiAI Family yashirin kuzatuv vositasi emas. Bola qanday ma'lumot
+olinishi, qoidalar va ekran vaqti holatini ko'ra oladi; ota-ona esa faqat
+kelishilgan xavfsizlik ma'lumotlarini boshqaradi.
 
 ## Running the backend
 
@@ -44,5 +55,5 @@ npm start
 ```bash
 cd agent
 go mod tidy
-go run ./cmd/installer -server http://localhost:8000
+go run ./cmd/installer -server http://localhost:8000 -allow-insecure-http
 ```

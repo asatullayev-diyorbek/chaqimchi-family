@@ -1,41 +1,72 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { logout } from "@/api/auth";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import { getCurrentUser } from "@/api/auth";
+import TopbarActions from "./TopbarActions";
 
 export default function Header() {
-  const router = useRouter();
+  const pathname = usePathname();
+  const [parentName, setParentName] = useState("Abdulvosit");
 
-  function onLogout() {
-    logout();
-    router.replace("/login");
-  }
+  useEffect(() => {
+    getCurrentUser().then((user) => setParentName(user.email.split("@")[0] || "Abdulvosit")).catch(() => undefined);
+  }, []);
 
   return (
-    <header
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        padding: "4px 4px 0",
-      }}
-    >
-      <button
-        onClick={onLogout}
-        style={{
-          border: "1px solid rgba(0,0,0,.08)",
-          background: "#fff",
-          borderRadius: 12,
-          padding: "9px 16px",
-          fontSize: 13.5,
-          fontWeight: 600,
-          color: "var(--foreground)",
-          cursor: "pointer",
-          boxShadow: "0 4px 12px rgba(90,120,170,.1)",
-        }}
-      >
-        Chiqish
-      </button>
+    <header className="topbar">
+      <div className="welcome">
+        {pathname === "/overview" && (
+          <>
+            <h1>Xush kelibsiz, {parentName}! 👋</h1>
+            <p>
+              Farzandingizning bugungi holati:
+              <span className="safe-badge">
+                <iconify-icon icon="solar:shield-check-linear"></iconify-icon>
+                Xavfsiz
+              </span>
+            </p>
+          </>
+        )}
+        {pathname === "/activity" && (
+          <>
+            <h1>Faoliyat</h1>
+            <p>Farzandingizning raqamli faoliyatini kuzatib boring.</p>
+          </>
+        )}
+        {pathname === "/devices" && (
+          <>
+            <h1>Qurilmalar</h1>
+            <p>Farzandingiz foydalanayotgan barcha qurilmalar.</p>
+          </>
+        )}
+        {pathname === "/settings" && (
+          <>
+            <h1>Sozlamalar</h1>
+            <p>Tizim va akkaunt sozlamalari.</p>
+          </>
+        )}
+        {pathname === "/rules" && (
+          <>
+            <h1>Qoidalar</h1>
+            <p>Vaqt va bloklash qoidalarini boshqaring.</p>
+          </>
+        )}
+        {pathname === "/alerts" && (
+          <>
+            <h1>Ogohlantirishlar</h1>
+            <p>Xavfli yoki taqiqlangan harakatlar haqida xabarlar.</p>
+          </>
+        )}
+        {!["/overview", "/activity", "/devices", "/settings", "/rules", "/alerts"].includes(pathname) && (
+          <>
+            <h1>Sergak AI</h1>
+            <p>Farzandingiz xavfsizligi sizning qo'lingizda</p>
+          </>
+        )}
+      </div>
+
+      <TopbarActions />
     </header>
   );
 }

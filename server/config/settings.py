@@ -5,6 +5,8 @@ Django settings for ChaqimchiAI Family server (Bosqich 0 — enrollment).
 import os
 from pathlib import Path
 
+from corsheaders.defaults import default_headers
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get(
@@ -56,10 +58,24 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     origin
     for origin in os.environ.get(
-        "CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "http://192.168.34.235:3000,https://chaqimchi-ai.uz,https://www.chaqimchi-ai.uz",
     ).split(",")
     if origin
 ]
+# Local development is commonly opened from a phone or another computer on
+# the same Wi-Fi. Permit only private-network origins while DEBUG is enabled;
+# production remains restricted to the explicit HTTPS origins above.
+CORS_ALLOWED_ORIGIN_REGEXES = (
+    [r"^http://(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}):3000$"]
+    if DEBUG
+    else []
+)
+# Ngrok's free browser warning can otherwise replace API responses with an
+# HTML page that has no CORS headers. Parent clients send this header only for
+# ngrok URLs; it must be included in Django's preflight response.
+CORS_ALLOW_HEADERS = [*default_headers, "ngrok-skip-browser-warning"]
 
 ROOT_URLCONF = "config.urls"
 
@@ -122,8 +138,15 @@ STATIC_URL = "static/"
 # Local static-file serving for agent binaries in this bosqich (Bosqich 4
 # scope explicitly excludes real S3/CDN hosting — AgentVersion.binary_url
 # can point here for local testing, e.g. http://localhost:8000/media/agent-builds/...).
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Local, versioned Windows build directory used by the public test-download
+# page. Production deployments can override this with CHAQIMCHI_RELEASES_DIR.
+RELEASES_DIR = os.environ.get("CHAQIMCHI_RELEASES_DIR", BASE_DIR.parent / "releases" / "windows")
+CHAQIMCHI_PUBLIC_API_URL = os.environ.get(
+    "CHAQIMCHI_PUBLIC_API_URL", "https://ora-splittable-illuminatedly.ngrok-free.dev"
+)
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
