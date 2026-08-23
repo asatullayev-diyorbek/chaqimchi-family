@@ -149,6 +149,13 @@ CHAQIMCHI_PUBLIC_API_URL = os.environ.get(
     "CHAQIMCHI_PUBLIC_API_URL", "https://ora-splittable-illuminatedly.ngrok-free.dev"
 )
 
+# Telegram login (see apps/accounts/telegram.py). Empty until a bot is
+# created via @BotFather and these are set in the hosting environment.
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "")
+TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+TELEGRAM_TOKEN_TTL_MINUTES = 10
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {

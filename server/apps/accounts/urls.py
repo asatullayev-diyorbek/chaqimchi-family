@@ -1,6 +1,12 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from .telegram import (
+    TelegramCompleteView,
+    TelegramStartView,
+    TelegramStatusView,
+    TelegramWebhookView,
+)
 from .views import LoginView, MeView, SignupView
 
 urlpatterns = [
@@ -8,4 +14,8 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("login/refresh/", TokenRefreshView.as_view(), name="login-refresh"),
     path("me/", MeView.as_view(), name="me"),
+    path("telegram/start/", TelegramStartView.as_view(), name="telegram-start"),
+    path("telegram/webhook/", TelegramWebhookView.as_view(), name="telegram-webhook"),
+    path("telegram/status/<uuid:token>/", TelegramStatusView.as_view(), name="telegram-status"),
+    path("telegram/complete/", TelegramCompleteView.as_view(), name="telegram-complete"),
 ]

@@ -10,7 +10,9 @@ export default function Header() {
   const [parentName, setParentName] = useState("Abdulvosit");
 
   useEffect(() => {
-    getCurrentUser().then((user) => setParentName(user.email.split("@")[0] || "Abdulvosit")).catch(() => undefined);
+    getCurrentUser()
+      .then((user) => setParentName(user.full_name || user.username || user.email?.split("@")[0] || "Abdulvosit"))
+      .catch(() => undefined);
   }, []);
 
   return (

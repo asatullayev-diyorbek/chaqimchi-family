@@ -35,3 +35,4 @@ parent-web/.next/
 
 .DS_Store
 agent/agent/
+.vercel

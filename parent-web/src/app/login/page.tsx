@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { login } from "@/api/auth";
+import { login, telegramStart, telegramStatus } from "@/api/auth";
 import { getAccessToken } from "@/api/client";
 import { toast } from "react-hot-toast";
+
+const TELEGRAM_POLL_INTERVAL_MS = 2000;
+const TELEGRAM_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,12 +18,20 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (getAccessToken()) {
       router.replace("/overview");
     }
   }, [router]);
+
+  useEffect(() => {
+    return () => {
+      if (pollTimer.current) clearInterval(pollTimer.current);
+    };
+  }, []);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,6 +57,50 @@ export default function LoginPage() {
 
   function onGoogleLogin() {
     toast("Google orqali kirish tez orada mavjud bo‘ladi.");
+  }
+
+  async function onTelegramLogin() {
+    if (telegramLoading) return;
+    setError("");
+    setTelegramLoading(true);
+    try {
+      const { token, bot_url } = await telegramStart();
+      window.open(bot_url, "_blank", "noopener,noreferrer");
+
+      const startedAt = Date.now();
+      pollTimer.current = setInterval(async () => {
+        if (Date.now() - startedAt > TELEGRAM_POLL_TIMEOUT_MS) {
+          if (pollTimer.current) clearInterval(pollTimer.current);
+          setTelegramLoading(false);
+          toast.error("Vaqt tugadi. Qaytadan urinib ko'ring.");
+          return;
+        }
+        try {
+          const result = await telegramStatus(token);
+          if (result.status === "pending") return;
+          if (pollTimer.current) clearInterval(pollTimer.current);
+          setTelegramLoading(false);
+          if (result.status === "expired") {
+            toast.error("Havola muddati tugadi. Qaytadan urinib ko'ring.");
+            return;
+          }
+          if (result.is_new_user) {
+            sessionStorage.setItem(
+              "telegram_prefill",
+              JSON.stringify({ username: result.telegram_username, full_name: result.full_name })
+            );
+            router.replace("/telegram/complete");
+          } else {
+            router.replace("/overview");
+          }
+        } catch {
+          // Transient network hiccup during polling — keep trying until timeout.
+        }
+      }, TELEGRAM_POLL_INTERVAL_MS);
+    } catch (err) {
+      setTelegramLoading(false);
+      toast.error(err instanceof Error ? err.message : "Xatolik yuz berdi");
+    }
   }
 
   return (
@@ -102,6 +157,11 @@ export default function LoginPage() {
               <path fill="#EA4335" d="M12 6.13c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.84 3.22 14.63 2.25 12 2.25a9.75 9.75 0 0 0-8.7 5.38l3.24 2.53C7.31 7.85 9.46 6.13 12 6.13Z" />
             </svg>
             Google orqali kirish
+          </button>
+
+          <button type="button" className="google-login-button" onClick={onTelegramLogin} disabled={telegramLoading} aria-busy={telegramLoading}>
+            <iconify-icon icon="logos:telegram" />
+            {telegramLoading ? "Telegram kutilmoqda..." : "Telegram orqali kirish"}
           </button>
 
           <p className="auth-signup">Hisobingiz yo'qmi? <Link href="/signup">Ro'yxatdan o'ting</Link></p>

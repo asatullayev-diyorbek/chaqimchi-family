@@ -17,4 +17,12 @@ class SignupSerializer(serializers.ModelSerializer):
 class ParentUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = ParentUser
-        fields = ["id", "email", "family", "created_at"]
+        fields = [
+            "id",
+            "email",
+            "username",
+            "full_name",
+            "telegram_username",
+            "family",
+            "created_at",
+        ]

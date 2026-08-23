@@ -25,10 +25,54 @@ export function logout() {
 
 export type CurrentUser = {
   id: number;
-  email: string;
+  email: string | null;
+  username: string | null;
+  full_name: string;
+  telegram_username: string;
   family: string;
   created_at: string;
 };
+
+export async function telegramStart(): Promise<{ token: string; bot_url: string }> {
+  return apiFetch("/api/auth/telegram/start/", { method: "POST", skipAuth: true }) as Promise<{
+    token: string;
+    bot_url: string;
+  }>;
+}
+
+export type TelegramStatus =
+  | { status: "pending" }
+  | { status: "expired" }
+  | {
+      status: "linked";
+      is_new_user: boolean;
+      access: string;
+      refresh: string;
+      username: string;
+      full_name: string;
+      telegram_username: string;
+    };
+
+export async function telegramStatus(token: string): Promise<TelegramStatus> {
+  const result = (await apiFetch(`/api/auth/telegram/status/${token}/`, {
+    skipAuth: true,
+  })) as TelegramStatus;
+  if (result.status === "linked") {
+    setTokens(result.access, result.refresh);
+  }
+  return result;
+}
+
+export async function telegramComplete(data: {
+  username: string;
+  full_name: string;
+  password: string;
+}): Promise<CurrentUser> {
+  return apiFetch("/api/auth/telegram/complete/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }) as Promise<CurrentUser>;
+}
 
 export async function getCurrentUser(): Promise<CurrentUser> {
   return apiFetch("/api/auth/me/");
