@@ -9,6 +9,18 @@ import { Child, createChild, getChildren } from "@/api/children";
 import { mediaUrl } from "@/api/client";
 import toast from "react-hot-toast";
 
+const MONTH_NAMES = [
+  "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
+  "Iyul", "Avgust", "Sentabr", "Oktabr", "Noyabr", "Dekabr",
+];
+const CURRENT_YEAR = new Date().getFullYear();
+const BIRTH_YEARS = Array.from({ length: 19 }, (_, i) => CURRENT_YEAR - i);
+
+function daysInMonth(month: string, year: string): number {
+  if (!month) return 31;
+  return new Date(Number(year) || CURRENT_YEAR, Number(month), 0).getDate();
+}
+
 export default function TopbarActions() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,7 +30,9 @@ export default function TopbarActions() {
   const [addStep, setAddStep] = useState<1 | 2>(1);
   const [addedChild, setAddedChild] = useState<Child | null>(null);
   const [childName, setChildName] = useState("");
-  const [birthDate, setBirthDate] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [birthMonth, setBirthMonth] = useState("");
+  const [birthYear, setBirthYear] = useState("");
   const [photo, setPhoto] = useState<File>();
   const [photoError, setPhotoError] = useState("");
   const [gender, setGender] = useState<"boy" | "girl">("boy");
@@ -78,7 +92,7 @@ export default function TopbarActions() {
   function closeAddChildModal() {
     setShowAddChild(false);
     setTimeout(() => {
-      setChildName(""); setBirthDate(""); setPhoto(undefined); setGender("boy"); setAddStep(1); setAddedChild(null); setPhotoError("");
+      setChildName(""); setBirthDay(""); setBirthMonth(""); setBirthYear(""); setPhoto(undefined); setGender("boy"); setAddStep(1); setAddedChild(null); setPhotoError("");
     }, 200);
   }
 
@@ -91,7 +105,10 @@ export default function TopbarActions() {
         const blob = await res.blob();
         finalPhoto = new File([blob], `child-${gender}.png`, { type: "image/png" });
       }
-      const child = await createChild({ name: childName.trim(), birth_date: birthDate || undefined, photo: finalPhoto });
+      const birthDate = birthDay && birthMonth && birthYear
+        ? `${birthYear}-${birthMonth.padStart(2, "0")}-${birthDay.padStart(2, "0")}`
+        : undefined;
+      const child = await createChild({ name: childName.trim(), birth_date: birthDate, photo: finalPhoto });
       setChildren((v) => [...v, child]);
       setAddedChild(child);
       setAddStep(2);
@@ -238,7 +255,46 @@ export default function TopbarActions() {
                   </div>
                   <div className="edit-field" style={{ marginTop: 14 }}>
                     <label>Tug'ilgan sana</label>
-                    <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1.4fr 1fr", gap: 8 }}>
+                      <select
+                        value={birthDay}
+                        onChange={(e) => setBirthDay(e.target.value)}
+                        aria-label="Kun"
+                      >
+                        <option value="">Kun</option>
+                        {Array.from({ length: daysInMonth(birthMonth, birthYear) }, (_, i) => i + 1).map((day) => (
+                          <option key={day} value={day}>{day}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={birthMonth}
+                        onChange={(e) => {
+                          const month = e.target.value;
+                          setBirthMonth(month);
+                          if (birthDay && Number(birthDay) > daysInMonth(month, birthYear)) setBirthDay("");
+                        }}
+                        aria-label="Oy"
+                      >
+                        <option value="">Oy</option>
+                        {MONTH_NAMES.map((name, index) => (
+                          <option key={name} value={index + 1}>{name}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={birthYear}
+                        onChange={(e) => {
+                          const year = e.target.value;
+                          setBirthYear(year);
+                          if (birthDay && Number(birthDay) > daysInMonth(birthMonth, year)) setBirthDay("");
+                        }}
+                        aria-label="Yil"
+                      >
+                        <option value="">Yil</option>
+                        {BIRTH_YEARS.map((year) => (
+                          <option key={year} value={year}>{year}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   
                   <div className="edit-field" style={{ marginTop: 16 }}>
