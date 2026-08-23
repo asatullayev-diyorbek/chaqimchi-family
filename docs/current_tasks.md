@@ -16,9 +16,12 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
 
 - [x] Backend PythonAnywhere Free tarifda joylashtirildi: `https://apiguard.pythonanywhere.com` (health check PASS, CORS PASS).
 - [x] Frontend (parent-web) GitHub'ga push qilindi va Vercel'ga ulandi: `https://chaqimchi-family-parent-web.vercel.app` (production, git auto-deploy yoqilgan).
-- [~] Custom domen (`api.guard.chaqimchi-ai.uz`) hali PA Free tarifga ulanmagan — Cloudflare Worker orqali Host-rewrite proxy rejalashtirilgan, keyingi qadam.
-- [ ] PA Free web app 3 oyda bitta qo‘lda "Run until 3 months" bosilishi kerak (dashboard orqali) — API bu ishni bajara olmaydi.
-- [ ] Vercel loyihasida Root Directory dashboard'da `parent-web` ga qo‘lda o‘rnatilishi kerak (CLI buni sozlay olmaydi).
+- [x] Custom domen `api.guard.chaqimchi-ai.uz` Cloudflare Worker (`apiguard-proxy`, Host-rewrite proxy → `apiguard.pythonanywhere.com`) orqali ulandi. DNS + SSL avtomatik (Cloudflare Workers Custom Domain). Health check PASS: `https://api.guard.chaqimchi-ai.uz/api/health/` → `200 {"status":"ok"}`.
+- [x] CT-01 va CT-02 checkpointlari shu konfiguratsiya bilan qayta tekshirildi va PASS: barcha client'lar (`parent-web` Vercel env, `parent-mobile/.env`, `parent-web/.env.local`) canonical `https://api.guard.chaqimchi-ai.uz` ga o'tkazildi, eski ngrok qiymatlari olib tashlandi.
+- [ ] PA Free web app 3 oyda bitta qo‘lda "Run until 3 months" bosilishi kerak (dashboard orqali, keyingi muddat: 2026-09-23) — API bu ishni bajara olmaydi.
+- [ ] Vercel loyihasida Root Directory dashboard'da `parent-web` ga qo‘lda o‘rnatilishi kerak (CLI buni sozlay olmaydi) — hali bajarilmagan, keyingi git-triggered build shu sababli muvaffaqiyatsiz bo'lishi mumkin.
+- [ ] PA Free tarif WSGI-only; `apps/devices` dagi enroll WebSocket consumer hozircha hech bir client tomonidan chaqirilmagani uchun bloklovchi emas, lekin kelajakda real-time xususiyat qo'shilsa boshqa hosting yoki PA paid+ASGI kerak bo'ladi.
+- [ ] Baza hozircha PA'da sqlite (production Postgres emas) — Bosqich 0 uchun yetarli, kattaroq foydalanuvchi bazasida tashqi Postgres (masalan Neon) ulanishi kerak bo'ladi.
 
 ## Eski holat
 
