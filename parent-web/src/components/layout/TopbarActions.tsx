@@ -149,8 +149,10 @@ export default function TopbarActions() {
             <span className="child-avatar">
               {selectedChild?.photo_url ? (
                 <img src={mediaUrl(selectedChild.photo_url)} alt="" loading="lazy" decoding="async" />
+              ) : children.length ? (
+                <img src="/assets/child-boy.png" alt="" loading="lazy" decoding="async" />
               ) : (
-                <img src={children.length ? "/assets/child-boy.png" : "/assets/profile.png"} alt="" loading="lazy" decoding="async" />
+                <iconify-icon icon="solar:add-circle-linear"></iconify-icon>
               )}
             </span>
             <div>
