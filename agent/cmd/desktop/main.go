@@ -24,7 +24,10 @@ func main() {
 		client := &http.Client{Timeout: 3 * time.Second}
 		for {
 			resp, err := client.Get(*endpoint)
-			if err != nil || resp.StatusCode != http.StatusOK {
+			if err != nil {
+				tray.SetStatus(ui.StatusOffline)
+			} else if resp.StatusCode != http.StatusOK {
+				resp.Body.Close()
 				tray.SetStatus(ui.StatusOffline)
 			} else {
 				var status localipc.Status

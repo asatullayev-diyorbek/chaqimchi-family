@@ -69,7 +69,12 @@ func (c *Client) GenerateCode(ctx context.Context, deviceHint string) (*Code, er
 // PythonAnywhere, where this backend now runs) cannot serve WebSockets at
 // all, so that dial failed immediately on every real enrollment attempt —
 // polling a REST endpoint works on any host the backend is deployed to.
-func (c *Client) WaitForLink(ctx context.Context, deviceID string) error {
+// onError, if non-nil, is called every time a poll attempt fails (e.g. no
+// internet connection) so the caller can surface that to the user. Polling
+// keeps retrying regardless — a transient network blip should not abort
+// pairing — but the caller now has enough information to stop showing a
+// plain countdown as if nothing were wrong.
+func (c *Client) WaitForLink(ctx context.Context, deviceID string, onError func(error)) error {
 	const pollInterval = 2 * time.Second
 
 	statusURL := c.BaseURL + "/api/enroll/status/" + deviceID + "/"
@@ -80,6 +85,9 @@ func (c *Client) WaitForLink(ctx context.Context, deviceID string) error {
 		linked, err := c.checkLinked(ctx, statusURL)
 		if err == nil && linked {
 			return nil
+		}
+		if err != nil && onError != nil {
+			onError(err)
 		}
 		select {
 		case <-ctx.Done():

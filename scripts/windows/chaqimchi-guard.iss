@@ -64,30 +64,8 @@ Filename: "{sys}\sc.exe"; Parameters: "delete ChaqimchiFamilyAgent"; StatusMsg: 
 [UninstallDelete]
 Type: filesandordirs; Name: "{commonappdata}\ChaqimchiFamily"
 
-[Code]
-var
-  TransparencyPage: TInputOptionWizardPage;
-
-procedure InitializeWizard;
-begin
-  TransparencyPage := CreateInputOptionPage(
-    wpWelcome,
-    'Shaffoflik va rozilik',
-    'ChaqimchiAI Guard nima o‘rnatishini tasdiqlang',
-    'O‘rnatiladi: Windows Service, avtomatik ishga tushish, qurilma holati va ekran vaqti monitoringi, xavfsiz HTTPS aloqa. ' +
-    'Kuzatilmaydi: parollar, shaxsiy fayllar, kamera, mikrofon yoki klaviatura bosishlari.',
-    False,
-    True);
-  TransparencyPage.Add('Ma’lumotlarni o‘qidim va ChaqimchiAI Guard o‘rnatilishiga roziman.');
-end;
-
-function NextButtonClick(CurPageID: Integer): Boolean;
-begin
-  Result := True;
-  if CurPageID = TransparencyPage.ID then begin
-    if not TransparencyPage.SelectedValue[0] then begin
-      MsgBox('Davom etish uchun shaffoflik ma’lumotlarini tasdiqlashingiz kerak.', mbInformation, MB_OK);
-      Result := False;
-    end;
-  end;
-end;
+; The binding transparency/consent prompt lives in the bootstrap itself
+; (internal/ui.RequireInstallerConsent), shown right before it creates any
+; enrollment credentials. A second, differently-worded consent page here
+; only duplicated it — a user could accept this wizard page and then decline
+; the bootstrap's dialog, leaving files copied with no service configured.

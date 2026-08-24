@@ -10,6 +10,7 @@ package main
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -76,8 +77,8 @@ func main() {
 		}
 
 		codeCtx, cancelCode := context.WithDeadline(ctx, code.ExpiresAt)
-		err = ui.ShowEnrollment(codeCtx, code.Code, code.QRPayload, code.ExpiresAt, func(waitCtx context.Context) error {
-			return client.WaitForLink(waitCtx, code.DeviceID)
+		err = ui.ShowEnrollment(codeCtx, code.Code, code.QRPayload, code.ExpiresAt, func(waitCtx context.Context, onError func(error)) error {
+			return client.WaitForLink(waitCtx, code.DeviceID, onError)
 		}, func(setStatus func(string)) error {
 			setStatus("Xizmat sozlanmoqda...")
 			exePath, installErr := installAgentBinary(*agentPath)
@@ -101,12 +102,16 @@ func main() {
 		if err == nil {
 			break
 		}
-		if ctx.Err() != nil {
-			fatalInstaller("Bog‘lash vaqti tugadi: %v", ctx.Err())
-		}
 		if expired {
 			fmt.Println("Kod muddati tugadi. Yangi kod olinmoqda...")
 			continue
+		}
+		if errors.Is(err, context.Canceled) {
+			log.Println("Foydalanuvchi qurilmani bog'lashni bekor qildi.")
+			return
+		}
+		if ctx.Err() != nil {
+			fatalInstaller("Bog‘lash vaqti tugadi: %v", ctx.Err())
 		}
 		fatalInstaller("Bog‘lash/o‘rnatishda xatolik: %v", err)
 	}

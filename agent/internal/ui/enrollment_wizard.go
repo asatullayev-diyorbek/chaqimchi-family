@@ -7,6 +7,8 @@ import (
 	"context"
 	"fmt"
 	"image/png"
+	"log"
+	"sync"
 	"syscall"
 	"time"
 
@@ -16,8 +18,10 @@ import (
 )
 
 // ShowEnrollment presents the pairing code and QR in a visible user-session
-// window, then waits for the parent app to complete pairing.
-func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.Time, wait func(context.Context) error, onLinked func(func(string)) error) error {
+// window, then waits for the parent app to complete pairing. wait's second
+// argument is called on every failed poll (e.g. no internet) so the window
+// can tell the user why nothing is happening instead of just counting down.
+func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.Time, wait func(context.Context, func(error)) error, onLinked func(func(string)) error) error {
 	pngBytes, err := qrcode.Encode(qrPayload, qrcode.Medium, 240)
 	if err != nil {
 		return fmt.Errorf("creating QR code: %w", err)
@@ -100,6 +104,20 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 	defer stop()
 	cancel.Clicked().Attach(func() { stop(); mw.Close(walk.DlgCmdCancel) })
 	completed := make(chan struct{})
+
+	var connMu sync.Mutex
+	var connProblem bool
+	setConnProblem := func(v bool) {
+		connMu.Lock()
+		connProblem = v
+		connMu.Unlock()
+	}
+	hasConnProblem := func() bool {
+		connMu.Lock()
+		defer connMu.Unlock()
+		return connProblem
+	}
+
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
@@ -115,7 +133,11 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 			}
 			minutes := int(remaining / time.Minute)
 			seconds := int(remaining/time.Second) % 60
-			mw.Synchronize(func() { status.SetText(fmt.Sprintf("Bog‘lanish kutilmoqda — %02d:%02d qoldi", minutes, seconds)) })
+			text := fmt.Sprintf("Bog‘lanish kutilmoqda — %02d:%02d qoldi", minutes, seconds)
+			if hasConnProblem() {
+				text = "Internetga ulanib bo‘lmayapti. Ulanishni tekshiring — qayta urinilmoqda... (" + fmt.Sprintf("%02d:%02d", minutes, seconds) + ")"
+			}
+			mw.Synchronize(func() { status.SetText(text) })
 			select {
 			case <-ctx.Done():
 				return
@@ -126,7 +148,10 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 		}
 	}()
 	go func() {
-		err := wait(ctx)
+		err := wait(ctx, func(pollErr error) {
+			log.Printf("enrollment poll error: %v", pollErr)
+			setConnProblem(true)
+		})
 		mw.Synchronize(func() {
 			if err == nil {
 				close(completed)
@@ -161,9 +186,11 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 // showEnrollmentFallback keeps pairing usable when the optional Walk window
 // cannot initialize a Windows tooltip control (TTM_ADDTOOL). Manual code
 // pairing does not depend on that control and is sufficient for the MVP.
-func showEnrollmentFallback(ctx context.Context, code, qrPayload string, expiresAt time.Time, wait func(context.Context) error, onLinked func(func(string)) error) error {
+func showEnrollmentFallback(ctx context.Context, code, qrPayload string, expiresAt time.Time, wait func(context.Context, func(error)) error, onLinked func(func(string)) error) error {
 	waitResult := make(chan error, 1)
-	go func() { waitResult <- wait(ctx) }()
+	go func() {
+		waitResult <- wait(ctx, func(pollErr error) { log.Printf("enrollment poll error: %v", pollErr) })
+	}()
 
 	title := "ChaqimchiAI Guard — Qurilmani bog‘lash"
 	message := fmt.Sprintf(
