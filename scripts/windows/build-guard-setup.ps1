@@ -27,6 +27,15 @@ $payloadDir = Join-Path $agentRoot "cmd\installer\payload"
 $installerSource = Join-Path $scriptRoot "chaqimchi-guard.iss"
 $iconPath = Join-Path $repoRoot "parent-web\src\app\favicon.ico"
 
+# Windows VersionInfo fields (and Inno Setup's VersionInfoVersion) require a
+# purely numeric a.b.c.d string, so an RC/pre-release tag like
+# "0.4.0-rc.1" can't be used verbatim. Keep the full string as the
+# user-visible AppVersion and derive a 4-part numeric build number from the
+# leading release part (CT-04: "0.4.0" -> "0.4.0.0").
+$numericVersion = ($Version -split '[-+]', 2)[0]
+$versionParts = @($numericVersion -split '\.') + @('0', '0', '0', '0')
+$numericVersion = ($versionParts[0..3] -join '.')
+
 $uri = [Uri]$ServerUrl
 if ($uri.Scheme -ne "https") {
   throw "Public build uchun ServerUrl HTTPS bo‘lishi shart. Local development uchun agentni --allow-insecure-http bilan alohida ishga tushiring."
@@ -55,6 +64,13 @@ function New-VersionResource {
     [string]$Description
   )
 
+  # goversioninfo (>= v1.4) still requires a base versioninfo.json positional
+  # argument even when every field is supplied via flags; without one it
+  # aborts with "cannot open versioninfo.json". Hand it a throwaway empty
+  # object so the flags below fully define the resource.
+  $baseJson = Join-Path ([System.IO.Path]::GetTempPath()) ("goversioninfo-" + [System.Guid]::NewGuid().ToString("N") + ".json")
+  Set-Content -Path $baseJson -Value "{}" -Encoding ascii
+
   $resourceArgs = @(
     "-64",
     "-o=$OutputPath",
@@ -68,10 +84,16 @@ function New-VersionResource {
     "-original-name=$OriginalName",
     "-product-name=ChaqimchiAI Guard",
     "-product-version=$Version",
-    "-copyright=Copyright (c) ChaqimchiAI"
+    "-copyright=Copyright (c) ChaqimchiAI",
+    $baseJson
   )
-  & $GoVersionInfo @resourceArgs
-  if ($LASTEXITCODE -ne 0) { throw "Windows metadata resursi yaratilmadi: $OriginalName" }
+  try {
+    & $GoVersionInfo @resourceArgs
+    if ($LASTEXITCODE -ne 0) { throw "Windows metadata resursi yaratilmadi: $OriginalName" }
+  }
+  finally {
+    Remove-Item -Path $baseJson -ErrorAction SilentlyContinue
+  }
 }
 
 function Assert-GuiExecutable {
@@ -114,7 +136,7 @@ finally {
   Pop-Location
 }
 
-& $ISCC "/DMyAppVersion=$Version" "/DBootstrapPath=$bootstrapExe" "/DDesktopPath=$desktopExe" $installerSource
+& $ISCC "/DMyAppVersion=$Version" "/DNumericVersion=$numericVersion" "/DBootstrapPath=$bootstrapExe" "/DDesktopPath=$desktopExe" $installerSource
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup build muvaffaqiyatsiz." }
 
 $finalInstaller = Join-Path $repoRoot "releases\windows\ChaqimchiAI Guard Setup.exe"
