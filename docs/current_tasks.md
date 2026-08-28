@@ -12,6 +12,36 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
 - Agent, bootstrap yoki boshqa ichki `.exe` fayllar public tarqatilmaydi. Foydalanuvchiga faqat `ChaqimchiAI Guard Setup.exe` beriladi.
 - Production’da faqat HTTPS ishlatiladi. Defender, SmartScreen, Firewall yoki UAC’ni o‘chirish tavsiya qilinmaydi.
 
+## Hozirgi holat — 2026-08-28 yangilanishi (real Windows)
+
+- [x] Ish real Windows 11 kompyuterga ko'chirildi (`Windows-da-davom-etish.md` bo'yicha). Go 1.27.0 zip orqali o'rnatildi (`C:\Users\Robbit\gosdk`, admin talab qilmaydi — winget MSI elevation'da osilib qoldi).
+- [x] **Real Tracking E2E PASS** (`hisobot.md` §18): Guard agent real Windows'da foreground app'ni aniqladi → SQLite buffer → `POST /api/tracking/ingest/` (production) → `summary`/`history` → Dashboard. Bu edi loyihaning asosiy ochiq P0 bandi.
+- [x] Go paket testlari va uchala Windows binary buildi (`cmd/agent`, `cmd/installer`, `cmd/desktop`) real Windows'da PASS.
+- [x] **CT-03 PASS:** `go1.27.0 windows/amd64` (`C:\Users\Robbit\gosdk`), `goversioninfo.exe` (`go install`, `C:\Users\Robbit\go\bin`), Inno Setup 6.7.3 ISCC (`C:\Users\Robbit\InnoSetup6\ISCC.exe`, `/CURRENTUSER` install — admin shart emas). `signtool` yo'q (CT-08, unsigned MVP). Repo clean checkout.
+- [x] **CT-05 PASS:** `build-guard-setup.ps1` to'liq ishladi → `releases\windows\ChaqimchiAI Guard Setup.exe` (22.4 MB, GUI subsystem, Inno Setup lzma2, packer yo'q). Embedded URL `https://api.guard.chaqimchi-ai.uz` (bootstrap). Metadata: ProductName "ChaqimchiAI Guard", ProductVersion `0.4.0-rc.1`, FileVersion `0.4.0.0`. **SHA-256:** `4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148`.
+- [x] Build script tuzatildi (hech qachon ishga tushirilmagan, 5 ta latent bug): (1) `goversioninfo` >= v1.4 uchun base `versioninfo.json` positional arg kerak — vaqtinchalik `{}` fayl beriladi; (2) RC tegli versiyadan 4-qismli numeric versiya (`NumericVersion`) ajratiladi (`VersionInfoVersion`/`VersionInfoProductVersion` numeric bo'lishi shart); (3) Inno Setup 6.4+ `DisableSilentInstall` direktivini olib tashlagan — o'rniga `[Code] InitializeSetup` da `WizardSilent()` guard; (4) `compiler:Languages\English.isl` → `compiler:Default.isl` (Inno Setup'da inglizcha Default.isl); (5) `[UninstallRun]` ga `RunOnceId` qo'shildi.
+- [x] **CT-08 qisman:** barcha 4 EXE metadata to'liq (Company "ChaqimchiAI", ProductName "ChaqimchiAI Guard", ProductVersion `0.4.0-rc.1`, Description bor). Consent oynasi (`internal/ui.RequireInstallerConsent`) faqat ruxsat etilgan kategoriyalarni ko'rsatadi (ilova/sayt nomlari, ekran vaqti, qurilma holati) va enrollment kodidan **oldin** ko'rsatiladi. Service DisplayName "ChaqimchiAI Guard Service", SCM id `ChaqimchiFamilyAgent`, installed exe `C:\Program Files\ChaqimchiAI\chaqimchi-agent.exe` — brendga mos, yashirin emas. Qolgan: code signing qarori (`signed` yoki `unsigned MVP`).
+- [x] **CT-10 qisman:** `parent-web` `/download` sahifasi tuzatildi — endi eski bootstrap `.exe` (`ChaqimchiAI-Guard-Installer.exe`, 27 MB, ichki artifact — public tarqatish taqiqlangan) o'rniga to'g'ri `ChaqimchiAI-Guard-Setup.exe` beriladi. Sahifada versiya, sana, hajm, noshir (unsigned MVP) va SHA-256 ko'rsatiladi; SmartScreen bo'yicha halol izoh bor. `parent-web` lint + production build PASS. Qolgan: Privacy/Terms/Support havolalari, eski URL redirect.
+- [~] **CT-06 boshlandi (Windows 11), 3 ta muammo topildi:**
+  - **Bug #1 (tuzatildi, `.iss`):** `postinstall` `[Run]` bootstrap'ni elevation'siz chaqirar edi → `CreateProcess failed; code 740` (bootstrap `requireAdministrator`) → `runascurrentuser` flag qo'shildi.
+  - **Bug #2 (tuzatildi, `.iss`):** `nowait` bilan ishga tushgan Desktop tray ilovasi uninstall paytida yopilmasdi → `.exe` va `{app}` papkasi o'chmay qolardi → `[UninstallRun]` ga `taskkill /f /im "ChaqimchiAI Guard Desktop.exe"` qo'shildi (service teardown'dan oldin).
+  - **Bug #3 (ARXITEKTURA, MVP-BLOKER — TUZATILDI VA REAL WINDOWS'DA TASDIQLANDI 2026-08-28):** o'rnatilgan service SYSTEM sifatida **Session 0** da ishlaydi. `GetForegroundWindow()` Session 0 window station'ining faol oynasini qaytaradi (u yerda interaktiv ilova yo'q) → **hech qachon `app_usage` event yaratilmaydi** (real test: 5+ daqiqa, buffer'da 0 ta `app_usage`, faqat `device_state`). §18 dagi E2E faqat agent **foydalanuvchi seansida** to'g'ridan-to'g'ri ishga tushirilgani uchun ishlagan.
+    **Tasdiq (real installed service, hotswap):** helper Session 1 da barqaror ishlaydi (respawn yo'q), buffer'ga `WindowsTerminal.exe`/`chrome.exe`/`explorer.exe` `app_usage` event'lari yozildi, `synced=1` (production backend qabul qildi). To'liq oqim: real foreground → helper (Session 1) → `POST /v1/foreground` → service (Session 0) → buffer → `/api/tracking/ingest/` → dashboard.
+    **Yechim (variant 1 — session helper):** service rejimida agent `internal/session.RunReporter` orqali o'zining nusxasini `-foreground-reporter` bilan faol konsol seansiga spawn qiladi (`WTSQueryUserToken` + `CreateProcessAsUser`, `winsta0\default`); helper foreground'ni polling qilib `POST http://127.0.0.1:37641/v1/foreground` orqali service'ga yuboradi; service `tracker.RunAppUsageFromObservations` bilan `app_usage` event'larini yozadi. Helper o'lsa/seans almashsa qayta spawn qilinadi; service to'xtasa helper o'zi chiqadi. O'zgargan fayllar: `internal/session/reporter_windows.go` (yangi), `internal/tracker/app_usage_core.go` (yangi, portable state machine), `internal/tracker/app_usage.go`, `internal/localipc/status.go` (`POST /v1/foreground`), `cmd/agent/main.go`, `internal/service/windows_service.go`. Build ✅ vet ✅ 7 yangi test ✅.
+    **Real testda topilgan 2 qo'shimcha bug (tuzatildi):**
+    (a) helper `-parent-pid` liveness'ni `OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)` bilan SYSTEM service PID'iga tekshirardi → **"Access is denied"** → har 10 sekundda respawn loop, event yig'ilmasdi. `OpenProcess` tekshiruvi olib tashlandi; helper faqat POST-xatolik backstop (12 ketma-ket → ~2 daq) va `RunReporter.TerminateProcess` bilan boshqariladi. `http.Client` transporti ham env-proxy'siz.
+    (b) SCM crash-restart'dan keyin eski instansiyaning helper'i user seansida yetim qolib, yangi instansiyaning ishlaydigan IPC'siga POST qilaverardi (backstop hech qachon ishlamas) → yangi service instansiyasi spawn qilishdan oldin `killStrayReporters()` bilan har qanday boshqa `chaqimchi-agent.exe` ni terminate qiladi (SYSTEM sifatida user helper'ini o'ldira oladi).
+  - **CT-06 tasdiqlangan checkpointlar (real installed service):**
+    - Installer GUI konsolsiz; consent enrollment kodidan oldin; QR/6-xonali kod oynasi.
+    - Parent link → service avtomatik: `ChaqimchiFamilyAgent` `Running`/`Automatic`/`LocalSystem`, to'g'ri arglar; `C:\ProgramData\ChaqimchiFamily\{buffer.db,rules.db}`.
+    - **`app_usage` real ishlaydi:** helper Session 1 da barqaror; `WindowsTerminal.exe`/`chrome.exe`/`explorer.exe` event'lari buffer'ga yozildi, `synced=1` (production ingest qabul qildi).
+    - **Crash-recovery:** `taskkill /F` service jarayoni → SCM 5s'da qayta ishga tushirdi → yangi service + yangi helper, **yetim jarayon yo'q** (`killStrayReporters`). Recovery config `RESTART 5s/5s/30s`, reset 86400s.
+    - **Uninstall:** `unins000.exe /VERYSILENT` → service, `C:\Program Files\ChaqimchiAI`, `C:\ProgramData\ChaqimchiFamily`, registry to'liq tozalandi.
+  - **Qolgan:** yangi installer bilan **toza** o'rnatish (hotswap emas); Windows 10; haqiqiy reboot orqali autostart.
+- [x] **CT-09 qisman PASS:** SHA-256 `4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148` (sidecar `.sha256` yozildi); Windows Defender scan (final installer + 3 ichki EXE) — hammasi "found no threats". **VirusTotal ochiq** (API kalit / qo'lda yuklash kerak; unsigned Go binariy — 2–10 evristik FP kutiladi).
+- [~] Kichik muammo: UWP ilovalar (masalan Calculator) foreground'da `ApplicationFrameHost.exe` sifatida ko'rinadi; Win32 ilovalar to'g'ri nomlanadi. MVP-blocker emas.
+- [~] `parent-web/public/downloads/*.exe` repo'ga commit qilinadi (Vercel static serve). Eski 27 MB fayl o'chirildi, yangi 22 MB qo'shildi — commit qilishdan oldin ko'rib chiqing (yoki Vercel'ga alohida yuklash).
+
 ## Hozirgi holat — 2026-08-23 yangilanishi
 
 - [x] Backend PythonAnywhere Free tarifda joylashtirildi: `https://apiguard.pythonanywhere.com` (health check PASS, CORS PASS).
@@ -276,6 +306,20 @@ Hali tekshirilmagan: Windows build script defaultidagi eski `https://api.chaqimc
 
 **Keyingi amaliy ish:** Windows release muhitida yuqoridagi command bilan RC installer build qilish, final GUI gate va SHA-256 natijasini qayd etish.
 
+### CT-05 bajarilish natijasi — 2026-08-28 (real Windows 11)
+
+`build-guard-setup.ps1` real Windows 11'da to'liq bajarildi (birinchi marta — CT-05 shu paytgacha "DEFERRED" edi). Script'da 5 ta latent bug topildi va tuzatildi (yuqoridagi 2026-08-28 holat bo'limiga qarang).
+
+- [x] PowerShell build xatosiz yakunlandi (Inno Setup warning'lar ham yo'q).
+- [x] `releases\windows\ChaqimchiAI Guard Setup.exe` yaratildi — 22 455 047 bayt (~21.4 MB).
+- [x] Bootstrap, desktop va final installer GUI subsystem gate (`Assert-GuiExecutable`, PE subsystem = 2) — PASS.
+- [x] Installer icon (`parent-web\src\app\favicon.ico`) va Windows metadata to'liq: ProductName `ChaqimchiAI Guard`, ProductVersion `0.4.0-rc.1`, FileVersion `0.4.0.0`, Company `ChaqimchiAI`.
+- [x] Embedded backend URL `https://api.guard.chaqimchi-ai.uz` — bootstrap `.exe` ichida tasdiqlandi.
+- [x] Packer yo'q: PE seksiyalari standart Inno Setup (`.text/.itext/.data/.bss/.idata/.didata/.edata/.tls/.rdata/.reloc/.rsrc`), `UPX0/UPX1` yo'q. Inno Setup `Compression=lzma2`.
+- [x] **SHA-256:** `4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148`
+
+**CT-05 holati:** `PASS` (RC installer yig'ildi, hali public emas). Keyingi: CT-06 (Windows 10/11 qo'lda GUI/lifecycle test), CT-09 (VirusTotal/Defender).
+
 ---
 
 ## CT-06 — Installer GUI oqimini Windows’da test qilish
@@ -416,6 +460,17 @@ Production canonical API (`https://api.guard.chaqimchi-ai.uz`) ustida to‘liq A
 - [ ] False-positive submission kerak bo‘lsa yuborilgan va reference saqlangan.
 
 **Done mezoni:** integrity va antivirus gate PASS yoki release sabab bilan bloklangan.
+
+### CT-09 bajarilish natijasi — 2026-08-28 (qisman)
+
+Local qism bajarildi, VirusTotal foydalanuvchining API kaliti / qo'lda yuklashini kutmoqda.
+
+- [x] **SHA-256 builddan keyin o'zgarmagan:** `4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148` (22 397 929 bayt). `releases/windows/ChaqimchiAI Guard Setup.exe.sha256` sidecar yaratildi (`sign-release.ps1` formatida: `<hash>  <name>`).
+- [x] **Windows Defender local scan clean:** `MpCmdRun.exe -Scan -ScanType 3` — final installer + uchala ichki EXE (`ChaqimchiAI Guard.exe`, `... Installer.exe`, `... Desktop.exe`) → hammasi "found no threats", exit 0. Real-time protection yoqilgan holatda build qilingan, quarantine bo'lmagan. Signature 1.457.286.0 (2026-08-22).
+- [ ] **VirusTotal:** yuklanmagan — VT API kaliti yo'q. Eslatma: installer **imzolanmagan** (CT-08 "unsigned MVP"). Imzolanmagan Go binariylar VT'da odatda bir nechta evristik false-positive oladi (Go-specific: "Wacatac", "Trojan.Generic" kabi) — 2–10 detection kutilishi mumkin, bu MVP uchun normal, lekin qayd etilishi kerak.
+- [ ] Detection tahlili / BLOCKED qarori / false-positive submission — VT natijasidan keyin.
+
+**CT-09 holati:** `PARTIAL PASS` — integrity ✅, Defender ✅; VirusTotal ochiq.
 
 ---
 

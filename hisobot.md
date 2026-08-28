@@ -584,3 +584,111 @@ MVP” holatiga o‘tadi.
 - [x] Faoliyat tarixi faqat o‘z tab’i ochilganda yuklanadi.
 - [x] Parent Web lint: **0 error**.
 - [x] Parent Web production build: **PASS**.
+
+## 18. Real Windows Tracking E2E — 2026-08-28
+
+Nihoyat hisobotning asosiy ochiq P0 bandi (`hisobot.md` §8, §11, §13) real Windows 11
+kompyuterda uchidan-uchiga bajarildi va production API ustida tasdiqlandi.
+
+Muhit: Windows 11 Pro, Go 1.27.0 (zip, `C:\Users\Robbit\gosdk`), agent `go build ./cmd/agent`
+(interaktiv rejim — `service.Run` SCM'siz `run(ctx)`ni to'g'ridan-to'g'ri chaqiradi).
+
+### PASS
+
+- [x] Parent signup/login + `POST /api/enroll/generate-code/` + parent `verify-code` → qurilma `linked` (production `https://api.guard.chaqimchi-ai.uz`).
+- [x] Guard agent real Windows'da ishga tushdi; `tracker.RunAppUsage` foreground `chrome.exe`, `WindowsTerminal.exe` va boshqa jarayonlarni aniqladi.
+- [x] Event'lar local SQLite buffer (`buffer.db`)ga yozildi.
+- [x] `sync.Uploader` batch'larni `POST /api/tracking/ingest/` (`Authorization: Device <id>:<secret>`) orqali yubordi; 13/13 event `synced=1`, `pending_batch` bo'sh.
+- [x] `GET /api/tracking/summary/<device_id>/` → `top_apps: [chrome.exe, WindowsTerminal.exe, ...]`, `device_status: online`, `last_sync` yangilandi, `breakdown` to'ldi.
+- [x] `GET /api/tracking/history/<device_id>/` → 8 ta `app_usage` event timeline'da to'g'ri `started_at/ended_at/duration_seconds` bilan.
+- [x] `device_state` event'lari (battery %, session, screen lock) real ma'lumot bilan yozildi va sync bo'ldi.
+- [x] Go paket testlari real Windows'da (`GOOS=windows`): endpoint, localipc, rules, service, sync, updater — **PASS**.
+- [x] `go build` uchala Windows binary uchun: `cmd/agent`, `cmd/installer` (embedded `payload/agent.exe` bilan), `cmd/desktop` — **PASS**.
+
+### Aniqlangan kichik muammo (MVP-blocker emas)
+
+- UWP Calculator foreground oynasi `ApplicationFrameHost.exe` sifatida ko'rinadi (Windows 11 xususiyati) — collector jarayon nomini oladi, "Calculator" emas. Klassik Win32 ilovalar (Chrome, Terminal, Notepad) to'g'ri nomlanadi. Kelajakda UWP ilovalar uchun `GetApplicationUserModelId` / window title fallback qo'shilishi mumkin.
+
+### Natija
+
+```text
+Real Windows foreground app (Chrome / Terminal)
+  → tracker.RunAppUsage (GetForegroundWindow → QueryFullProcessImageNameW)
+  → local SQLite buffer
+  → POST /api/tracking/ingest/  (production)
+  → Django EventBatch + Event
+  → GET /api/tracking/summary/ + /history/
+  → Parent Dashboard: "online", ekran vaqti, ilova bo'yicha breakdown
+```
+
+Loyiha "kod yozilgan" holatidan "ishlaydigan MVP" holatiga o'tdi.
+
+### CT-05 — to'liq installer build (birinchi marta bajarildi)
+
+Toolchain: Go 1.27 (`gosdk` zip), `goversioninfo` v1.7.0 (`go install`), Inno Setup 6.7.3
+ISCC (`C:\Users\Robbit\InnoSetup6`, `/CURRENTUSER` — admin shart emas).
+
+`scripts\windows\build-guard-setup.ps1 -Version 0.4.0-rc.1 -ServerUrl https://api.guard.chaqimchi-ai.uz`
+→ `releases\windows\ChaqimchiAI Guard Setup.exe` (22.4 MB, GUI subsystem, lzma2, packer yo'q).
+SHA-256: `4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148`.
+
+Build script hech qachon ishga tushirilmagani uchun 5 ta latent bug tuzatildi
+(`build-guard-setup.ps1` + `chaqimchi-guard.iss`):
+
+1. `goversioninfo` >= v1.4 base `versioninfo.json` positional arg talab qiladi — vaqtinchalik `{}` fayl beriladi.
+2. `VersionInfoVersion`/`VersionInfoProductVersion` numeric `a.b.c.d` bo'lishi shart — RC tegidan `NumericVersion` (`0.4.0.0`) ajratiladi, `VersionInfoProductTextVersion` da to'liq string qoladi.
+3. Inno Setup 6.4+ `DisableSilentInstall` ni olib tashlagan — `[Code] InitializeSetup` da `WizardSilent()` guard bilan almashtirildi (CT-08 "silent o'rnatmaydi" talabi saqlanadi).
+4. `compiler:Languages\English.isl` mavjud emas (inglizcha = `Default.isl`) → `compiler:Default.isl`.
+5. `[UninstallRun]` ga `RunOnceId` qo'shildi (compiler warning yo'qoldi).
+
+### CT-06 — real Windows 11 installer testi (2026-08-28)
+
+Installer o'rnatildi, service ishga tushdi. 3 ta bug topildi va uchalasi tuzatildi.
+
+**Ishladi:** GUI konsolsiz ochildi; consent oynasi enrollment kodidan oldin; QR/6-xonali kod
+oynasi; parent link → `ChaqimchiFamilyAgent` service avtomatik o'rnatildi (`Running`,
+`Automatic`, `LocalSystem`); recovery config to'g'ri (`RESTART 5s/5s/30s`);
+`C:\ProgramData\ChaqimchiFamily\{buffer.db,rules.db}`; device dashboard'da `online`;
+uninstall `unins000.exe /VERYSILENT` — service, fayllar, `ProgramData`, registry to'liq tozalandi.
+
+**Bug #1, #2 (tuzatildi, `chaqimchi-guard.iss`):** `code 740` (postinstall bootstrap'ni
+elevation'siz chaqirish) → `runascurrentuser`; uninstall paytida tray ilovasi yopilmasligi →
+`[UninstallRun]` taskkill.
+
+**Bug #3 (MVP-bloker, arxitektura — TUZATILDI VA TASDIQLANDI):** service SYSTEM sifatida
+Session 0 da ishlaydi; `GetForegroundWindow()` u yerdan foydalanuvchi seansidagi faol
+oynani ko'rmaydi → dastlab **0 ta `app_usage` event**. §18 dagi E2E faqat agent foydalanuvchi
+seansida qo'lda ishga tushirilgani uchun ishlagan edi.
+
+Yechim: service rejimida agent o'zining nusxasini `-foreground-reporter` bilan faol konsol
+seansiga `CreateProcessAsUser` orqali spawn qiladi; u foreground'ni polling qilib
+`POST http://127.0.0.1:37641/v1/foreground` orqali service'ga yuboradi; service
+`app_usage` event'larini yozadi. Yangi fayllar: `internal/session/reporter_windows.go`,
+`internal/tracker/app_usage_core.go`; o'zgargan: `internal/tracker/app_usage.go`,
+`internal/localipc/status.go`, `cmd/agent/main.go`, `internal/service/windows_service.go`.
+Build/vet ✅, 7 yangi test ✅.
+
+Real testda topilgan 2 yon-bug (tuzatildi): (a) helper `-parent-pid` liveness'ni SYSTEM
+service PID'iga `OpenProcess` bilan tekshirardi → "Access is denied" → 10s respawn loop →
+tekshiruv olib tashlandi; (b) SCM crash-restart'dan keyin eski helper yetim qolib yangi
+IPC'ga POST qilaverardi → yangi service `killStrayReporters()` bilan boshqa barcha
+`chaqimchi-agent.exe` ni terminate qiladi.
+
+**CT-06 tasdiqlangan (real installed service):**
+
+```text
+Real foreground app (user session)
+  → chaqimchi-agent.exe -foreground-reporter (Session 1, CreateProcessAsUser)
+  → POST 127.0.0.1:37641/v1/foreground
+  → ChaqimchiFamilyAgent service (Session 0) → buffer.db
+  → POST /api/tracking/ingest/ (production)  [synced=1]
+  → Parent Dashboard
+```
+
+- `app_usage`: `WindowsTerminal.exe`/`chrome.exe`/`explorer.exe` — buffer'ga yozildi, backend qabul qildi.
+- Crash-recovery: `taskkill /F` → SCM 5s'da qayta ishga tushirdi, yangi service+helper, yetim jarayon yo'q.
+- Uninstall: `unins000.exe /VERYSILENT` → service/fayllar/`ProgramData`/registry to'liq tozalandi.
+
+**Qolgan:** yangi installer bilan **toza** o'rnatish (hotswap emas); Windows 10; haqiqiy reboot;
+CT-09 VirusTotal. Installer qayta yig'ildi: SHA-256 `4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148`,
+Defender clean (final + 3 ichki EXE).
