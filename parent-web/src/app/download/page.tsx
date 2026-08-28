@@ -12,7 +12,7 @@ const RELEASE = {
   version: "0.4.0-rc.1",
   file: "ChaqimchiAI-Guard-Setup.exe",
   sizeMB: "21.4",
-  sha256: "4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148",
+  sha256: "9D5743764B8A8B027FCFD293712F3145277057F08487911ADB477B45E6E8BD35",
   date: "2026-08-28",
   publisher: "ChaqimchiAI (imzolanmagan — MVP/Beta)",
 };

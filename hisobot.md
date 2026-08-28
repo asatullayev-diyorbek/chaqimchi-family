@@ -630,7 +630,7 @@ ISCC (`C:\Users\Robbit\InnoSetup6`, `/CURRENTUSER` — admin shart emas).
 
 `scripts\windows\build-guard-setup.ps1 -Version 0.4.0-rc.1 -ServerUrl https://api.guard.chaqimchi-ai.uz`
 → `releases\windows\ChaqimchiAI Guard Setup.exe` (22.4 MB, GUI subsystem, lzma2, packer yo'q).
-SHA-256: `4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148`.
+SHA-256: `9D5743764B8A8B027FCFD293712F3145277057F08487911ADB477B45E6E8BD35`.
 
 Build script hech qachon ishga tushirilmagani uchun 5 ta latent bug tuzatildi
 (`build-guard-setup.ps1` + `chaqimchi-guard.iss`):
@@ -689,6 +689,14 @@ Real foreground app (user session)
 - Crash-recovery: `taskkill /F` → SCM 5s'da qayta ishga tushirdi, yangi service+helper, yetim jarayon yo'q.
 - Uninstall: `unins000.exe /VERYSILENT` → service/fayllar/`ProgramData`/registry to'liq tozalandi.
 
+**Bug #4 (installer GUI, tuzatildi):** enrollment wizard oynasi ochilmasdi, o'rniga xom URL'li
+xunuk MessageBox chiqardi — `installer.manifest` da `Microsoft.Windows.Common-Controls` v6
+dependency yo'q edi (`lxn/walk` talab qiladi). Manifestlarga qo'shildi; QR endi to'g'ri render bo'ladi.
+
+**Bug #5 (installer GUI, dizayn):** oynalar `lxn/walk/declarative` bilan qayta yozildi —
+brend sarlavha, tipografik ierarxiya, QR kartada, katta bold kod; consent oynasi endi
+xom MessageBox emas, 2-ustunli shaffoflik jadvali + checkbox-gate. `internal/ui/theme.go` yangi.
+
 **Qolgan:** yangi installer bilan **toza** o'rnatish (hotswap emas); Windows 10; haqiqiy reboot;
-CT-09 VirusTotal. Installer qayta yig'ildi: SHA-256 `4D8A9235BD083E99DE434F4EB16F42D46ECE6500D94EA57FA090277D6E63D148`,
+CT-09 VirusTotal. Installer qayta yig'ildi: SHA-256 `9D5743764B8A8B027FCFD293712F3145277057F08487911ADB477B45E6E8BD35`,
 Defender clean (final + 3 ichki EXE).
