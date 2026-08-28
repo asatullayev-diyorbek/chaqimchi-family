@@ -198,10 +198,23 @@ class DeviceDetailView(APIView):
         device, error = self._get_owned_device(request, id)
         if error:
             return error
+        updated = []
         child_name = request.data.get("child_name")
         if child_name is not None:
             device.child_name = child_name
-            device.save(update_fields=["child_name"])
+            updated.append("child_name")
+        if "child_id" in request.data:
+            child_id = request.data.get("child_id")
+            if child_id:
+                child = get_object_or_404(Child, id=child_id, family=request.user.family)
+                device.child = child
+                device.child_name = child.name
+                updated += ["child", "child_name"]
+            else:
+                device.child = None
+                updated.append("child")
+        if updated:
+            device.save(update_fields=list(dict.fromkeys(updated)))
         return Response(ChildDeviceListSerializer(device).data)
 
     def delete(self, request, id):

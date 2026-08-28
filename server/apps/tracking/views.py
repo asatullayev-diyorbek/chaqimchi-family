@@ -221,6 +221,24 @@ class SummaryView(APIView):
         else:
             device_status = "offline"
 
+        # Latest known battery level from the agent's device_state events.
+        # None means no battery / unavailable (desktop PC, or the agent
+        # reported -1); the dashboard hides the battery UI in that case
+        # instead of showing a fake "Noma'lum".
+        battery_percent = None
+        battery_at = None
+        latest_state = (
+            Event.objects.filter(device=device, event_type="device_state")
+            .order_by("-occurred_at")
+            .only("payload", "occurred_at")
+            .first()
+        )
+        if latest_state:
+            raw = (latest_state.payload or {}).get("battery_percent")
+            if isinstance(raw, (int, float)) and raw >= 0:
+                battery_percent = int(raw)
+                battery_at = latest_state.occurred_at
+
         data = SummarySerializer(
             {
                 "device_id": device.id,
@@ -232,6 +250,8 @@ class SummaryView(APIView):
                 "top_apps": top_apps,
                 "device_status": device_status,
                 "last_sync": device.last_sync,
+                "battery_percent": battery_percent,
+                "battery_updated_at": battery_at,
                 "breakdown": breakdown,
             }
         ).data

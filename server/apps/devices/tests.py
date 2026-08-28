@@ -29,6 +29,23 @@ class DeviceDetailTests(TestCase):
         self.device.refresh_from_db()
         self.assertEqual(self.device.child_name, "Ali")
 
+    def test_reassign_device_to_another_child(self):
+        child = Child.objects.create(family=self.parent.family, name="Laylo")
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.patch(self.url, {"child_id": str(child.id)}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["child_id"], str(child.id))
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.child_id, child.id)
+        self.assertEqual(self.device.child_name, "Laylo")
+
+    def test_reassign_rejects_child_from_another_family(self):
+        other = ParentUser.objects.create_user(email="o@example.com", password="supersecret123")
+        foreign_child = Child.objects.create(family=other.family, name="NotYours")
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.patch(self.url, {"child_id": str(foreign_child.id)}, format="json")
+        self.assertEqual(response.status_code, 404)
+
     def test_unlink_device_soft_deletes(self):
         self.client.force_authenticate(user=self.parent)
         response = self.client.delete(self.url)

@@ -1,8 +1,8 @@
 from django.conf import settings
-from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import JsonResponse
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve as serve_media
 
 from apps.devices.views import ChildDetailView, ChildListCreateView, DeviceDetailView, DeviceListView
 
@@ -27,5 +27,12 @@ urlpatterns = [
     path("api/health/", health, name="health"),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Child photos are user uploads under MEDIA_ROOT. django.views.static.serve
+# is not a high-performance file server, but on the PythonAnywhere free tier
+# there is no separate media host and the volume here is tiny (a handful of
+# <=5 MB images, validated on upload), so serving them from Django — in
+# production too, not only when DEBUG — is the pragmatic choice. If a real
+# static host or CDN is added later, drop this and map /media/ there.
+urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve_media, {"document_root": settings.MEDIA_ROOT}),
+]

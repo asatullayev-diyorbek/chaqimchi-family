@@ -227,6 +227,39 @@ class SummaryTests(TestCase):
         response = self.client.get(self.url, {"date": self.today_str, "range": "year"})
         self.assertEqual(response.status_code, 400)
 
+    def test_summary_battery_is_null_without_device_state(self):
+        self.client.force_authenticate(user=self.parent)
+        data = self.client.get(self.url, {"date": self.today_str}).json()
+        self.assertIsNone(data["battery_percent"])
+        self.assertIsNone(data["battery_updated_at"])
+
+    def test_summary_reports_latest_battery_from_device_state(self):
+        now = timezone.now()
+        Event.objects.create(
+            batch=self.batch, device=self.device, event_type="device_state",
+            payload={"type": "device_state", "battery_percent": 61},
+            occurred_at=now - timedelta(minutes=5),
+        )
+        Event.objects.create(
+            batch=self.batch, device=self.device, event_type="device_state",
+            payload={"type": "device_state", "battery_percent": 58},
+            occurred_at=now,
+        )
+        self.client.force_authenticate(user=self.parent)
+        data = self.client.get(self.url, {"date": self.today_str}).json()
+        self.assertEqual(data["battery_percent"], 58)
+        self.assertIsNotNone(data["battery_updated_at"])
+
+    def test_summary_ignores_unavailable_battery(self):
+        Event.objects.create(
+            batch=self.batch, device=self.device, event_type="device_state",
+            payload={"type": "device_state", "battery_percent": -1},
+            occurred_at=timezone.now(),
+        )
+        self.client.force_authenticate(user=self.parent)
+        data = self.client.get(self.url, {"date": self.today_str}).json()
+        self.assertIsNone(data["battery_percent"])
+
 
 class ActivityHistoryTests(TestCase):
     def setUp(self):
