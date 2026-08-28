@@ -154,7 +154,7 @@ func windowsActionType(t RecoveryActionType) int {
 
 // handler adapts a plain run(ctx) func into the svc.Handler the SCM calls.
 type handler struct {
-	run func(ctx context.Context) error
+	run func(ctx context.Context, interactive bool) error
 }
 
 func (h *handler) Execute(args []string, r <-chan svc.ChangeRequest, statusChan chan<- svc.Status) (bool, uint32) {
@@ -165,7 +165,7 @@ func (h *handler) Execute(args []string, r <-chan svc.ChangeRequest, statusChan 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- h.run(ctx) }()
+	go func() { done <- h.run(ctx, false) }()
 
 	statusChan <- svc.Status{State: svc.Running, Accepts: accepted}
 
@@ -195,17 +195,19 @@ func (h *handler) Execute(args []string, r <-chan svc.ChangeRequest, statusChan 
 	}
 }
 
-// Run runs run(ctx) as the named Windows service when launched by the SCM,
-// or directly (blocking, no SCM involved) when running interactively —
-// e.g. `go run ./cmd/agent` during development, where there is no SCM to
-// report status to.
-func Run(name string, run func(ctx context.Context) error) error {
+// Run runs run(ctx, interactive) as the named Windows service when launched
+// by the SCM (interactive=false), or directly (blocking, no SCM involved)
+// when running interactively (interactive=true) — e.g. `go run ./cmd/agent`
+// during development, where there is no SCM to report status to. cmd/agent
+// uses the flag to decide whether foreground tracking can run in-process
+// (interactive) or must be delegated to a session helper (service).
+func Run(name string, run func(ctx context.Context, interactive bool) error) error {
 	interactive, err := svc.IsAnInteractiveSession()
 	if err != nil {
 		return fmt.Errorf("checking session type: %w", err)
 	}
 	if interactive {
-		return run(context.Background())
+		return run(context.Background(), true)
 	}
 	return svc.Run(name, &handler{run: run})
 }

@@ -3,17 +3,16 @@
 // Package tracker polls OS state and hands finished observations to the
 // buffer as events. app_usage.go watches which process owns the foreground
 // window; when it changes, the previous app's start/end window becomes one
-// "app_usage" event.
+// "app_usage" event. The event state machine itself lives in
+// app_usage_core.go so it can also be fed from another process (see
+// internal/session) when the agent runs as a Session 0 service.
 package tracker
 
 import (
 	"context"
-	"encoding/json"
 	"syscall"
 	"time"
 	"unsafe"
-
-	"github.com/google/uuid"
 
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
 )
@@ -32,10 +31,11 @@ const (
 	processQueryLimitedInformation = 0x1000
 )
 
-// foregroundProcessName returns the executable name (e.g. "chrome.exe") of
+// ForegroundProcessName returns the executable name (e.g. "chrome.exe") of
 // the process currently owning the foreground window, or "" if it can't be
-// determined (no window focused, permission denied, etc).
-func foregroundProcessName() string {
+// determined (no window focused, permission denied, or — importantly —
+// being called from Session 0, which has no interactive foreground window).
+func ForegroundProcessName() string {
 	hwnd, _, _ := procGetForegroundWindow.Call()
 	if hwnd == 0 {
 		return ""
@@ -72,55 +72,29 @@ func foregroundProcessName() string {
 }
 
 // RunAppUsage polls the foreground app every pollInterval and appends an
-// "app_usage" event to store whenever the foreground app changes, covering
-// the just-finished [started_at, ended_at) window. If onPoll is non-nil, it
-// is called on every tick with the currently observed foreground app name
-// (possibly "") — this is the hook internal/rules.Enforcer.CheckForegroundApp
-// is wired into from cmd/agent, so blocked-app enforcement reacts on the
-// same cadence as usage tracking rather than needing its own poll loop.
+// "app_usage" event to store whenever the foreground app changes. onPoll, if
+// non-nil, is called on every tick with the currently observed foreground
+// app name — the hook internal/rules.Enforcer.CheckForegroundApp is wired
+// into from cmd/agent. This is the in-process path used when cmd/agent runs
+// interactively (a real user session); the service path feeds
+// RunAppUsageFromObservations from a session helper instead.
 func RunAppUsage(ctx context.Context, store *buffer.Store, pollInterval time.Duration, onPoll func(app string)) {
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
-
-	var currentApp string
-	var startedAt time.Time
-
-	flush := func(endedAt time.Time) {
-		if currentApp == "" {
-			return
-		}
-		payload, _ := json.Marshal(map[string]any{
-			"type":             "app_usage",
-			"app":              currentApp, // legacy alias during server transition
-			"app_id":           currentApp,
-			"app_name":         currentApp,
-			"started_at":       startedAt.UTC().Format(time.RFC3339),
-			"ended_at":         endedAt.UTC().Format(time.RFC3339),
-			"duration_seconds": int(endedAt.Sub(startedAt).Seconds()),
-		})
-		store.Append(buffer.Event{
-			ID:        uuid.NewString(),
-			Type:      "app_usage",
-			Payload:   payload,
-			CreatedAt: endedAt,
-		})
-	}
-
-	for {
-		select {
-		case <-ctx.Done():
-			flush(time.Now())
-			return
-		case now := <-ticker.C:
-			app := foregroundProcessName()
-			if app != currentApp {
-				flush(now)
-				currentApp = app
-				startedAt = now
-			}
-			if onPoll != nil {
-				onPoll(app)
+	obs := make(chan string)
+	go func() {
+		ticker := time.NewTicker(pollInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				select {
+				case obs <- ForegroundProcessName():
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
-	}
+	}()
+	RunAppUsageFromObservations(ctx, store, obs, onPoll)
 }

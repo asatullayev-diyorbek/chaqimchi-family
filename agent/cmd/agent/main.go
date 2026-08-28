@@ -5,16 +5,22 @@
 // caches rules, and records rule/status events. Wires together every package built across
 // Bosqich 1-4.5. As of Bosqich 4.5 it actually runs under the Windows
 // Service Control Manager (via internal/service.Run) instead of as a bare
-// console process. Like
-// the rest of the Windows-only code in this repo, this has been
-// cross-compiled but never run on a real Windows machine.
+// console process.
+//
+// When run under the SCM it lives in session 0 and can't see the
+// interactive foreground window, so it launches a copy of itself with
+// -foreground-reporter into the active console session (internal/session)
+// and consumes that stream instead of polling directly.
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"time"
@@ -24,6 +30,7 @@ import (
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/rules"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/service"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/session"
 	syncpkg "github.com/chaqimchi/chaqimchi-family/agent/internal/sync"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/tracker"
 )
@@ -39,7 +46,14 @@ func main() {
 	deviceSecret := flag.String("device-secret", os.Getenv("CHAQIMCHI_DEVICE_SECRET"), "device secret")
 	dataDir := flag.String("data-dir", `C:\ProgramData\ChaqimchiFamily`, "local data directory")
 	allowInsecureHTTP := flag.Bool("allow-insecure-http", false, "development only: allow a non-HTTPS backend URL")
+	foregroundReporter := flag.Bool("foreground-reporter", false, "internal: run only the session-side foreground probe (launched by the service)")
+	parentPID := flag.Int("parent-pid", 0, "internal: exit when this process id is gone (used with -foreground-reporter)")
 	flag.Parse()
+
+	if *foregroundReporter {
+		runForegroundReporter(*parentPID)
+		return
+	}
 
 	if *deviceID == "" || *deviceSecret == "" {
 		log.Fatal("device-id and device-secret are required (flags or CHAQIMCHI_DEVICE_ID/CHAQIMCHI_DEVICE_SECRET)")
@@ -48,8 +62,8 @@ func main() {
 		log.Fatalf("backend URL rejected: %v", err)
 	}
 
-	err := service.Run(service.ServiceName, func(ctx context.Context) error {
-		return run(ctx, *baseURL, *deviceID, *deviceSecret, *dataDir)
+	err := service.Run(service.ServiceName, func(ctx context.Context, interactive bool) error {
+		return run(ctx, *baseURL, *deviceID, *deviceSecret, *dataDir, interactive)
 	})
 	if err != nil {
 		log.Fatalf("service: %v", err)
@@ -60,8 +74,15 @@ func main() {
 // Bosqich 4.5. It's now a plain func(ctx) error so internal/service.Run can
 // drive it either directly (interactive/dev) or as an SCM-managed service,
 // identically.
-func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string) error {
+func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, interactive bool) error {
 	startedAt := time.Now().UTC().Format(time.RFC3339)
+
+	// In service (session 0) mode the foreground probe runs in a helper
+	// process in the user's session and reports app names here.
+	var foregroundCh chan string
+	if !interactive {
+		foregroundCh = make(chan string, 8)
+	}
 	go func() {
 		if err := localipc.Serve(ctx, func() localipc.Status {
 			return localipc.Status{
@@ -69,7 +90,7 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string) e
 				Monitoring: []string{"Ekran vaqti", "Ilova nomlari", "Qurilma holati"},
 				RecentLogs: []string{"Service Started: " + startedAt, "Automatic updates: disabled until signed-update support"},
 			}
-		}); err != nil && ctx.Err() == nil {
+		}, foregroundCh); err != nil && ctx.Err() == nil {
 			log.Printf("local desktop IPC: %v", err)
 		}
 	}()
@@ -126,7 +147,7 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string) e
 	var todayMinutes float64
 	var trackedDate string
 
-	go tracker.RunAppUsage(ctx, store, pollInterval, func(app string) {
+	onPoll := func(app string) {
 		today := time.Now().UTC().Format("2006-01-02")
 		if trackedDate != today {
 			trackedDate = today
@@ -138,8 +159,64 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string) e
 
 		enforcer.CheckForegroundApp(ctx, app)
 		enforcer.CheckDailyLimit(ctx, todayMinutes)
-	})
+	}
+
+	if interactive {
+		go tracker.RunAppUsage(ctx, store, pollInterval, onPoll)
+	} else {
+		// Session 0: poll from a helper in the active console session.
+		if exe, exeErr := os.Executable(); exeErr == nil {
+			go session.RunReporter(ctx, exe)
+		} else {
+			log.Printf("cannot locate own executable for session reporter: %v", exeErr)
+		}
+		go tracker.RunAppUsageFromObservations(ctx, store, foregroundCh, onPoll)
+	}
 
 	<-ctx.Done()
 	return ctx.Err()
+}
+
+// runForegroundReporter is the -foreground-reporter mode: a tiny loop that
+// runs in the interactive user session (launched by internal/session),
+// polls the real foreground window and POSTs it to the service's local IPC.
+// It carries no device credentials and touches nothing but loopback.
+//
+// Lifetime: internal/session.RunReporter terminates this child on graceful
+// service stop and on console-session change. As a backstop for an abrupt
+// service kill, the loop also exits after maxConsecFails consecutive POST
+// failures — long enough (~2 min) to ride out the service's own 5s/5s/30s
+// recovery restarts without dropping the reporter. (parentPID is accepted
+// for diagnostic context only: a user-session process cannot reliably
+// OpenProcess a SYSTEM service to poll its liveness — "Access is denied".)
+func runForegroundReporter(parentPID int) {
+	const (
+		pollInterval   = 10 * time.Second
+		endpointURL    = "http://" + localipc.Address + "/v1/foreground"
+		maxConsecFails = 12
+	)
+	_ = parentPID
+	// A dedicated transport with no environment proxy: this is loopback IPC
+	// and must never be routed anywhere.
+	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{}}
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+	fails := 0
+	for range ticker.C {
+		body, _ := json.Marshal(localipc.ForegroundReport{App: tracker.ForegroundProcessName()})
+		req, err := http.NewRequest(http.MethodPost, endpointURL, bytes.NewReader(body))
+		if err != nil {
+			continue
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			if fails++; fails >= maxConsecFails {
+				return
+			}
+			continue
+		}
+		resp.Body.Close()
+		fails = 0
+	}
 }
