@@ -127,7 +127,7 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Guard bootstrap build muvaffaqiyatsiz." }
   Assert-GuiExecutable $bootstrapExe
 
-  New-VersionResource (Join-Path $agentRoot "cmd\desktop\resource.syso") (Join-Path $agentRoot "cmd\agent\guard.manifest") "ChaqimchiAIGuardDesktop" "ChaqimchiAI Guard Desktop.exe" "Parental Control Status"
+  New-VersionResource (Join-Path $agentRoot "cmd\desktop\resource.syso") (Join-Path $agentRoot "cmd\desktop\desktop.manifest") "ChaqimchiAIGuardDesktop" "ChaqimchiAI Guard Desktop.exe" "Parental Control Status"
   go build -trimpath -ldflags "-H=windowsgui" -o $desktopExe ./cmd/desktop
   if ($LASTEXITCODE -ne 0) { throw "Guard Desktop build muvaffaqiyatsiz." }
   Assert-GuiExecutable $desktopExe

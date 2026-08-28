@@ -3,16 +3,13 @@
 package ui
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"image/png"
-	"log"
-	"sync"
 	"syscall"
 	"time"
 
 	"github.com/lxn/walk"
+	d "github.com/lxn/walk/declarative"
 	"github.com/lxn/win"
 	qrcode "github.com/skip2/go-qrcode"
 )
@@ -21,123 +18,107 @@ import (
 // window, then waits for the parent app to complete pairing. wait's second
 // argument is called on every failed poll (e.g. no internet) so the window
 // can tell the user why nothing is happening instead of just counting down.
+// onLinked runs the actual service install once the parent has linked the
+// device; its callback updates the visible status line.
 func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.Time, wait func(context.Context, func(error)) error, onLinked func(func(string)) error) error {
-	pngBytes, err := qrcode.Encode(qrPayload, qrcode.Medium, 240)
+	// qrDIP is the on-screen box; the source bitmap is rendered larger so it
+	// stays crisp after walk scales it for the monitor's DPI.
+	const qrDIP = 176
+	qr, err := qrcode.New(qrPayload, qrcode.Medium)
 	if err != nil {
-		return fmt.Errorf("creating QR code: %w", err)
+		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
 	}
-	img, err := png.Decode(bytes.NewReader(pngBytes))
+	qr.DisableBorder = false
+	bmp, err := walk.NewBitmapFromImage(qr.Image(qrDIP * 3))
 	if err != nil {
-		return fmt.Errorf("reading QR code: %w", err)
-	}
-	bmp, err := walk.NewBitmapFromImage(img)
-	if err != nil {
-		return err
+		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
 	}
 	defer bmp.Dispose()
 
-	// A MainWindow eagerly creates toolbar/statusbar tooltip controls. On some
-	// Windows builds that initialization fails with TTM_ADDTOOL, even though
-	// the enrollment UI does not need either control. A fixed-size dialog keeps
-	// the same visible flow without those extra controls.
-	mw, err := walk.NewDialogWithFixedSize(nil)
-	if err != nil {
-		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
-	}
-	mw.SetTitle("ChaqimchiAI Guard — Qurilmani bog‘lash")
-	mw.SetSize(walk.Size{Width: 520, Height: 520})
-	box := walk.NewVBoxLayout()
-	box.SetMargins(walk.Margins{HNear: 28, VNear: 24, HFar: 28, VFar: 24})
-	box.SetSpacing(12)
-	mw.SetLayout(box)
-	var controlErr error
-	add := func(text string) *walk.Label {
-		l, createErr := walk.NewLabel(mw)
-		if createErr != nil {
-			controlErr = createErr
-			return nil
-		}
-		l.SetText(text)
-		return l
-	}
-	add("Qurilmani ota-ona ilovasiga ulang")
-	add("Ota-ona ilovasida QR kodni skaner qiling yoki quyidagi kodni kiriting.")
-	iv, err := walk.NewImageView(mw)
-	if err != nil {
-		mw.Dispose()
-		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
-	}
-	// ImageViewModeIdeal (the default) sizes itself from the bitmap's native
-	// pixel dimensions reinterpreted at the widget's DPI, and isn't
-	// growable/shrinkable in the surrounding VBoxLayout — on a scaled
-	// display, or when the fixed-size dialog's content doesn't fit, that
-	// leaves the QR blank. Zoom mode always fits the image into whatever
-	// bounds the layout actually gives the widget, which is what
-	// SetMinMaxSize below reserves.
-	iv.SetMode(walk.ImageViewModeZoom)
-	iv.SetMinMaxSize(walk.Size{Width: 240, Height: 240}, walk.Size{Width: 240, Height: 240})
-	iv.SetImage(bmp)
-	codeLabel := add("Bog‘lash kodi: " + code)
-	status := add("")
-	if controlErr != nil {
-		mw.Dispose()
-		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
-	}
-	progress, err := walk.NewProgressBar(mw)
-	if err != nil {
-		mw.Dispose()
-		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
-	}
-	if err := progress.SetMarqueeMode(true); err != nil {
-		mw.Dispose()
-		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
-	}
-	font, _ := walk.NewFont("Segoe UI", 18, walk.FontBold)
-	codeLabel.SetFont(font)
-	cancel, err := walk.NewPushButton(mw)
-	if err != nil || controlErr != nil {
-		mw.Dispose()
-		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
-	}
-	cancel.SetText("Bekor qilish")
 	ctx, stop := context.WithCancel(ctx)
 	defer stop()
-	cancel.Clicked().Attach(func() { stop(); mw.Close(walk.DlgCmdCancel) })
+
+	var (
+		dlg       *walk.Dialog
+		statusLbl *walk.Label
+		bar       *walk.ProgressBar
+		cancelBtn *walk.PushButton
+	)
 	completed := make(chan struct{})
 
-	var connMu sync.Mutex
-	var connProblem bool
-	setConnProblem := func(v bool) {
-		connMu.Lock()
-		connProblem = v
-		connMu.Unlock()
+	err = d.Dialog{
+		AssignTo:   &dlg,
+		Title:      "ChaqimchiAI Guard — Qurilmani bog‘lash",
+		Icon:       brandIcon(),
+		Background: solid(colorCanvas),
+		FixedSize:  true,
+		Size:       d.Size{Width: 432, Height: 524},
+		Layout:     d.VBox{Margins: d.Margins{Left: 26, Top: 20, Right: 26, Bottom: 16}, Spacing: 8},
+		Children: []d.Widget{
+			brandRow(),
+			hairline(),
+			d.Label{Text: "OILAGA  BOG‘LASH", Font: fontOf(8, true), TextColor: colorAccent},
+			d.Label{Text: "Qurilmani hisobingizga bog‘lang", Font: fontOf(14, true), TextColor: colorInk},
+			d.TextLabel{
+				Text: "Ota-ona telefonidagi ChaqimchiAI Family ilovasida “Qurilma qo‘shish”ni oching va QR kodni skaner qiling — yoki 6 xonali kodni kiriting.",
+				Font: fontOf(9, false), TextColor: colorMuted, MinSize: d.Size{Width: 372},
+			},
+			d.Composite{
+				Background: solid(colorCard),
+				Border:     true,
+				MinSize:    d.Size{Height: qrDIP + 26},
+				MaxSize:    d.Size{Height: qrDIP + 26},
+				Layout:     d.HBox{Margins: d.Margins{Left: 13, Top: 13, Right: 13, Bottom: 13}},
+				Children: []d.Widget{
+					d.HSpacer{},
+					d.ImageView{Image: bmp, Mode: d.ImageViewModeZoom, MinSize: d.Size{Width: qrDIP, Height: qrDIP}, MaxSize: d.Size{Width: qrDIP, Height: qrDIP}},
+					d.HSpacer{},
+				},
+			},
+			d.Label{Text: spacedCode(code), Font: fontOf(21, true), TextColor: colorInk, Alignment: d.AlignHCenterVNear},
+			d.Label{AssignTo: &statusLbl, Font: fontOf(9, false), TextColor: colorMuted, Alignment: d.AlignHCenterVNear},
+			d.ProgressBar{AssignTo: &bar, MarqueeMode: true, MinSize: d.Size{Height: 4}, MaxSize: d.Size{Height: 4}},
+			d.VSpacer{},
+			d.Composite{
+				Layout: d.HBox{MarginsZero: true},
+				Children: []d.Widget{
+					d.PushButton{AssignTo: &cancelBtn, Text: "Bekor qilish", MinSize: d.Size{Width: 104, Height: 28}, OnClicked: func() { stop(); dlg.Cancel() }},
+					d.HSpacer{},
+				},
+			},
+		},
+	}.Create(nil)
+	if err != nil {
+		return showEnrollmentFallback(ctx, code, qrPayload, expiresAt, wait, onLinked)
 	}
-	hasConnProblem := func() bool {
-		connMu.Lock()
-		defer connMu.Unlock()
-		return connProblem
+	dlg.SetCancelButton(cancelBtn)
+
+	setStatus := func(s string, c walk.Color) {
+		dlg.Synchronize(func() {
+			statusLbl.SetTextColor(c)
+			statusLbl.SetText(s)
+		})
 	}
 
+	// Countdown + connectivity state.
+	var connProblem bool
 	go func() {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 		for {
 			remaining := time.Until(expiresAt)
 			if remaining <= 0 {
-				mw.Synchronize(func() {
-					status.SetText("Kod muddati tugadi. Yangi kod olinmoqda...")
-					time.AfterFunc(1200*time.Millisecond, func() { mw.Synchronize(func() { mw.Close(walk.DlgCmdCancel) }) })
-				})
+				setStatus("Kod muddati tugadi — yangi kod olinmoqda...", colorMuted)
+				time.AfterFunc(1200*time.Millisecond, func() { dlg.Synchronize(func() { dlg.Cancel() }) })
 				stop()
 				return
 			}
-			minutes := int(remaining / time.Minute)
-			seconds := int(remaining/time.Second) % 60
-			text := fmt.Sprintf("Bog‘lanish kutilmoqda — %02d:%02d qoldi", minutes, seconds)
-			if hasConnProblem() {
-				text = "Internetga ulanib bo‘lmayapti. Ulanishni tekshiring — qayta urinilmoqda... (" + fmt.Sprintf("%02d:%02d", minutes, seconds) + ")"
+			mm, ss := int(remaining/time.Minute), int(remaining/time.Second)%60
+			text := fmt.Sprintf("Bog‘lanish kutilmoqda — %02d:%02d qoldi", mm, ss)
+			if connProblem {
+				text = fmt.Sprintf("Internetga ulanib bo‘lmayapti, qayta urinilmoqda... (%02d:%02d)", mm, ss)
 			}
-			mw.Synchronize(func() { status.SetText(text) })
+			setStatus(text, colorMuted)
 			select {
 			case <-ctx.Done():
 				return
@@ -147,59 +128,63 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 			}
 		}
 	}()
+
+	// Wait for the parent link, then run the install.
 	go func() {
-		err := wait(ctx, func(pollErr error) {
-			log.Printf("enrollment poll error: %v", pollErr)
-			setConnProblem(true)
-		})
-		mw.Synchronize(func() {
-			if err == nil {
-				close(completed)
-				mw.Synchronize(func() { status.SetText("✓ Qurilma bog‘landi. Xizmat sozlanmoqda...") })
-				go func() {
-					installErr := onLinked(func(message string) {
-						mw.Synchronize(func() { status.SetText(message) })
-					})
-					mw.Synchronize(func() {
-						if installErr != nil {
-							_ = progress.SetMarqueeMode(false)
-							status.SetText("O‘rnatishda xatolik: " + installErr.Error())
-							return
-						}
-						_ = progress.SetMarqueeMode(false)
-						status.SetText("✓ Tayyor. ChaqimchiAI Guard ishlamoqda.")
-						time.AfterFunc(1500*time.Millisecond, func() { mw.Synchronize(func() { mw.Close(walk.DlgCmdOK) }) })
-					})
-				}()
-			} else if ctx.Err() == nil {
-				status.SetText("Bog‘lanishda xatolik: " + err.Error())
+		waitErr := wait(ctx, func(error) { connProblem = true })
+		dlg.Synchronize(func() {
+			if waitErr != nil {
+				if ctx.Err() == nil {
+					setStatus("Bog‘lanishda xatolik: "+waitErr.Error(), colorDanger)
+				}
+				return
 			}
+			close(completed)
+			setStatus("✓ Qurilma bog‘landi. Xizmat sozlanmoqda...", colorOK)
+			go func() {
+				installErr := onLinked(func(msg string) { setStatus(msg, colorMuted) })
+				dlg.Synchronize(func() {
+					_ = bar.SetMarqueeMode(false)
+					if installErr != nil {
+						setStatus("O‘rnatishda xatolik: "+installErr.Error(), colorDanger)
+						return
+					}
+					setStatus("✓ Tayyor. ChaqimchiAI Guard ishlamoqda.", colorOK)
+					time.AfterFunc(1600*time.Millisecond, func() { dlg.Synchronize(func() { dlg.Accept() }) })
+				})
+			}()
 		})
 	}()
-	mw.Run()
+
+	dlg.Run()
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
 	return nil
 }
 
-// showEnrollmentFallback keeps pairing usable when the optional Walk window
-// cannot initialize a Windows tooltip control (TTM_ADDTOOL). Manual code
-// pairing does not depend on that control and is sufficient for the MVP.
+// spacedCode turns "482913" into "482 913" so it reads and dictates cleanly.
+func spacedCode(code string) string {
+	if len(code) == 6 {
+		return code[:3] + " " + code[3:]
+	}
+	return code
+}
+
+// showEnrollmentFallback keeps pairing usable if the Walk window can't be
+// created at all (missing ComCtl32, locked-down session). Manual code entry
+// still works; it just isn't pretty.
 func showEnrollmentFallback(ctx context.Context, code, qrPayload string, expiresAt time.Time, wait func(context.Context, func(error)) error, onLinked func(func(string)) error) error {
 	waitResult := make(chan error, 1)
 	go func() {
-		waitResult <- wait(ctx, func(pollErr error) { log.Printf("enrollment poll error: %v", pollErr) })
+		waitResult <- wait(ctx, func(error) {})
 	}()
 
 	title := "ChaqimchiAI Guard — Qurilmani bog‘lash"
 	message := fmt.Sprintf(
-		"QR oynasini ochib bo‘lmadi, lekin pairing davom etmoqda.\n\n"+
-			"Parent ilovasida 6 xonali kodni qo‘lda kiriting:\n\n%s\n\n"+
-			"QR payload: %s\n\nKod %s gacha amal qiladi.",
-		code,
-		qrPayload,
-		expiresAt.Local().Format("15:04:05"),
+		"Ota-ona ilovasida quyidagi 6 xonali kodni kiriting:\n\n        %s\n\n"+
+			"Kod %s gacha amal qiladi. Bu oynani ochiq qoldiring.",
+		spacedCode(code), expiresAt.Local().Format("15:04"),
 	)
 	messageDone := make(chan struct{})
 	go func() {
@@ -207,11 +192,12 @@ func showEnrollmentFallback(ctx context.Context, code, qrPayload string, expires
 		close(messageDone)
 	}()
 
-	closeMessageBox := func() {
+	// The MsgBox is modal, so once pairing finishes elsewhere we have to
+	// close it by handle to let the flow continue.
+	closeBox := func() {
 		caption := syscall.StringToUTF16Ptr(title)
 		for attempt := 0; attempt < 20; attempt++ {
-			hwnd := win.FindWindow(nil, caption)
-			if hwnd != 0 {
+			if hwnd := win.FindWindow(nil, caption); hwnd != 0 {
 				win.PostMessage(hwnd, win.WM_CLOSE, 0, 0)
 				return
 			}
@@ -221,7 +207,7 @@ func showEnrollmentFallback(ctx context.Context, code, qrPayload string, expires
 
 	select {
 	case err := <-waitResult:
-		closeMessageBox()
+		closeBox()
 		<-messageDone
 		if err == nil {
 			if installErr := onLinked(func(string) {}); installErr != nil {
@@ -230,7 +216,7 @@ func showEnrollmentFallback(ctx context.Context, code, qrPayload string, expires
 		}
 		return err
 	case <-ctx.Done():
-		closeMessageBox()
+		closeBox()
 		<-messageDone
 		return ctx.Err()
 	}
