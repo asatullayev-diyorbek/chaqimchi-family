@@ -99,6 +99,7 @@ function OverviewContent() {
   }));
   
   const hasLimitRule = limitMinutes !== null;
+  const blockedAppCount = rules.filter((r) => r.rule_type === "blocked_app").length;
 
   const showEmptyState = !summaryLoading && (!devices?.length || !summary);
 
@@ -132,12 +133,12 @@ function OverviewContent() {
 
         <div className="stat-card">
           <div className="icon blue">
-            <iconify-icon icon="solar:chart-square-linear"></iconify-icon>
+            <iconify-icon icon="solar:widget-2-linear"></iconify-icon>
           </div>
           <div>
-            <span>Faoliyat balli</span>
-            <h2>85 / 100</h2>
-            <small>+8%</small>
+            <span>Ilovalar</span>
+            <h2>{summary?.top_apps.length ?? 0} ta</h2>
+            <small>Bugun ishlatilgan</small>
           </div>
         </div>
 
@@ -289,40 +290,20 @@ function OverviewContent() {
 
           <div className="rule">
             <span className="rule-icon">
-              <iconify-icon icon="solar:shield-check-linear"></iconify-icon>
+              <iconify-icon icon="solar:lock-keyhole-linear"></iconify-icon>
             </span>
             <div className="rule-info">
-              <span>Xavfsiz qidiruv</span>
-              <small>Faol</small>
+              <span>Bloklangan ilovalar</span>
+              <small>{blockedAppCount ? `${blockedAppCount} ta` : "Yo'q"}</small>
             </div>
-            <input type="checkbox" readOnly checked={true} />
+            <input type="checkbox" readOnly checked={blockedAppCount > 0} />
           </div>
 
-          <div className="rule">
-            <span className="rule-icon">
-              <iconify-icon icon="solar:moon-linear"></iconify-icon>
-            </span>
-            <div className="rule-info">
-              <span>Tungi rejim</span>
-              <small>22:00 - 07:00</small>
-            </div>
-            <input type="checkbox" readOnly checked={true} />
-          </div>
+          <Link href={`/rules?device=${summary?.device_id ?? ""}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, color: "var(--brand-blue)", fontWeight: 600, textDecoration: "none", padding: "0 4px" }}>
+            <iconify-icon icon="solar:settings-linear"></iconify-icon>
+            Qoidalarni sozlash
+          </Link>
         </div>
-      </section>
-
-      {/* AI */}
-      <section className="ai-card">
-        <div className="ai-left">
-          <iconify-icon icon="solar:stars-linear"></iconify-icon>
-          <div>
-            <h3>AI tavsiyasi</h3>
-            <p>
-              Farzandingiz bu hafta ta'lim va dasturlashga ko'proq vaqt ajratmoqda.
-            </p>
-          </div>
-        </div>
-        <Link href="#">Batafsil →</Link>
       </section>
     </AppShell>
   );

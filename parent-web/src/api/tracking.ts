@@ -23,6 +23,8 @@ export type DeviceSummary = {
   top_apps: TopApp[];
   device_status: "online" | "offline";
   last_sync: string | null;
+  battery_percent: number | null;
+  battery_updated_at: string | null;
   breakdown: DayBreakdown[];
 };
 
@@ -82,10 +84,13 @@ export async function getActivityHistory(
   return apiFetch(`/api/tracking/history/${deviceId}/?${params.toString()}`);
 }
 
-export async function renameDevice(deviceId: string, childName: string): Promise<Device> {
+export async function updateDevice(
+  deviceId: string,
+  patch: { child_name?: string; child_id?: string | null },
+): Promise<Device> {
   return apiFetch(`/api/devices/${deviceId}/`, {
     method: "PATCH",
-    body: JSON.stringify({ child_name: childName }),
+    body: JSON.stringify(patch),
   });
 }
 

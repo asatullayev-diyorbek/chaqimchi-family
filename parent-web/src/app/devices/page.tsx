@@ -58,6 +58,8 @@ export default function DevicesPage() {
 
   const linkedDevices = devices?.filter((device) => device.status === "linked");
   const visibleDevices = childFilterId ? linkedDevices?.filter((device) => device.child_id === childFilterId) : linkedDevices;
+  const totalScreenMinutes = Object.values(summaries).reduce((sum, s) => sum + (s?.total_screen_minutes ?? 0), 0);
+  const onlineCount = Object.values(summaries).filter((s) => s?.device_status === "online").length;
 
   async function load() {
     try {
@@ -180,18 +182,8 @@ export default function DevicesPage() {
           </div>
           <div>
             <span>Bugungi umumiy ekran vaqti</span>
-            <h2>---</h2>
+            <h2>{Math.floor(totalScreenMinutes / 60) ? `${Math.floor(totalScreenMinutes / 60)} soat ` : ""}{totalScreenMinutes % 60} min</h2>
             <small>Barcha qurilmalar</small>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="icon red">
-            <iconify-icon icon="solar:shield-cross-linear"></iconify-icon>
-          </div>
-          <div>
-            <span>Bloklangan urinishlar</span>
-            <h2>---</h2>
-            <small>Bugun</small>
           </div>
         </div>
         <div className="stat-card">
@@ -201,7 +193,7 @@ export default function DevicesPage() {
           <div>
             <span>Bog'langan qurilmalar</span>
             <h2>{linkedDevices?.length || 0} ta</h2>
-            <small>Aktiv</small>
+            <small>{onlineCount} ta onlayn</small>
           </div>
         </div>
 
@@ -495,16 +487,15 @@ export default function DevicesPage() {
                 <th>Qurilma</th>
                 <th>Operatsion tizim</th>
                 <th>Egasi</th>
-                <th>Foydalanish vaqti</th>
+                <th>Bugungi ekran vaqti</th>
                 <th>Batareya</th>
-                <th>Saqlash</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {devices === null && (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={6}>
                     <div className="device-table-loading" aria-live="polite">
                       <div className="skeleton skeleton-row"></div>
                       <p>Qurilmalar yuklanmoqda...</p>
@@ -514,11 +505,13 @@ export default function DevicesPage() {
               )}
               {visibleDevices?.map((device) => {
                 const child = children.find(c => c.id === device.child_id);
-                const isOnline = device.status === "linked";
-                const minutesUsed = summaries[device.id]?.total_screen_minutes ?? 0;
+                const summary = summaries[device.id];
+                const isOnline = summary?.device_status === "online";
+                const minutesUsed = summary?.total_screen_minutes ?? 0;
                 const usagePercent = Math.min((minutesUsed / (24 * 60)) * 100, 100);
                 const usageHours = Math.floor(minutesUsed / 60);
                 const usageMinutes = minutesUsed % 60;
+                const battery = summary?.battery_percent ?? null;
 
                 return (
                   <tr key={device.id} suppressHydrationWarning>
@@ -541,7 +534,7 @@ export default function DevicesPage() {
                         <OsIcon platform={device.platform} />
                         <div>
                           <strong>{device.platform === "windows" ? "Windows" : device.platform}</strong>
-                          <small>Versiya kutilmoqda</small>
+                          <small>{device.platform === "windows" ? "PC" : "Mobil"}</small>
                         </div>
                       </div>
                     </td>
@@ -566,12 +559,8 @@ export default function DevicesPage() {
                     <td>
                       <span className="battery">
                         <iconify-icon icon="solar:battery-low-linear"></iconify-icon>
-                        —
+                        {battery !== null ? `${battery}%` : "—"}
                       </span>
-                    </td>
-                    <td>
-                      <strong>—</strong>
-                      <small>Ma'lumot kutilmoqda</small>
                     </td>
                     <td>
                       <Link href={`/devices/${device.id}`} className="btn-view" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
@@ -584,7 +573,7 @@ export default function DevicesPage() {
               })}
               {visibleDevices && visibleDevices.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{textAlign: 'center', padding: '40px 0', color: 'var(--muted)'}}>
+                  <td colSpan={6} style={{textAlign: 'center', padding: '40px 0', color: 'var(--muted)'}}>
                     Hali bog'langan qurilmalar yo'q.
                   </td>
                 </tr>

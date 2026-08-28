@@ -22,16 +22,18 @@ export default function TelegramCompletePage() {
       router.replace("/login");
       return;
     }
-    try {
-      const raw = sessionStorage.getItem("telegram_prefill");
-      if (raw) {
-        const prefill = JSON.parse(raw) as { username?: string; full_name?: string };
-        setUsername(prefill.username || "");
-        setFullName(prefill.full_name || "");
+    setTimeout(() => {
+      try {
+        const raw = sessionStorage.getItem("telegram_prefill");
+        if (raw) {
+          const prefill = JSON.parse(raw) as { username?: string; full_name?: string };
+          setUsername(prefill.username || "");
+          setFullName(prefill.full_name || "");
+        }
+      } catch {
+        // No prefill available — fields stay editable and empty.
       }
-    } catch {
-      // No prefill available — fields stay editable and empty.
-    }
+    }, 0);
   }, [router]);
 
   async function onSubmit(e: React.FormEvent) {
