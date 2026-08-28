@@ -14,6 +14,19 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
 
 ## Hozirgi holat — 2026-08-28 yangilanishi (real Windows)
 
+### Parent-web dashboard tuzatishlari (real foydalanuvchi test'idan) — deploy kutmoqda
+
+- [x] **Farzand rasmi ko'rinmasdi:** `/media/` faqat `DEBUG=True` da route qilinardi → PA (`DEBUG=0`) da 404. `config/urls.py` da `django.views.static.serve` bilan doim serve qilinadi (DEBUG=0 bilan test PASS). ⚠️ PA dashboard'da `/media/` uchun konfliktli static mapping bo'lmasligi kerak.
+- [x] **"Qurilmani uzish" ishlamasdi:** `/devices/[id]` sahifasidagi tugmada `onClick` yo'q edi (`unlinkDevice` API hech qayerda chaqirilmagan). Endi confirm + `unlinkDevice()` + `/devices` ga qaytadi. Backend `DELETE` allaqachon ishlaydi (prod'da 204 test PASS).
+- [x] **Dashboard'dagi mock data olib tashlandi:**
+  - `/devices/[id]`: soxta "saqlash" tugmasi, "Qo'lda sinxronlash", butun Settings tab (soxta toggle'lar), Model/IP/MAC/Internet/Versiya qatorlari; edit form endi `updateDevice()` ni haqiqatan chaqiradi (rename + `child_id` reassign).
+  - `/devices`: `---` o'rniga haqiqiy umumiy ekran vaqti + onlayn son; batareya ustuni `summary.battery_percent` dan; bo'sh "Saqlash" ustuni va "Versiya kutilmoqda" olib tashlandi.
+  - `/overview`: qattiq yozilgan "Faoliyat balli 85/100", soxta "Xavfsiz qidiruv"/"Tungi rejim" qoidalari, "AI tavsiyasi" bloki (AI MVP'da yo'q) olib tashlandi.
+- [x] **Batareya endi haqiqiy:** summary endpoint eng oxirgi `device_state` event'dan `battery_percent` qaytaradi (yo'q/`-1` bo'lsa `null` → UI batareyani yashiradi).
+- [x] **Qurilmani boshqa farzandga o'tkazish:** `DeviceDetailView` PATCH endi `child_id` ni ham qabul qiladi (family-scoped).
+- [x] Backend testlari: **+5 yangi, 46/46 PASS**. Parent-web lint 0 error, build PASS.
+- [ ] **Deploy kerak:** backend → PythonAnywhere (git pull + reload); parent-web → Vercel (branch merge yoki push). Backend deploy bo'lmaguncha rasm/batareya/reassign ishlamaydi (unlink esa hoziroq ishlaydi).
+
 - [x] Ish real Windows 11 kompyuterga ko'chirildi (`Windows-da-davom-etish.md` bo'yicha). Go 1.27.0 zip orqali o'rnatildi (`C:\Users\Robbit\gosdk`, admin talab qilmaydi — winget MSI elevation'da osilib qoldi).
 - [x] **Real Tracking E2E PASS** (`hisobot.md` §18): Guard agent real Windows'da foreground app'ni aniqladi → SQLite buffer → `POST /api/tracking/ingest/` (production) → `summary`/`history` → Dashboard. Bu edi loyihaning asosiy ochiq P0 bandi.
 - [x] Go paket testlari va uchala Windows binary buildi (`cmd/agent`, `cmd/installer`, `cmd/desktop`) real Windows'da PASS.
