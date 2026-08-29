@@ -56,6 +56,13 @@ class SummarySerializer(serializers.Serializer):
     breakdown = DayBreakdownSerializer(many=True)
 
 
+class SiteUsageSerializer(serializers.Serializer):
+    domain = serializers.CharField()
+    minutes = serializers.IntegerField()
+    visits = serializers.IntegerField()
+    last_visited_at = serializers.DateTimeField(allow_null=True)
+
+
 class ActivityHistorySerializer(serializers.Serializer):
     id = serializers.UUIDField()
     event_type = serializers.CharField()

@@ -1,13 +1,13 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { ActivityHistoryItem, SummaryRange, TimelineSegment, getActivityHistory, getActivityTimeline, getSummary } from "@/api/tracking";
+import { ActivityHistoryItem, SiteUsage, SummaryRange, TimelineSegment, getActivityHistory, getActivityTimeline, getSites, getSummary } from "@/api/tracking";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useSelectedDevice } from "@/hooks/useSelectedDevice";
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
 import DayTimeline from "@/components/DayTimeline";
-import DeviceSelector from "@/components/DeviceSelector";
+import DeviceSelector, { deviceLabel } from "@/components/DeviceSelector";
 import ScreenTimeChart from "@/components/ScreenTimeChart";
 import { getRules, getDailyLimitMinutes, Rule } from "@/api/rules";
 import { appDisplay } from "@/lib/appDisplay";
@@ -56,6 +56,7 @@ function ActivityContent() {
   const [summaryRetry, setSummaryRetry] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [appsPage, setAppsPage] = useState(0);
+  const [sitesPage, setSitesPage] = useState(0);
   const [tab, setTab] = useState<"screen" | "apps" | "history" | "sites">("screen");
   const [historyOffset, setHistoryOffset] = useState(0);
   const [historyDate, setHistoryDate] = useState(todayISO);
@@ -94,6 +95,17 @@ function ActivityContent() {
   const historyLoading = historyQuery.loading;
   const historyError = historyQuery.error !== null;
 
+  // Sites are device-scoped like everything else: two devices browsing the
+  // same site in the same hour must not be summed into one bogus total.
+  const sitesQuery = useApiQuery(
+    () => getSites(activeDeviceId!, { range }),
+    [activeDeviceId, range],
+    { enabled: Boolean(activeDeviceId) && tab === "sites" },
+  );
+  const sites: SiteUsage[] = sitesQuery.data?.results ?? [];
+  const sitesLoading = sitesQuery.loading;
+  const sitesError = sitesQuery.error !== null;
+
   const timelineQuery = useApiQuery(
     () => getActivityTimeline(activeDeviceId!, { date: historyDate }),
     [activeDeviceId, historyDate],
@@ -108,6 +120,9 @@ function ActivityContent() {
 
   const sortedApps = summary ? [...summary.top_apps].sort((a, b) => b.minutes - a.minutes) : [];
   const appsPageC = Math.min(appsPage, Math.max(0, Math.ceil(sortedApps.length / PAGE_SIZE) - 1));
+  // Clamp rather than reset on change: switching range shortens the list,
+  // and a stale page index would otherwise render an empty table.
+  const sitesPageC = Math.min(sitesPage, Math.max(0, Math.ceil(sites.length / PAGE_SIZE) - 1));
 
   return (
     <>
@@ -330,10 +345,68 @@ function ActivityContent() {
             )}
 
             {tab === "sites" && (
-              <div className="card" style={{padding: 30, textAlign: 'center', color: 'var(--muted)'}}>
-                Saytlar ro'yxati hali mavjud emas — agent hozircha faqat ilova
-                ishlatilishini (app_usage) yuboradi, sayt darajasidagi kuzatuv
-                (browser_domain) hali qo'shilmagan.
+              <div className="card" style={{ padding: 20 }}>
+                <div className="card-header" style={{ marginBottom: 14 }}>
+                  <h3>
+                    Web-saytlar
+                    {device ? ` — ${deviceLabel(device)}` : ""}
+                  </h3>
+                  <div className="range-switch" role="group" aria-label="Davr tanlash">
+                    {(["week", "month"] as SummaryRange[]).map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        className={`range-chip ${range === r ? "active" : ""}`}
+                        aria-pressed={range === r}
+                        onClick={() => setRange(r)}
+                      >
+                        {RANGE_LABELS[r]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {sitesLoading && <p style={{ color: "var(--muted)" }}>Saytlar yuklanmoqda...</p>}
+                {sitesError && (
+                  <p style={{ color: "var(--danger, #dc2626)" }}>
+                    Saytlarni yuklab bo&apos;lmadi. Qayta urinib ko&apos;ring.
+                  </p>
+                )}
+                {!sitesLoading && !sitesError && sites.length === 0 && (
+                  <p style={{ color: "var(--muted)" }}>
+                    Bu davrda sayt tashrifi qayd etilmagan.
+                  </p>
+                )}
+                {!sitesLoading && !sitesError && sites.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    {sites.slice(sitesPageC * PAGE_SIZE, sitesPageC * PAGE_SIZE + PAGE_SIZE).map((site) => (
+                      <div
+                        key={site.domain}
+                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(37,99,235,.08)" }}
+                      >
+                        <span className="site-badge" aria-hidden="true">
+                          <iconify-icon icon="solar:global-linear"></iconify-icon>
+                        </span>
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {site.domain}
+                          </span>
+                          <span style={{ fontSize: 12, color: "var(--muted)" }}>{site.visits} marta</span>
+                        </span>
+                        <em style={{ color: "var(--muted)", fontStyle: "normal", fontSize: 13, fontWeight: 600 }}>
+                          {formatMinutes(site.minutes)}
+                        </em>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {!sitesLoading && !sitesError && sites.length > PAGE_SIZE && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+                    <button className="btn-view" disabled={sitesPageC === 0} onClick={() => setSitesPage(sitesPageC - 1)}>← Oldingi</button>
+                    <span style={{ color: "var(--muted)", fontSize: 13 }}>{sitesPageC + 1} / {Math.ceil(sites.length / PAGE_SIZE)}</span>
+                    <button className="btn-view" disabled={(sitesPageC + 1) * PAGE_SIZE >= sites.length} onClick={() => setSitesPage(sitesPageC + 1)}>Keyingi →</button>
+                  </div>
+                )}
               </div>
             )}
           </>

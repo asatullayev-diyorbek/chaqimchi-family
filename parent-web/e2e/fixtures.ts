@@ -56,6 +56,26 @@ export const SUMMARY = {
   })),
 };
 
+/**
+ * Browsing differs per device on purpose: the suite proves the Web-saytlar
+ * tab shows the selected device's sites rather than a pooled list.
+ */
+export const SITES: Record<string, unknown> = {
+  d1: {
+    device_id: "d1", date: SUMMARY.date, total_minutes: 95, count: 2,
+    results: [
+      { domain: "youtube.com", minutes: 62, visits: 14, last_visited_at: minutesAgo(20) },
+      { domain: "wikipedia.org", minutes: 33, visits: 4, last_visited_at: minutesAgo(120) },
+    ],
+  },
+  d2: {
+    device_id: "d2", date: SUMMARY.date, total_minutes: 41, count: 1,
+    results: [{ domain: "instagram.com", minutes: 41, visits: 9, last_visited_at: minutesAgo(30) }],
+  },
+};
+
+const EMPTY_SITES = { device_id: "", date: SUMMARY.date, total_minutes: 0, results: [], count: 0 };
+
 /** 14 alerts so the 10-per-page pagination has a second page to show. */
 export const ALERTS = Array.from({ length: 14 }, (_, i) => ({
   id: `a${i}`,
@@ -81,6 +101,7 @@ export async function mockApi(page: Page, overrides: Record<string, unknown> = {
     "/api/tracking/summary/": SUMMARY,
     "/api/tracking/history/": { results: [], count: 0, limit: 10, offset: 0, next_offset: null },
     "/api/tracking/timeline/": { date: SUMMARY.date, segments: [] },
+    "/api/tracking/sites/": (deviceId: string) => SITES[deviceId] ?? EMPTY_SITES,
     "/api/alerts/": ALERTS,
     "/api/rules/": [],
     ...overrides,
@@ -90,10 +111,16 @@ export async function mockApi(page: Page, overrides: Record<string, unknown> = {
     const path = new URL(route.request().url()).pathname;
     const key = Object.keys(routes).find((k) => path.startsWith(k));
     if (!key) return route.fulfill({ status: 404, body: "{}" });
+    // A device-scoped route answers per id, so a test can tell which device
+    // the page actually asked for instead of getting one shared blob.
+    const value = routes[key];
+    const body = typeof value === "function"
+      ? value(path.slice(key.length).split("/")[0])
+      : value;
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify(routes[key]),
+      body: JSON.stringify(body),
     });
   });
 }

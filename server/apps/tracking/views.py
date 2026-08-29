@@ -3,6 +3,7 @@ import binascii
 import logging
 from collections import defaultdict
 from datetime import datetime, time, timedelta
+from urllib.parse import urlsplit
 
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
@@ -20,7 +21,12 @@ from .models import EVENT_TYPES, ICON_EVENT_TYPE, DeviceAppIcon, Event, EventBat
 # Guard against a malformed or hostile agent: a 32x32 PNG is ~1-3 KB, so a
 # base64 payload over this is never a legitimate app icon.
 MAX_ICON_B64_LEN = 96 * 1024
-from .serializers import ActivityHistorySerializer, IngestSerializer, SummarySerializer
+from .serializers import (
+    ActivityHistorySerializer,
+    IngestSerializer,
+    SiteUsageSerializer,
+    SummarySerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +47,64 @@ def _day_bounds(first_date, last_date):
     start = timezone.make_aware(datetime.combine(first_date, time.min), tz)
     end = timezone.make_aware(datetime.combine(last_date, time.max), tz)
     return start, end
+
+
+def _owned_device(request, device_id):
+    """(device, None) when the caller's family owns it, else (None, Response).
+
+    Every read endpoint here is tenant-isolated identically: a parent may only
+    see devices in their own family, and an unknown id is a 404 either way.
+    """
+    if not isinstance(request.user, ParentUser):
+        return None, Response(
+            {"detail": "Parent autentifikatsiyasi talab qilinadi"},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+    device = get_object_or_404(ChildDevice, id=device_id)
+    if device.family_id != request.user.family_id:
+        return None, Response(
+            {"detail": "Bu qurilma sizning oilangizga tegishli emas"},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    return device, None
+
+
+def _event_minutes(payload: dict) -> float:
+    """How long one usage event lasted, in minutes.
+
+    duration_seconds is authoritative when the agent sends it; older agents
+    only sent the start/end pair, so fall back to the difference.
+    """
+    duration = payload.get("duration_seconds")
+    if isinstance(duration, (int, float)) and duration >= 0:
+        return duration / 60
+    started = parse_datetime(payload.get("started_at") or "")
+    ended = parse_datetime(payload.get("ended_at") or "")
+    if started and ended and ended > started:
+        return (ended - started).total_seconds() / 60
+    return 0
+
+
+def _normalize_domain(payload: dict) -> str:
+    """The registrable host from a browser_domain event, or "" if unusable.
+
+    Agents may send either a bare `domain` or a full `url`. Both are folded
+    to one lowercase host without `www.` or a port, so that "YouTube.com",
+    "www.youtube.com" and "youtube.com:443" are one row rather than three.
+    """
+    raw = (payload.get("domain") or "").strip()
+    if not raw:
+        url = (payload.get("url") or "").strip()
+        # urlsplit needs a scheme to treat the first segment as a host.
+        raw = urlsplit(url if "//" in url else f"//{url}").hostname or ""
+    raw = raw.strip().lower().rstrip(".")
+    if raw.startswith("www."):
+        raw = raw[4:]
+    # Reject anything that isn't plausibly a hostname: the payload is
+    # attacker-controlled and this string is rendered in the parent's UI.
+    if not raw or len(raw) > 253 or "/" in raw or " " in raw:
+        return ""
+    return raw
 
 
 def _store_app_icon(device, event: dict) -> bool:
@@ -191,6 +255,34 @@ RANGE_DAYS = {
 }
 
 
+def _parse_window(request):
+    """(dates, target_date, None) for ?date= and ?range=, else (…, Response).
+
+    `dates` is the full day list oldest-first, so a caller can build a
+    per-day breakdown without recomputing the range.
+    """
+    date_param = request.query_params.get("date")
+    if date_param:
+        target_date = parse_date(date_param)
+        if target_date is None:
+            return None, None, Response(
+                {"detail": "Noto'g'ri sana formati (YYYY-MM-DD kerak)"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        target_date = timezone.now().date()
+
+    range_param = request.query_params.get("range", "day")
+    if range_param not in RANGE_DAYS:
+        return None, None, Response(
+            {"detail": "range 'day', 'week' yoki 'month' bo'lishi kerak"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    num_days = RANGE_DAYS[range_param]
+    dates = [target_date - timedelta(days=offset) for offset in range(num_days - 1, -1, -1)]
+    return dates, target_date, None
+
+
 class SummaryView(APIView):
     """GET /api/tracking/summary/<device_id>/?date=YYYY-MM-DD&range=day|week|month
     — parent-authenticated.
@@ -204,38 +296,13 @@ class SummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, device_id):
-        if not isinstance(request.user, ParentUser):
-            return Response(
-                {"detail": "Parent autentifikatsiyasi talab qilinadi"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+        device, error = _owned_device(request, device_id)
+        if error:
+            return error
 
-        device = get_object_or_404(ChildDevice, id=device_id)
-        if device.family_id != request.user.family_id:
-            return Response(
-                {"detail": "Bu qurilma sizning oilangizga tegishli emas"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-
-        date_param = request.query_params.get("date")
-        if date_param:
-            target_date = parse_date(date_param)
-            if target_date is None:
-                return Response(
-                    {"detail": "Noto'g'ri sana formati (YYYY-MM-DD kerak)"},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-        else:
-            target_date = timezone.now().date()
-
-        range_param = request.query_params.get("range", "day")
-        if range_param not in RANGE_DAYS:
-            return Response(
-                {"detail": "range 'day', 'week' yoki 'month' bo'lishi kerak"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        num_days = RANGE_DAYS[range_param]
-        dates = [target_date - timedelta(days=offset) for offset in range(num_days - 1, -1, -1)]
+        dates, target_date, error = _parse_window(request)
+        if error:
+            return error
 
         # Fetch the whole requested range once. The previous implementation
         # performed one query per day plus one query per application for
@@ -254,13 +321,7 @@ class SummaryView(APIView):
         for event in events:
             payload = event.payload or {}
             app = payload.get("app_id") or payload.get("app") or "unknown"
-            duration_seconds = payload.get("duration_seconds")
-            if isinstance(duration_seconds, (int, float)) and duration_seconds >= 0:
-                minutes = duration_seconds / 60
-            else:
-                started = parse_datetime(payload.get("started_at") or "")
-                ended = parse_datetime(payload.get("ended_at") or "")
-                minutes = (ended - started).total_seconds() / 60 if started and ended and ended > started else 0
+            minutes = _event_minutes(payload)
             combined_minutes_per_app[app] += minutes
             daily_minutes[timezone.localtime(event.occurred_at, current_tz).date()] += minutes
             if app not in last_used_at or event.occurred_at > last_used_at[app]:
@@ -329,18 +390,9 @@ class ActivityHistoryView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, device_id):
-        if not isinstance(request.user, ParentUser):
-            return Response(
-                {"detail": "Parent autentifikatsiyasi talab qilinadi"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        device = get_object_or_404(ChildDevice, id=device_id)
-        if device.family_id != request.user.family_id:
-            return Response(
-                {"detail": "Bu qurilma sizning oilangizga tegishli emas"},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        device, error = _owned_device(request, device_id)
+        if error:
+            return error
 
         try:
             limit = int(request.query_params.get("limit", 50))
@@ -417,12 +469,9 @@ class TimelineView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, device_id):
-        if not isinstance(request.user, ParentUser):
-            return Response({"detail": "Parent autentifikatsiyasi talab qilinadi"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        device = get_object_or_404(ChildDevice, id=device_id)
-        if device.family_id != request.user.family_id:
-            return Response({"detail": "Bu qurilma sizning oilangizga tegishli emas"}, status=status.HTTP_403_FORBIDDEN)
+        device, error = _owned_device(request, device_id)
+        if error:
+            return error
 
         tz = timezone.get_current_timezone()
         date_param = request.query_params.get("date")
@@ -490,3 +539,70 @@ class TimelineView(APIView):
             for start, end, app_id, app_name, count, active in merged
         ]
         return Response({"date": target_date, "segments": [s for s in segments if s["end_minute"] > s["start_minute"]]})
+
+
+class SitesView(APIView):
+    """GET /api/tracking/sites/<device_id>/?date=YYYY-MM-DD&range=day|week|month
+
+    Browsing time per site for one device, newest range first.
+
+    Scoped to a single device on purpose, exactly like summary/history: a
+    child may have a laptop and a phone linked at once, and adding up the
+    minutes they spent on the same site from both would double-count any
+    period they used the two together. The parent picks a device instead.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, device_id):
+        device, error = _owned_device(request, device_id)
+        if error:
+            return error
+
+        dates, target_date, error = _parse_window(request)
+        if error:
+            return error
+
+        range_start, range_end = _day_bounds(dates[0], target_date)
+        events = Event.objects.filter(
+            device=device,
+            event_type="browser_domain",
+            occurred_at__gte=range_start,
+            occurred_at__lte=range_end,
+        ).only("payload", "occurred_at")
+
+        minutes_per_domain = defaultdict(float)
+        visits_per_domain = defaultdict(int)
+        last_visited_at = {}
+        for event in events:
+            payload = event.payload or {}
+            domain = _normalize_domain(payload)
+            if not domain:
+                # A browser_domain event we cannot attribute to a host is
+                # dropped rather than bucketed under a fake "unknown" row.
+                continue
+            minutes_per_domain[domain] += _event_minutes(payload)
+            visits_per_domain[domain] += 1
+            if domain not in last_visited_at or event.occurred_at > last_visited_at[domain]:
+                last_visited_at[domain] = event.occurred_at
+
+        results = [
+            {
+                "domain": domain,
+                "minutes": round(minutes),
+                "visits": visits_per_domain[domain],
+                "last_visited_at": last_visited_at.get(domain),
+            }
+            for domain, minutes in minutes_per_domain.items()
+        ]
+        results.sort(key=lambda entry: (-entry["minutes"], -entry["visits"], entry["domain"]))
+
+        return Response(
+            {
+                "device_id": device.id,
+                "date": target_date,
+                "total_minutes": round(sum(minutes_per_domain.values())),
+                "results": SiteUsageSerializer(results, many=True).data,
+                "count": len(results),
+            }
+        )

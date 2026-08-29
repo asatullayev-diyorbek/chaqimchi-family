@@ -155,3 +155,38 @@ test.describe("multiple devices per child", () => {
     await expect(page.getByText(/Qaysi qurilmani ko'rmoqchisiz/)).toHaveCount(0);
   });
 });
+
+test.describe("web sites tab", () => {
+  test("shows the selected device's sites, not a pooled list", async ({ page }) => {
+    await mockApi(page, { "/api/devices/": [DEVICE, PHONE] });
+    await page.goto("/activity?device=d1");
+    await page.getByRole("button", { name: "Web-saytlar" }).click();
+
+    await expect(page.getByText("youtube.com")).toBeVisible();
+    await expect(page.getByText("instagram.com")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Android" }).click();
+    await expect(page.getByText("instagram.com")).toBeVisible();
+    // The laptop's browsing must disappear rather than accumulate.
+    await expect(page.getByText("youtube.com")).toHaveCount(0);
+  });
+
+  test("asks which device instead of pooling browsing", async ({ page }) => {
+    await mockApi(page, { "/api/devices/": [DEVICE, PHONE] });
+    await page.goto("/activity");
+    await page.getByRole("button", { name: "Web-saytlar" }).click();
+
+    await expect(page.getByText(/Qaysi qurilmani ko'rmoqchisiz/)).toBeVisible();
+    await expect(page.getByText("youtube.com")).toHaveCount(0);
+  });
+
+  test("an empty result reads as empty, not as a missing feature", async ({ page }) => {
+    await mockApi(page, {
+      "/api/tracking/sites/": { device_id: "d1", date: "2026-08-29", total_minutes: 0, results: [], count: 0 },
+    });
+    await page.goto("/activity");
+    await page.getByRole("button", { name: "Web-saytlar" }).click();
+
+    await expect(page.getByText(/sayt tashrifi qayd etilmagan/)).toBeVisible();
+  });
+});

@@ -5151,3 +5151,53 @@ body{
     color:var(--muted);
     font-size:13px;
 }
+
+/* Compact day-range picker inside a card header (Web-saytlar tab). Same
+   visual language as .device-chip, sized down to sit beside an <h3>. */
+.range-switch{
+    display:inline-flex;
+    gap:4px;
+    padding:4px;
+    border-radius:12px;
+    background:var(--glass-bg);
+    border:1px solid var(--glass-border);
+}
+
+.range-chip{
+    padding:5px 12px;
+    border:none;
+    border-radius:8px;
+    background:transparent;
+    font-family:inherit;
+    font-size:12px;
+    font-weight:700;
+    color:var(--muted);
+    cursor:pointer;
+    transition:background .18s ease,color .18s ease;
+}
+
+.range-chip:hover:not(.active){
+    background:rgba(37,99,235,.06);
+    color:var(--foreground);
+}
+
+.range-chip.active{
+    background:var(--surface);
+    color:var(--brand-blue);
+    box-shadow:0 1px 3px rgba(37,99,235,.18);
+}
+
+/* Stands in for an app icon on the sites list. Deliberately not a remote
+   favicon: fetching one would tell that third party what the child browses. */
+.site-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 34px;
+    width:34px;
+    height:34px;
+    border-radius:10px;
+    background:rgba(37,99,235,.08);
+    color:var(--brand-blue);
+    font-size:19px;
+}

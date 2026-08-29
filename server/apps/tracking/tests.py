@@ -529,3 +529,94 @@ class TimelineTests(TestCase):
 
     def test_timeline_requires_auth(self):
         self.assertEqual(self.client.get(self.url).status_code, 401)
+
+
+class SitesTests(TestCase):
+    """GET /api/tracking/sites/<device_id>/ — browsing per site, per device."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(
+            email="sites@example.com", password="supersecret123"
+        )
+        from apps.devices.models import Child
+
+        self.child = Child.objects.create(family=self.parent.family, name="Ali")
+        self.laptop = ChildDevice.objects.create(
+            family=self.parent.family, child=self.child, child_name="Ali",
+            status=ChildDevice.STATUS_LINKED,
+        )
+        self.phone = ChildDevice.objects.create(
+            family=self.parent.family, child=self.child, child_name="Ali",
+            status=ChildDevice.STATUS_LINKED, platform=ChildDevice.PLATFORM_ANDROID,
+        )
+
+    def _visit(self, device, batch_id, **event):
+        event.setdefault("type", "browser_domain")
+        event.setdefault("occurred_at", "2026-08-30T10:00:00Z")
+        response = self.client.post(
+            reverse("ingest"),
+            {"device_id": str(device.id), "batch_id": batch_id, "events": [event]},
+            format="json",
+            **auth_header(device),
+        )
+        self.assertEqual(response.status_code, 201, response.content)
+
+    def _sites(self, device, **params):
+        self.client.force_authenticate(user=self.parent)
+        params.setdefault("date", "2026-08-30")
+        response = self.client.get(reverse("sites", kwargs={"device_id": device.id}), params)
+        self.assertEqual(response.status_code, 200, response.content)
+        return response.json()
+
+    def test_sites_are_scoped_to_one_device(self):
+        """The whole point: a child's two devices must not pool their browsing."""
+        self._visit(self.laptop, "b1", domain="youtube.com", duration_seconds=600)
+        self._visit(self.phone, "b2", domain="instagram.com", duration_seconds=300)
+
+        self.assertEqual([s["domain"] for s in self._sites(self.laptop)["results"]], ["youtube.com"])
+        self.assertEqual([s["domain"] for s in self._sites(self.phone)["results"]], ["instagram.com"])
+
+    def test_visits_to_one_host_are_merged_and_ranked(self):
+        self._visit(self.laptop, "b1", domain="www.YouTube.com", duration_seconds=600)
+        self._visit(self.laptop, "b2", url="https://youtube.com:443/watch?v=x", duration_seconds=300)
+        self._visit(self.laptop, "b3", domain="wikipedia.org", duration_seconds=60)
+
+        results = self._sites(self.laptop)["results"]
+        self.assertEqual([s["domain"] for s in results], ["youtube.com", "wikipedia.org"])
+        self.assertEqual(results[0]["minutes"], 15)
+        self.assertEqual(results[0]["visits"], 2)
+
+    def test_events_without_a_usable_host_are_dropped(self):
+        self._visit(self.laptop, "b1", domain="youtube.com", duration_seconds=60)
+        self._visit(self.laptop, "b2", domain="")
+        self._visit(self.laptop, "b3", domain="not a host/../etc")
+
+        # No "unknown" bucket, and nothing unparsed reaches the parent's UI.
+        self.assertEqual([s["domain"] for s in self._sites(self.laptop)["results"]], ["youtube.com"])
+
+    def test_app_usage_does_not_leak_into_the_sites_list(self):
+        self._visit(self.laptop, "b1", type="app_usage", app_id="chrome.exe", duration_seconds=600)
+
+        payload = self._sites(self.laptop)
+        self.assertEqual(payload["results"], [])
+        self.assertEqual(payload["total_minutes"], 0)
+
+    def test_range_window_selects_the_right_days(self):
+        self._visit(self.laptop, "b1", domain="youtube.com",
+                    occurred_at="2026-08-30T10:00:00Z", duration_seconds=600)
+        self._visit(self.laptop, "b2", domain="wikipedia.org",
+                    occurred_at="2026-08-25T10:00:00Z", duration_seconds=600)
+
+        self.assertEqual([s["domain"] for s in self._sites(self.laptop)["results"]], ["youtube.com"])
+        weekly = self._sites(self.laptop, range="week")["results"]
+        self.assertEqual({s["domain"] for s in weekly}, {"youtube.com", "wikipedia.org"})
+
+    def test_another_family_cannot_read_the_sites(self):
+        self._visit(self.laptop, "b1", domain="youtube.com", duration_seconds=600)
+        stranger = ParentUser.objects.create_user(
+            email="stranger@example.com", password="supersecret123"
+        )
+        self.client.force_authenticate(user=stranger)
+        response = self.client.get(reverse("sites", kwargs={"device_id": self.laptop.id}))
+        self.assertEqual(response.status_code, 403)

@@ -116,6 +116,32 @@ export async function getActivityHistory(
   return apiFetch(`/api/tracking/history/${deviceId}/?${params.toString()}`);
 }
 
+export type SiteUsage = {
+  domain: string;
+  minutes: number;
+  visits: number;
+  last_visited_at: string | null;
+};
+
+export type SitesResponse = {
+  device_id: string;
+  date: string;
+  total_minutes: number;
+  results: SiteUsage[];
+  count: number;
+};
+
+/** Browsing per site for ONE device — never pooled across a child's devices. */
+export async function getSites(
+  deviceId: string,
+  options: { date?: string; range?: SummaryRange } = {},
+): Promise<SitesResponse> {
+  const params = new URLSearchParams();
+  if (options.date) params.set("date", options.date);
+  params.set("range", options.range ?? "day");
+  return apiFetch(`/api/tracking/sites/${deviceId}/?${params.toString()}`);
+}
+
 export async function updateDevice(
   deviceId: string,
   patch: { child_name?: string; child_id?: string | null },
