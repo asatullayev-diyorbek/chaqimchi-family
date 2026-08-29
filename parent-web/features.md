@@ -164,7 +164,7 @@ Dizayn tizimidan tashqarida, uslublanmaydi, mobil'да xunuk.
 - `aria-expanded` / `aria-haspopup` yo'q
 - tashqariga bosish faqat `mousedown` — touch qurilmада ishlamaydi
 
-### [ ] P1-4. `setTimeout(..., 0)` bilan lint qoidasini aylanib o'tish
+### [x] P1-4. `setTimeout(..., 0)` bilan lint qoidasini aylanib o'tish
 
 **Fayl:** `devices/page.tsx:82-90`, `telegram/complete/page.tsx:25-36`,
 `activity/page.tsx:93, 133, 158`
@@ -234,7 +234,7 @@ Runtime xato → oq ekran. Route almashganда — hech qanday indikator yo'q.
 
 ## 3. P2 — O'rta
 
-### [ ] P2-1. Data-fetch qatlami yo'q — har sahifa qo'lда `useEffect`
+### [x] P2-1. Data-fetch qatlami yo'q — har sahifa qo'lда `useEffect`
 
 Har sahifада bir xil naqsh takrorlanadi: `useEffect` + `getAccessToken()` tekshiruvи
 + `router.replace("/login")` + fetch + `cancelled` bayrog'i + `try/catch` + toast.

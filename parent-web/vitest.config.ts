@@ -3,8 +3,9 @@ import path from "node:path";
 
 export default defineConfig({
   test: {
-    environment: "node",
-    include: ["src/**/*.test.ts"],
+    // jsdom for the hook tests; the pure-logic ones don't care either way.
+    environment: "jsdom",
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "src") },

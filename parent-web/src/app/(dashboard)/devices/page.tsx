@@ -60,7 +60,11 @@ function BatteryCell({ level }: { level: number | null }) {
 
 export default function DevicesPage() {
   const router = useRouter();
-  const [childFilterId, setChildFilterId] = useState<string | null>(null);
+  // Read straight from the URL at mount — it is a lazy initialiser, so no
+  // effect and no timer are involved.
+  const [childFilterId, setChildFilterId] = useState<string | null>(
+    () => (typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("child")),
+  );
   const [devices, setDevices] = useState<Device[] | null>(null);
   const [summaries, setSummaries] = useState<Record<string, DeviceSummary | null>>({});
   const [showLinkForm, setShowLinkForm] = useState(false);
@@ -69,7 +73,9 @@ export default function DevicesPage() {
   const [enrollmentCode, setEnrollmentCode] = useState("");
   const [linking, setLinking] = useState(false);
   const [children, setChildren] = useState<Child[]>([]);
-  const [selectedChildId, setSelectedChildId] = useState("");
+  const [selectedChildId, setSelectedChildId] = useState(
+    () => (typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("child") ?? ""),
+  );
 
   const [profileChild, setProfileChild] = useState<Child | null>(null);
   const [profileName, setProfileName] = useState("");
@@ -105,12 +111,15 @@ export default function DevicesPage() {
   }
 
   useEffect(() => {
-    const childFromUrl = new URLSearchParams(window.location.search).get("child");
-    setTimeout(() => {
-      setChildFilterId(childFromUrl);
-      if (childFromUrl) setSelectedChildId(childFromUrl);
-    }, 0);
-    setTimeout(() => void load(), 0);
+    let active = true;
+    (async () => {
+      try {
+        await load();
+      } catch {
+        if (active) toast.error("Ma'lumotlar yuklanmadi");
+      }
+    })();
+    return () => { active = false; };
   }, [router]);
 
   function openLinkModal() {

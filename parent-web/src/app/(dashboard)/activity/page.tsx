@@ -1,8 +1,10 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ActivityHistoryItem, Device, DeviceSummary, SummaryRange, TimelineSegment, getActivityHistory, getActivityTimeline, getDevices, getSummary } from "@/api/tracking";
+import { useSearchParams } from "next/navigation";
+import { ActivityHistoryItem, SummaryRange, TimelineSegment, getActivityHistory, getActivityTimeline, getSummary } from "@/api/tracking";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { useSelectedDevice } from "@/hooks/useSelectedDevice";
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
 import DayTimeline from "@/components/DayTimeline";
@@ -48,114 +50,63 @@ function formatActivityTime(value: string | null): string {
 }
 
 function ActivityContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const deviceId = searchParams.get("device");
-  const childId = searchParams.get("child");
 
-  const [devices, setDevices] = useState<Device[] | null>(null);
+  const { device } = useSelectedDevice();
   const [range, setRange] = useState<SummaryRange>("week");
-  const [summary, setSummary] = useState<DeviceSummary | null>(null);
-  const [summaryLoading, setSummaryLoading] = useState(false);
-  const [summaryError, setSummaryError] = useState(false);
   const [summaryRetry, setSummaryRetry] = useState(0);
-  const [rules, setRules] = useState<Rule[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [appsPage, setAppsPage] = useState(0);
   const [tab, setTab] = useState<"screen" | "apps" | "history" | "sites">("screen");
-  const [history, setHistory] = useState<ActivityHistoryItem[]>([]);
-  const [historyCount, setHistoryCount] = useState(0);
   const [historyOffset, setHistoryOffset] = useState(0);
-  const [historyNextOffset, setHistoryNextOffset] = useState<number | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyError, setHistoryError] = useState(false);
   const [historyDate, setHistoryDate] = useState(todayISO);
-  const [timeline, setTimeline] = useState<TimelineSegment[]>([]);
-  const [timelineLoading, setTimelineLoading] = useState(false);
-  useEffect(() => {
-    getDevices()
-      .then(setDevices)
-      .catch((err) => toast.error(err instanceof Error ? err.message : "Xatolik"));
-  }, [router]);
 
-  const activeDeviceId = deviceId ?? devices?.find((d) => d.child_id === childId && d.status === "linked")?.id ?? devices?.find((d) => d.status === "linked")?.id ?? null;
-
+  // ?device wins, otherwise the shared hook's pick — this page also honours
+  // ?child, which the hook already handles.
+  const activeDeviceId = deviceId ?? device?.id ?? null;
   const onSummaryTab = tab === "screen" || tab === "apps";
-  useEffect(() => {
-    if (!activeDeviceId || !onSummaryTab) return;
-    let cancelled = false;
-    const start = setTimeout(() => {
-      if (cancelled) return;
-      setSummaryLoading(true);
-      setSummaryError(false);
-    }, 0);
-    (async () => {
-      try {
-        const data = await getSummary(activeDeviceId, { range });
-        if (!cancelled) setSummary(data);
-      } catch (err) {
-        if (cancelled) return;
-        setSummaryError(true);
-        toast.error(
-          err instanceof Error
-            ? err.message
-          : "Ma'lumotlar yangilanmadi, birozdan keyin qayta urinib ko'ring"
-        );
-      } finally {
-        // Cancel the pending skeleton flip: a cached/fast response resolves on
-        // the microtask queue before this 0ms macrotask fires, and without
-        // this the timer would set loading back to true with nothing left to
-        // clear it — the "stuck on yuklanmoqda" bug when switching tabs.
-        clearTimeout(start);
-        if (!cancelled) setSummaryLoading(false);
-      }
-    })();
-    return () => { cancelled = true; clearTimeout(start); };
-  }, [activeDeviceId, range, onSummaryTab, summaryRetry]);
+  const onHistoryTab = tab === "history";
 
-  // The device's daily limit, for the screen-time cards' progress bars.
-  useEffect(() => {
-    if (!activeDeviceId || tab !== "screen") return;
-    let cancelled = false;
-    getRules(activeDeviceId).then((r) => { if (!cancelled) setRules(r); }).catch(() => {});
-    return () => { cancelled = true; };
-  }, [activeDeviceId, tab, summaryRetry]);
+  const summaryQuery = useApiQuery(
+    () => getSummary(activeDeviceId!, { range }),
+    [activeDeviceId, range, summaryRetry],
+    { enabled: Boolean(activeDeviceId) && onSummaryTab },
+  );
+  const summary = summaryQuery.data;
+  const summaryLoading = summaryQuery.loading;
+  const summaryError = summaryQuery.error !== null;
+
+  // Daily limit, for the screen-time cards' progress bars.
+  const rulesQuery = useApiQuery(
+    () => getRules(activeDeviceId!),
+    [activeDeviceId, summaryRetry],
+    { enabled: Boolean(activeDeviceId) && tab === "screen" },
+  );
+  const rules: Rule[] = rulesQuery.data ?? [];
+
+  const historyQuery = useApiQuery(
+    () => getActivityHistory(activeDeviceId!, { date: historyDate, limit: PAGE_SIZE, offset: historyOffset }),
+    [activeDeviceId, historyDate, historyOffset],
+    { enabled: Boolean(activeDeviceId) && onHistoryTab },
+  );
+  const history: ActivityHistoryItem[] = historyQuery.data?.results ?? [];
+  const historyCount = historyQuery.data?.count ?? 0;
+  const historyNextOffset = historyQuery.data?.next_offset ?? null;
+  const historyLoading = historyQuery.loading;
+  const historyError = historyQuery.error !== null;
+
+  const timelineQuery = useApiQuery(
+    () => getActivityTimeline(activeDeviceId!, { date: historyDate }),
+    [activeDeviceId, historyDate],
+    { enabled: Boolean(activeDeviceId) && onHistoryTab },
+  );
+  const timeline: TimelineSegment[] = timelineQuery.data?.segments ?? [];
+  const timelineLoading = timelineQuery.loading;
 
   useEffect(() => {
-    if (!activeDeviceId || tab !== "history") return;
-    let cancelled = false;
-    const start = setTimeout(() => {
-      if (cancelled) return;
-      setHistoryLoading(true);
-      setHistoryError(false);
-    }, 0);
-    getActivityHistory(activeDeviceId, { date: historyDate, limit: PAGE_SIZE, offset: historyOffset })
-      .then((data) => {
-        if (cancelled) return;
-        setHistory(data.results);
-        setHistoryCount(data.count);
-        setHistoryNextOffset(data.next_offset);
-      })
-      .catch(() => {
-        if (!cancelled) setHistoryError(true);
-      })
-      .finally(() => {
-        clearTimeout(start);
-        if (!cancelled) setHistoryLoading(false);
-      });
-    return () => { cancelled = true; clearTimeout(start); };
-  }, [activeDeviceId, historyOffset, historyDate, tab]);
-
-  useEffect(() => {
-    if (!activeDeviceId || tab !== "history") return;
-    let cancelled = false;
-    const start = setTimeout(() => { if (!cancelled) setTimelineLoading(true); }, 0);
-    getActivityTimeline(activeDeviceId, { date: historyDate })
-      .then((data) => { if (!cancelled) setTimeline(data.segments); })
-      .catch(() => { if (!cancelled) setTimeline([]); })
-      .finally(() => { clearTimeout(start); if (!cancelled) setTimelineLoading(false); });
-    return () => { cancelled = true; clearTimeout(start); };
-  }, [activeDeviceId, historyDate, tab]);
+    if (summaryQuery.error) toast.error(summaryQuery.error.message);
+  }, [summaryQuery.error]);
 
   const sortedApps = summary ? [...summary.top_apps].sort((a, b) => b.minutes - a.minutes) : [];
   const appsPageC = Math.min(appsPage, Math.max(0, Math.ceil(sortedApps.length / PAGE_SIZE) - 1));

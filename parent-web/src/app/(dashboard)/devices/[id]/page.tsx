@@ -67,12 +67,21 @@ function DeviceDetailContent() {
   }
 
   useEffect(() => {
-    setTimeout(() => {
-      load().catch(() => {
+    // No setTimeout(fn, 0) wrapper: load() only sets state after an await, so
+    // nothing runs synchronously in this effect. The wrapper existed purely to
+    // dodge the lint rule, and it is what stranded a "yuklanmoqda" spinner
+    // elsewhere when a cached response beat the timer.
+    let active = true;
+    (async () => {
+      try {
+        await load();
+      } catch {
+        if (!active) return;
         toast.error("Ma'lumotlarni yuklashda xatolik");
         setLoading(false);
-      });
-    }, 0);
+      }
+    })();
+    return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceId, router]);
 

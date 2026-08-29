@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { Alert, getAlerts, markAlertSeen } from "@/api/alerts";
-import { getDevices } from "@/api/tracking";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { useSelectedDevice } from "@/hooks/useSelectedDevice";
 import { toast } from "react-hot-toast";
 
 const PAGE_SIZE = 10;
@@ -21,42 +21,21 @@ function formatTime(value: string) {
 }
 
 function AlertsContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const requestedDeviceId = searchParams.get("device");
-  const requestedChildId = searchParams.get("child");
-  const [deviceId, setDeviceId] = useState("");
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { deviceId, loading: devicesLoading } = useSelectedDevice();
   const [marking, setMarking] = useState(false);
   const [page, setPage] = useState(0);
-  const loadAlerts = useCallback(async (selectedDeviceId: string) => {
-    setLoading(true);
-    try {
-      setAlerts(await getAlerts(selectedDeviceId));
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Ma'lumotlar yangilanmadi");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+
+  const alertsQuery = useApiQuery(() => getAlerts(deviceId), [deviceId], { enabled: Boolean(deviceId) });
+  const [seenOverride, setSeenOverride] = useState<Set<string>>(new Set());
+
+  const alerts: Alert[] = (alertsQuery.data ?? []).map((a) =>
+    seenOverride.has(a.id) ? { ...a, seen: true } : a,
+  );
+  const loading = devicesLoading || alertsQuery.loading;
 
   useEffect(() => {
-    getDevices()
-      .then((list) => {
-        const selected = list.find((device) => device.id === requestedDeviceId) ?? list.find((device) => device.child_id === requestedChildId && device.status === "linked") ?? list.find((device) => device.status === "linked") ?? list[0];
-        if (selected) {
-          setDeviceId(selected.id);
-          void loadAlerts(selected.id);
-        } else {
-          setLoading(false);
-        }
-      })
-      .catch((cause) => {
-        toast.error(cause instanceof Error ? cause.message : "Qurilmalar yuklanmadi");
-        setLoading(false);
-      });
-  }, [loadAlerts, requestedDeviceId, requestedChildId, router]);
+    if (alertsQuery.error) toast.error(alertsQuery.error.message);
+  }, [alertsQuery.error]);
 
   async function markAllSeen() {
     const unseen = alerts.filter((alert) => !alert.seen);
@@ -64,7 +43,9 @@ function AlertsContent() {
     setMarking(true);
     try {
       await Promise.all(unseen.map((alert) => markAlertSeen(alert.id)));
-      setAlerts((current) => current.map((alert) => ({ ...alert, seen: true })));
+      // Mark locally rather than refetching: the server has no bulk
+      // endpoint, so a refetch would be N requests for a change we already know.
+      setSeenOverride(new Set(alerts.map((a) => a.id)));
       toast.success(`${unseen.length} ta ogohlantirish ko'rilgan deb belgilandi.`);
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : "Alertlar yangilanmadi");

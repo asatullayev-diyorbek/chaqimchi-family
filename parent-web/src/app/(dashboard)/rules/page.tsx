@@ -1,43 +1,39 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { createRule, deleteRule, getDailyLimitMinutes, getRules, Rule } from "@/api/rules";
-import { getDevices } from "@/api/tracking";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { useSelectedDevice } from "@/hooks/useSelectedDevice";
 import { toast } from "react-hot-toast";
 
 function RulesContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const requestedDeviceId = searchParams.get("device");
-  const requestedChildId = searchParams.get("child");
-  const [deviceId, setDeviceId] = useState("");
-  const [rules, setRules] = useState<Rule[]>([]);
-  const [limit, setLimit] = useState("");
+  // Only the device selection moves to the shared hook. The rules list itself
+  // stays local state: this page edits it (limit, blocked apps) as well as
+  // reading it, and useApiQuery has no opinion about local mutations.
+  const { deviceId, loading: devicesLoading } = useSelectedDevice();
+  const rulesQuery = useApiQuery(() => getRules(deviceId), [deviceId], { enabled: Boolean(deviceId) });
+
+  // Server rules, plus this page's own edits laid on top. Mutations return
+  // the created object, so applying them locally avoids a refetch per change.
+  const [localRules, setLocalRules] = useState<Rule[] | null>(null);
+  const rules = localRules ?? rulesQuery.data ?? [];
+  const setRules = (next: Rule[] | ((current: Rule[]) => Rule[])) =>
+    setLocalRules(typeof next === "function" ? next(rules) : next);
+
+  // The limit field is derived from the rules until the parent types into it;
+  // `limitEdit` is that override. Deriving instead of seeding through an
+  // effect is what keeps this free of setState-in-effect.
+  const [limitEdit, setLimitEdit] = useState<string | null>(null);
+  const limit = limitEdit ?? String(getDailyLimitMinutes(rules) ?? "");
+  const setLimit = (value: string) => setLimitEdit(value);
+
   const [app, setApp] = useState("");
-  const [loading, setLoading] = useState(true);
   const [savingLimit, setSavingLimit] = useState(false);
   const [addingApp, setAddingApp] = useState(false);
 
-  const loadRules = useCallback(async (selectedDeviceId: string) => {
-    setLoading(true);
-    try {
-      const nextRules = await getRules(selectedDeviceId);
-      setRules(nextRules);
-      setLimit(String(getDailyLimitMinutes(nextRules) ?? ""));
-    } catch (cause) {
-      toast.error(cause instanceof Error ? cause.message : "Qoidalar yuklanmadi");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    getDevices().then((list) => {
-      const selected = list.find((device) => device.id === requestedDeviceId) ?? list.find((device) => device.child_id === requestedChildId && device.status === "linked") ?? list.find((device) => device.status === "linked") ?? list[0];
-      if (selected) { setDeviceId(selected.id); void loadRules(selected.id); } else setLoading(false);
-    }).catch(() => { toast.error("Qurilmalar yuklanmadi"); setLoading(false); });
-  }, [loadRules, requestedDeviceId, requestedChildId, router]);
+    if (rulesQuery.error) toast.error(rulesQuery.error.message);
+  }, [rulesQuery.error]);
 
   async function saveLimit() {
     if (!deviceId || savingLimit) return;
@@ -63,17 +59,19 @@ function RulesContent() {
         const created = await createRule(deviceId, "daily_limit_minutes", { minutes });
         if (oldLimit) await deleteRule(oldLimit.id).catch(() => undefined);
         setRules((current) => [...current.filter((rule) => rule.rule_type !== "daily_limit_minutes"), created]);
+        setLimitEdit(null);
         toast.success(`Kunlik limit ${minutes} daqiqa qilib saqlandi.`);
       } else if (oldLimit) {
         await deleteRule(oldLimit.id);
         setRules((current) => current.filter((rule) => rule.rule_type !== "daily_limit_minutes"));
+        setLimitEdit(null);
         toast.success("Kunlik limit o'chirildi.");
       } else {
         toast("Limit allaqachon belgilanmagan.");
       }
     } catch (cause) {
       setRules(previous);
-      setLimit(String(getDailyLimitMinutes(previous) ?? ""));
+      setLimitEdit(null);
       toast.error(cause instanceof Error ? cause.message : "Limit saqlanmadi");
     } finally {
       setSavingLimit(false);
@@ -114,6 +112,7 @@ function RulesContent() {
     }
   }
 
+  const loading = devicesLoading || rulesQuery.loading;
   const blockedApps = rules.filter((rule) => rule.rule_type === "blocked_app");
   
   return (
