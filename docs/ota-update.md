@@ -81,10 +81,28 @@ Hozirgi imzolash kaliti **development paytida yaratilgan** va bir marta
 transcript'да ko'ringan. Har qanday haqiqiy public release'dan oldin:
 
 ```bash
-cd agent && go run ./cmd/relsign genkey        # maxfiy joyda bajaring
-# public key → agent/internal/updater/pubkey.go
-# private key → sekret menejer (masalan GitHub Actions secret)
+cd agent
+go run ./cmd/relsign rotate
 ```
+
+Bu buyruq:
+
+- yangi Ed25519 juftlik yaratadi;
+- **private** qismini to'g'ridan-to'g'ri `agent/.secrets/update-signing.key`
+  ga yozadi (`0600`, gitignored) — **ekranga hech qachon chiqarmaydi**;
+- **public** qismini `agent/internal/updater/pubkey.go` ga yozadi.
+
+Qo'lda nusxalash yo'q, demak private kalit terminal tarixiga, log'ga yoki
+sessiya transcript'iga tushmaydi. Mavjud kalit ustiga yozish uchun `-force`
+kerak — himoya ataylab: kalit almashsa, eski `pubkey.go` bilan ishlayotgan
+agentlar **yangilana olmay qoladi**.
+
+Almashtirgandan keyin:
+
+1. `agent/.secrets/update-signing.key` ni parol menejeriga yoki CI sekretiga
+   nusxalang — bu yagona nusxa, yo'qolsa release chiqara olmaysiz.
+2. `pubkey.go` o'zgarishini commit qiling.
+3. Shundan keyingi barcha release'lar yangi kalit bilan imzolanadi.
 
 Kalit almashса, undan oldingi versiyadagi agentlar yangilana olmaydi —
 ular avval eski kalit bilan imzolangan oraliq release orqali yangi
