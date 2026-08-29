@@ -2,9 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import AppShell from "@/components/layout/AppShell";
 import { Alert, getAlerts, markAlertSeen } from "@/api/alerts";
-import { getAccessToken } from "@/api/client";
 import { getDevices } from "@/api/tracking";
 import { toast } from "react-hot-toast";
 
@@ -44,10 +42,6 @@ function AlertsContent() {
   }, []);
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
     getDevices()
       .then((list) => {
         const selected = list.find((device) => device.id === requestedDeviceId) ?? list.find((device) => device.child_id === requestedChildId && device.status === "linked") ?? list.find((device) => device.status === "linked") ?? list[0];
@@ -85,7 +79,7 @@ function AlertsContent() {
   const visible = alerts.slice(currentPage * PAGE_SIZE, currentPage * PAGE_SIZE + PAGE_SIZE);
 
   return (
-    <AppShell>
+    <>
       <div className="card" style={{ padding: 20 }}>
         <div className="card-header" style={{ marginBottom: 14 }}>
           <div>
@@ -114,12 +108,12 @@ function AlertsContent() {
           </div>
         )}
       </div>
-    </AppShell>
+    </>
   );
 }
 
 export default function AlertsPage() {
-  return <Suspense fallback={<AppShell><p style={mutedStyle}>Yuklanmoqda...</p></AppShell>}><AlertsContent /></Suspense>;
+  return <Suspense fallback={<><p style={mutedStyle}>Yuklanmoqda...</p></>}><AlertsContent /></Suspense>;
 }
 
 function AlertRow({ alert }: { alert: Alert }) {

@@ -3,8 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import AppShell from "@/components/layout/AppShell";
-import { getAccessToken } from "@/api/client";
 import { Device, DeviceSummary, getDevices, getSummary } from "@/api/tracking";
 import { getDailyLimitMinutes, getRules, Rule } from "@/api/rules";
 import { Alert, getAlerts } from "@/api/alerts";
@@ -48,10 +46,6 @@ function OverviewContent() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
     (async () => {
       try {
         setSummaryLoading(true);
@@ -79,7 +73,7 @@ function OverviewContent() {
     })();
   }, [requestedChildId, requestedDeviceId, router]);
 
-  if (devices === null) return <AppShell><p>Yuklanmoqda...</p></AppShell>;
+  if (devices === null) return <><p>Yuklanmoqda...</p></>;
   const totalToday = summary?.total_screen_minutes ?? 0;
   const limitMinutes = getDailyLimitMinutes(rules);
   const isOnline = summary?.device_status === "online";
@@ -114,7 +108,7 @@ function OverviewContent() {
   const showEmptyState = !summaryLoading && (!devices?.length || !summary);
 
   return (
-    <AppShell>
+    <>
       {showEmptyState && (
         <div className="card" style={{ marginBottom: 24, background: "var(--brand-blue)", color: "#fff", border: "none" }}>
           <div style={{ padding: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
@@ -289,10 +283,10 @@ function OverviewContent() {
           </Link>
         </div>
       </section>
-    </AppShell>
+    </>
   );
 }
 
 export default function OverviewPage() {
-  return <Suspense fallback={<AppShell><p>Yuklanmoqda...</p></AppShell>}><OverviewContent /></Suspense>;
+  return <Suspense fallback={<><p>Yuklanmoqda...</p></>}><OverviewContent /></Suspense>;
 }

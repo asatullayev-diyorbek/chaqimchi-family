@@ -3,8 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import AppShell from "@/components/layout/AppShell";
-import { API_BASE_URL, getAccessToken, mediaUrl } from "@/api/client";
+import { API_BASE_URL, mediaUrl } from "@/api/client";
 import {
   Device,
   DeviceSummary,
@@ -111,10 +110,6 @@ export default function DevicesPage() {
       setChildFilterId(childFromUrl);
       if (childFromUrl) setSelectedChildId(childFromUrl);
     }, 0);
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
     setTimeout(() => void load(), 0);
   }, [router]);
 
@@ -204,7 +199,7 @@ export default function DevicesPage() {
   }
 
   return (
-    <AppShell>
+    <>
       {/* Header */}
 
 
@@ -603,6 +598,6 @@ export default function DevicesPage() {
           </table>
         </div>
       </div>
-    </AppShell>
+    </>
   );
 }

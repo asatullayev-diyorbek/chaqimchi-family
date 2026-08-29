@@ -3,8 +3,6 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
-import AppShell from "@/components/layout/AppShell";
-import { getAccessToken } from "@/api/client";
 import { Device, DeviceSummary, getDevices, getSummary, unlinkDevice, updateDevice } from "@/api/tracking";
 import { Child, getChildren } from "@/api/children";
 import { toast } from "react-hot-toast";
@@ -69,10 +67,6 @@ function DeviceDetailContent() {
   }
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
     setTimeout(() => {
       load().catch(() => {
         toast.error("Ma'lumotlarni yuklashda xatolik");
@@ -115,14 +109,14 @@ function DeviceDetailContent() {
     }
   }
 
-  if (loading) return <AppShell><p>Yuklanmoqda...</p></AppShell>;
-  if (!device) return <AppShell><p>Qurilma topilmadi.</p></AppShell>;
+  if (loading) return <><p>Yuklanmoqda...</p></>;
+  if (!device) return <><p>Qurilma topilmadi.</p></>;
 
   const isOnline = summary?.device_status === "online";
   const battery = summary?.battery_percent ?? null;
 
   return (
-    <AppShell>
+    <>
       <div className={`device-detail-card ${isEditing ? "editing" : ""}`}>
         <header className="content-header">
           <div className="header-title">
@@ -302,13 +296,13 @@ function DeviceDetailContent() {
         onConfirm={handleUnlink}
         onCancel={() => setConfirmUnlink(false)}
       />
-    </AppShell>
+    </>
   );
 }
 
 export default function DeviceDetailPage() {
   return (
-    <Suspense fallback={<AppShell><p>Yuklanmoqda...</p></AppShell>}>
+    <Suspense fallback={<><p>Yuklanmoqda...</p></>}>
       <DeviceDetailContent />
     </Suspense>
   );

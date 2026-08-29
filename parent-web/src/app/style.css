@@ -127,7 +127,7 @@ body{
 
     color:#4c5d78;
 
-    transition:.35s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .menu-item .left{
@@ -248,7 +248,7 @@ body{
 
     cursor:pointer;
 
-    transition:.35s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .family-card button:hover{
@@ -313,7 +313,7 @@ body{
 
     cursor:pointer;
 
-    transition:.3s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .profile-menu iconify-icon{
@@ -365,7 +365,7 @@ body{
         #2563eb
     );
 
-    transition:.35s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .menu-item.active::before{
@@ -401,7 +401,7 @@ body{
 
     transform:skewX(-25deg);
 
-    transition:.7s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .menu-item:hover::after{
@@ -433,7 +433,7 @@ body{
 
 .menu-item span{
 
-    transition:.3s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .menu-item:hover span{
@@ -499,7 +499,7 @@ body{
 
 .family-image{
 
-    transition:.4s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .family-card:hover .family-image{
@@ -544,7 +544,7 @@ body{
 
     rgba(255,255,255,.35);
 
-    transition:.7s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .family-card button:hover::before{
@@ -556,7 +556,7 @@ body{
 
 .profile{
 
-    transition:.35s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .profile:hover{
@@ -603,7 +603,7 @@ body{
 
 .logo{
 
-    transition:.4s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .logo:hover{
@@ -613,7 +613,7 @@ body{
 
 .logo img{
 
-    transition:.4s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .logo:hover img{
@@ -2088,7 +2088,7 @@ transform:translateX(140%);
 
 .profile-image{
 
-    transition:.4s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 
 }
 
@@ -2168,7 +2168,7 @@ transform:scale(1.9);
 
 .family-card h4{
 
-    transition:.3s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 
 }
 
@@ -2558,10 +2558,30 @@ transition:all .35s ease;
 /* GLASS FADE */
 /* ========================================= */
 
+/* Runs once, on first load. It used to replay on every menu click because
+   AppShell lived inside each page, so navigating tore the sidebar down and
+   rebuilt it; the shell is a route-group layout now and stays mounted. */
 .sidebar>*{
 
     animation:fadeUp .6s ease both;
 
+}
+
+/* Wraps the content area and is keyed on the route (AppShell), so only this
+   part re-enters when you switch pages. It has to repeat .content's flex
+   column and gap — it now sits between .content and the page's sections. */
+.page-transition{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    min-width:0;
+
+    animation:pageIn .26s ease both;
+}
+
+@keyframes pageIn{
+    from{ opacity:0; transform:translateY(6px); }
+    to{ opacity:1; transform:none; }
 }
 
 @keyframes fadeUp{
@@ -2708,7 +2728,7 @@ transition:all .35s ease;
         transparent
     );
 
-    transition:.8s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .profile:hover::after{
@@ -2752,7 +2772,7 @@ transition:all .35s ease;
 
     border:3px solid rgba(255,255,255,.9);
 
-    transition:.35s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .profile-image::before{
@@ -2853,7 +2873,7 @@ transition:all .35s ease;
 
     cursor:pointer;
 
-    transition:.35s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .profile-menu iconify-icon{
@@ -3169,7 +3189,7 @@ transition:all .35s ease;
     font-size:20px;
     cursor:pointer;
 
-    transition:.3s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .icon-btn:hover{
@@ -3220,7 +3240,7 @@ transition:all .35s ease;
     box-shadow:0 6px 18px rgba(37,99,235,.08);
 
     cursor:pointer;
-    transition:.3s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .child-profile:hover{
@@ -3633,7 +3653,7 @@ transition:all .35s ease;
     position:relative;
     cursor:pointer;
 
-    transition:.25s;
+    transition:background 0.25s ease,color 0.25s ease,border-color 0.25s ease,box-shadow 0.25s ease,transform 0.25s ease,opacity 0.25s ease;
 }
 
 .rule input[type="checkbox"]::before{
@@ -3650,7 +3670,7 @@ transition:all .35s ease;
 
     box-shadow:0 1px 3px rgba(0,0,0,.25);
 
-    transition:.25s;
+    transition:background 0.25s ease,color 0.25s ease,border-color 0.25s ease,box-shadow 0.25s ease,transform 0.25s ease,opacity 0.25s ease;
 }
 
 .rule input[type="checkbox"]:checked{
@@ -3725,7 +3745,7 @@ transition:all .35s ease;
     font-weight:700;
     text-decoration:none;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .ai-card > a:hover{
@@ -4265,7 +4285,7 @@ svg.graph{
     color:#5a6879;
     cursor:pointer;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .tab iconify-icon{
@@ -4550,7 +4570,7 @@ tbody td:first-child{
     color:#9aa6b6;
     cursor:pointer;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .view-toggle button.active{
@@ -4653,7 +4673,7 @@ tbody td:first-child{
     color:#9aa6b6;
     cursor:pointer;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .row-menu:hover{
@@ -4745,7 +4765,7 @@ tbody td:first-child{
     color:#2563eb;
     text-decoration:none;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .apps-summary-cta:hover{
@@ -5073,7 +5093,7 @@ tbody td:first-child{
     text-decoration:none;
     cursor:pointer;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .btn-view:hover{
@@ -5273,7 +5293,7 @@ tbody td:first-child{
     color:#5a6879;
     cursor:pointer;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .close-btn:hover{
@@ -5376,7 +5396,7 @@ tbody td:first-child{
     color:#8a96aa;
     cursor:pointer;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .modal-tabs button.active{
@@ -5573,7 +5593,7 @@ tbody td:first-child{
     font-weight:700;
     cursor:pointer;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .danger-btn{
@@ -5664,7 +5684,7 @@ tbody td:first-child{
     cursor:pointer;
     box-shadow:0 4px 12px rgba(90,120,170,.1);
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .edit-toggle-btn:hover{
@@ -5919,7 +5939,7 @@ tbody td:first-child{
     background:rgba(120,140,170,.28);
 
     cursor:pointer;
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .switch span::before{
@@ -5935,7 +5955,7 @@ tbody td:first-child{
     background:#fff;
     box-shadow:0 1px 3px rgba(0,0,0,.25);
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .switch input:checked + span{
@@ -5978,7 +5998,7 @@ tbody td:first-child{
     font-weight:700;
     cursor:pointer;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .btn-primary{
@@ -6836,7 +6856,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     text-align:left;
     text-decoration:none;
     cursor:pointer;
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .add-device-card:hover{
@@ -6935,7 +6955,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     font-weight:800;
     color:#8a96aa;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .step-dot.active{
@@ -6996,7 +7016,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 
     font-family:inherit;
     cursor:pointer;
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .child-pick-item:hover{
@@ -7027,7 +7047,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     font-size:20px;
     color:#2563eb;
     opacity:0;
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .child-pick-item.selected .check{
@@ -7071,7 +7091,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     color:#1f2b3a;
     text-align:center;
 
-    transition:.2s;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .code-digit:focus{

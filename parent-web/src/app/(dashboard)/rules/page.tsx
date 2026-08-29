@@ -2,9 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import AppShell from "@/components/layout/AppShell";
 import { createRule, deleteRule, getDailyLimitMinutes, getRules, Rule } from "@/api/rules";
-import { getAccessToken } from "@/api/client";
 import { getDevices } from "@/api/tracking";
 import { toast } from "react-hot-toast";
 
@@ -35,7 +33,6 @@ function RulesContent() {
   }, []);
 
   useEffect(() => {
-    if (!getAccessToken()) { router.replace("/login"); return; }
     getDevices().then((list) => {
       const selected = list.find((device) => device.id === requestedDeviceId) ?? list.find((device) => device.child_id === requestedChildId && device.status === "linked") ?? list.find((device) => device.status === "linked") ?? list[0];
       if (selected) { setDeviceId(selected.id); void loadRules(selected.id); } else setLoading(false);
@@ -120,7 +117,7 @@ function RulesContent() {
   const blockedApps = rules.filter((rule) => rule.rule_type === "blocked_app");
   
   return (
-    <AppShell>
+    <>
       {/* Header */}
 
 
@@ -209,13 +206,13 @@ function RulesContent() {
                       </div>
         )}
       </section>
-    </AppShell>
+    </>
   );
 }
 
 export default function RulesPage() {
   return (
-    <Suspense fallback={<AppShell><p style={{ color: "var(--muted)" }}>Yuklanmoqda...</p></AppShell>}>
+    <Suspense fallback={<><p style={{ color: "var(--muted)" }}>Yuklanmoqda...</p></>}>
       <RulesContent />
     </Suspense>
   );

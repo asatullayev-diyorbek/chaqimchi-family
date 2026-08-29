@@ -2,8 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import AppShell from "@/components/layout/AppShell";
-import { getAccessToken } from "@/api/client";
 import { ActivityHistoryItem, Device, DeviceSummary, SummaryRange, TimelineSegment, getActivityHistory, getActivityTimeline, getDevices, getSummary } from "@/api/tracking";
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
@@ -75,10 +73,6 @@ function ActivityContent() {
   const [timeline, setTimeline] = useState<TimelineSegment[]>([]);
   const [timelineLoading, setTimelineLoading] = useState(false);
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
     getDevices()
       .then(setDevices)
       .catch((err) => toast.error(err instanceof Error ? err.message : "Xatolik"));
@@ -167,7 +161,7 @@ function ActivityContent() {
   const appsPageC = Math.min(appsPage, Math.max(0, Math.ceil(sortedApps.length / PAGE_SIZE) - 1));
 
   return (
-    <AppShell>
+    <>
       {/* Header */}
 
 
@@ -384,7 +378,7 @@ function ActivityContent() {
           </>
         )}
       </section>
-    </AppShell>
+    </>
   );
 }
 
