@@ -8,6 +8,8 @@ import { ActivityHistoryItem, Device, DeviceSummary, SummaryRange, TimelineSegme
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
 import DayTimeline from "@/components/DayTimeline";
+import ScreenTimeChart from "@/components/ScreenTimeChart";
+import { getRules, getDailyLimitMinutes, Rule } from "@/api/rules";
 import { appDisplay } from "@/lib/appDisplay";
 
 function todayISO(): string {
@@ -40,12 +42,6 @@ function formatMinutes(minutes: number): string {
   return `${hours} soat ${mins} min`;
 }
 
-function shortDay(dateStr: string): string {
-  const WEEKDAYS_UZ = ["Yak", "Dush", "Sesh", "Chor", "Pay", "Jum", "Shan"];
-  const d = new Date(dateStr + "T00:00:00");
-  return WEEKDAYS_UZ[d.getDay()];
-}
-
 function formatActivityTime(value: string | null): string {
   if (!value) return "—";
   return new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
@@ -63,6 +59,8 @@ function ActivityContent() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState(false);
   const [summaryRetry, setSummaryRetry] = useState(0);
+  const [today, setToday] = useState<DeviceSummary | null>(null);
+  const [rules, setRules] = useState<Rule[]>([]);
   const [tab, setTab] = useState<"screen" | "apps" | "history" | "sites">("screen");
   const [history, setHistory] = useState<ActivityHistoryItem[]>([]);
   const [historyCount, setHistoryCount] = useState(0);
@@ -117,6 +115,15 @@ function ActivityContent() {
     })();
     return () => { cancelled = true; clearTimeout(start); };
   }, [activeDeviceId, range, onSummaryTab, summaryRetry]);
+
+  // Today's total + apps + the daily limit — independent of the chart range.
+  useEffect(() => {
+    if (!activeDeviceId || tab !== "screen") return;
+    let cancelled = false;
+    getSummary(activeDeviceId).then((d) => { if (!cancelled) setToday(d); }).catch(() => {});
+    getRules(activeDeviceId).then((r) => { if (!cancelled) setRules(r); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeDeviceId, tab, summaryRetry]);
 
   useEffect(() => {
     if (!activeDeviceId || tab !== "history") return;
@@ -261,95 +268,115 @@ function ActivityContent() {
                 <button className="btn-view" onClick={() => setSummaryRetry((value) => value + 1)}>Qayta urinib ko‘ring</button>
               </div>
             )}
-            {tab === "screen" && !summaryLoading && !summaryError && summary && (
-              <div className="screen-layout">
-                {/* Chart */}
-                <div className="card chart-card">
-                  <div className="card-header">
-                    <h3>{range === "day" ? "Bugungi" : `${RANGE_LABELS[range]}lik`} ekran vaqti</h3>
-                    <div className="dropdown-wrap" style={{position: 'relative'}}>
-                      <button onClick={(e) => {
-                        const target = e.currentTarget.nextElementSibling as HTMLElement;
-                        target.style.display = target.style.display === 'block' ? 'none' : 'block';
-                      }}>
-                        {RANGE_LABELS[range]}
-                        <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
+            {tab === "screen" && !summaryLoading && !summaryError && summary && (() => {
+              const days = summary.breakdown;
+              const todayMin = today?.total_screen_minutes ?? days[days.length - 1]?.total_minutes ?? 0;
+              const limit = getDailyLimitMinutes(rules);
+              const avg = days.length ? Math.round(days.reduce((s, d) => s + d.total_minutes, 0) / days.length) : 0;
+              const limitPct = limit ? Math.round((todayMin / limit) * 100) : null;
+              const remaining = limit != null ? limit - todayMin : null;
+
+              const apps = [...(today?.top_apps ?? [])].sort((a, b) => b.minutes - a.minutes);
+              const appTotal = apps.reduce((s, a) => s + a.minutes, 0);
+              const topApps = apps.slice(0, 4);
+              const restMin = apps.slice(4).reduce((s, a) => s + a.minutes, 0);
+              const rows: { key: string; appId: string | null; icon: string | null; name: string; minutes: number }[] = [
+                ...topApps.map((a) => ({ key: a.app, appId: a.app, icon: a.icon, name: appDisplay(a.app).label, minutes: a.minutes })),
+                ...(restMin > 0 ? [{ key: "__other", appId: null, icon: null, name: "Boshqa", minutes: restMin }] : []),
+              ];
+              const maxRow = Math.max(...rows.map((r) => r.minutes), 1);
+              const dropdown = (
+                <div className="dropdown-wrap" style={{ position: "relative" }}>
+                  <button onClick={(e) => { const t = e.currentTarget.nextElementSibling as HTMLElement; t.style.display = t.style.display === "block" ? "none" : "block"; }}>
+                    {RANGE_LABELS[range]}
+                    <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
+                  </button>
+                  <div className="profile-dropdown" style={{ display: "none", position: "absolute", right: 0, top: "100%", minWidth: 100, zIndex: 10, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 8 }}>
+                    {(["week", "month"] as SummaryRange[]).map((r) => (
+                      <button key={r} onClick={(e) => { setRange(r); (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} style={{ width: "100%", textAlign: "left", padding: "6px 8px", border: 0, background: "transparent", cursor: "pointer", borderRadius: 8 }}>
+                        {RANGE_LABELS[r]}
                       </button>
-                      <div className="profile-dropdown" style={{display: 'none', position: 'absolute', right: 0, top: '100%', minWidth: 100, zIndex: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 8}}>
-                        {(Object.keys(RANGE_LABELS) as SummaryRange[]).map(r => (
-                          <button key={r} onClick={(e) => {
-                             setRange(r);
-                             const target = (e.currentTarget.parentElement as HTMLElement);
-                             target.style.display = 'none';
-                          }} style={{width: '100%', textAlign: 'left', padding: '6px 8px', border: 0, background: 'transparent', cursor: 'pointer', borderRadius: 8}}>
-                            {RANGE_LABELS[r]}
-                          </button>
-                        ))}
+                    ))}
+                  </div>
+                </div>
+              );
+
+              const limitCard = (tone: string, icon: string, label: string, value: string, pct: number | null, barGradient: string) => (
+                <div className="stat-card stat-card-limit">
+                  <div className={`icon ${tone}`}><iconify-icon icon={icon}></iconify-icon></div>
+                  <div className="stat-card-limit-body">
+                    <small>{label}</small>
+                    <h2>{value}</h2>
+                    {pct !== null && (
+                      <>
+                        <small>{pct}% {label === "Kunlik limit" ? "ishlatilgan" : "limit ishlatilgan"}</small>
+                        <div className="progress" style={{ width: "100%" }}>
+                          <div style={{ width: `${Math.min(100, pct)}%`, background: pct >= 100 ? "#dc2626" : barGradient }} />
+                        </div>
+                        <small>{remaining != null && remaining >= 0 ? `${formatMinutes(remaining)} qoldi` : `${formatMinutes(Math.abs(remaining ?? 0))} oshib ketdi`}</small>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+
+              return (
+                <>
+                  <div className="card chart-card">
+                    <div className="card-header">
+                      <h3>{range === "month" ? "30 kunlik" : "7 kunlik"} ekran vaqti</h3>
+                      {dropdown}
+                    </div>
+                    <ScreenTimeChart data={days} />
+                  </div>
+
+                  <div className="stats-grid" style={{ marginTop: 16 }}>
+                    {limitCard("green", "solar:clock-circle-linear", "Bugungi ekran vaqti", formatMinutes(todayMin), limitPct, "linear-gradient(90deg,#4ade80,#16a34a)")}
+                    {limitCard("purple", "solar:shield-check-linear", "Kunlik limit", limit ? formatMinutes(limit) : "Belgilanmagan", limitPct, "linear-gradient(90deg,#a78bfa,#7c3aed)")}
+                    <div className="stat-card stat-card-limit">
+                      <div className="icon orange"><iconify-icon icon="solar:graph-up-linear"></iconify-icon></div>
+                      <div className="stat-card-limit-body">
+                        <small>{days.length} kunlik o&apos;rtacha</small>
+                        <h2>{formatMinutes(avg)}</h2>
+                        <small>Oxirgi {days.length} kun bo&apos;yicha</small>
                       </div>
                     </div>
                   </div>
 
-                  <div className="dashboard-chart-scroll" style={{overflowX: 'auto', paddingBottom: 2}}>
-                    <svg className="graph" viewBox="0 0 480 190" preserveAspectRatio="xMidYMid meet" style={{minWidth: 460}}>
-                      <g stroke="rgba(37,99,235,.08)" strokeWidth="1">
-                        <line x1="36" y1="10" x2="460" y2="10"/>
-                        <line x1="36" y1="46" x2="460" y2="46"/>
-                        <line x1="36" y1="82" x2="460" y2="82"/>
-                        <line x1="36" y1="118" x2="460" y2="118"/>
-                        <line x1="36" y1="154" x2="460" y2="154"/>
-                      </g>
-                      <g fontFamily="Inter, Segoe UI, Arial, sans-serif" fontSize="10" fill="#9aa6b6">
-                        <text x="4"  y="14">5s</text>
-                        <text x="4"  y="50">4s</text>
-                        <text x="4"  y="86">3s</text>
-                        <text x="4"  y="122">2s</text>
-                        <text x="12" y="158">0</text>
-                      </g>
-                      <g>
-                        {summary.breakdown.slice(-7).map((item, index) => {
-                          const minutes = item.total_minutes;
-                          const maxMins = 5 * 60;
-                          const cappedMins = Math.min(minutes, maxMins);
-                          const height = (cappedMins / maxMins) * (154 - 10);
-                          const y = 154 - height;
-                          return (
-                            <rect key={item.date} x={52 + index * 63} y={y} width="28" height={Math.max(height, 2)} rx="8" fill="#60a5fa"/>
-                          );
-                        })}
-                      </g>
-                      <g fontFamily="Inter, Segoe UI, Arial, sans-serif" fontSize="11" fontWeight="600" fill="#7a8698" textAnchor="middle">
-                        {summary.breakdown.slice(-7).map((item, index) => (
-                          <text key={item.date} x={66 + index * 63} y="174">{shortDay(item.date)}</text>
+                  <div className="card" style={{ padding: 20, marginTop: 16 }}>
+                    <div className="card-header" style={{ marginBottom: 14 }}>
+                      <h3>Bugungi ilovalar bo&apos;yicha foydalanish</h3>
+                    </div>
+                    {rows.length === 0 ? (
+                      <p style={{ color: "var(--muted)", fontSize: 13, margin: "8px 0" }}>Bugun hali ma&apos;lumot yo&apos;q.</p>
+                    ) : (
+                      <>
+                        {rows.map((r) => (
+                          <div key={r.key} style={{ display: "grid", gridTemplateColumns: "148px 1fr 84px 42px", alignItems: "center", gap: 12, padding: "9px 0" }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
+                              {r.appId ? (
+                                <AppIcon appId={r.appId} icon={r.icon} size={24} />
+                              ) : (
+                                <span style={{ width: 24, height: 24, display: "grid", placeItems: "center", borderRadius: 7, background: "var(--border)", color: "var(--muted)", flex: "0 0 auto" }}>
+                                  <iconify-icon icon="solar:menu-dots-linear" style={{ fontSize: 14 }}></iconify-icon>
+                                </span>
+                              )}
+                              <span style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</span>
+                            </span>
+                            <span style={{ position: "relative", height: 8, borderRadius: 5, background: "rgba(37,99,235,.1)" }}>
+                              <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.max((r.minutes / maxRow) * 100, 3)}%`, borderRadius: 5, background: r.appId ? "#2563eb" : "#94a3b8" }} />
+                            </span>
+                            <em style={{ fontStyle: "normal", textAlign: "right", fontSize: 12, color: "var(--muted)" }}>{formatMinutes(r.minutes)}</em>
+                            <strong style={{ textAlign: "right", fontWeight: 800, fontSize: 13 }}>{appTotal ? Math.round((r.minutes / appTotal) * 100) : 0}%</strong>
+                          </div>
                         ))}
-                      </g>
-                    </svg>
+                        <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginTop: 12 }}>Jami: {formatMinutes(appTotal)}</p>
+                      </>
+                    )}
                   </div>
-                </div>
-
-                {/* Stats */}
-                <div className="stats-grid activity-stats">
-                  <div className="stat-card stat-card-limit stat-card-wide">
-                    <div className="icon green">
-                      <iconify-icon icon="solar:clock-circle-linear"></iconify-icon>
-                    </div>
-                    <div className="stat-card-limit-body">
-                      <small>Tanlangan davr ekran vaqti</small>
-                      <h2>{formatMinutes(summary.total_screen_minutes)}</h2>
-                    </div>
-                  </div>
-
-                  <div className="stat-card">
-                    <div className="icon blue">
-                      <iconify-icon icon="solar:widget-5-linear"></iconify-icon>
-                    </div>
-                    <div>
-                      <small>Ilovalar soni</small>
-                      <h2>{summary.top_apps.length} ta</h2>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+                </>
+              );
+            })()}
 
             {tab === "apps" && !summaryLoading && !summaryError && summary && (
               <div className="card" style={{padding: 20}}>
