@@ -8,6 +8,7 @@ import { Device, getDevices } from "@/api/tracking";
 import { Child, createChild, getChildren } from "@/api/children";
 import { mediaUrl } from "@/api/client";
 import { applyTheme, readTheme } from "@/lib/theme";
+import Modal from "@/components/Modal";
 import WheelPicker from "@/components/WheelPicker";
 import toast from "react-hot-toast";
 
@@ -216,19 +217,20 @@ export default function TopbarActions() {
         </div>
       </div>
 
-      {showAddChild && (
-        <div className="modal-overlay open" onClick={closeAddChildModal}>
-          <div className="device-modal add-device-modal" onClick={e => e.stopPropagation()}>
-            <div className="add-device-modal-header">
-              <div>
-                <h2>Farzand qo'shish</h2>
-                <p>{addStep === 1 ? "Ma'lumotlarni kiriting" : "2-qadam: Tasdiqlash"}</p>
-              </div>
-              <button className="close-btn" onClick={closeAddChildModal}>
-                <iconify-icon icon="solar:close-circle-linear"></iconify-icon>
-              </button>
-            </div>
-            
+      <Modal
+        open={showAddChild}
+        onClose={closeAddChildModal}
+        title="Farzand qo'shish"
+        subtitle={addStep === 1 ? "Ma'lumotlarni kiriting" : "2-qadam: Tasdiqlash"}
+        footer={
+          addStep === 1 ? (
+            <button className="add-device-btn primary" onClick={addChild} style={{ width: "100%" }}>
+              Saqlash va davom etish
+            </button>
+          ) : undefined
+        }
+      >
+        <>
             <div className="step-indicator">
               <div className={`step-dot ${addStep >= 1 ? "active" : ""}`}><span>1</span></div>
               <div className="step-line"></div>
@@ -340,18 +342,8 @@ export default function TopbarActions() {
                 </div>
               )}
             </div>
-
-            <div className="add-device-footer">
-              {addStep === 1 && (
-                <button className="add-device-btn primary" onClick={addChild} style={{ width: "100%" }}>
-                  Saqlash va davom etish
-                </button>
-              )}
-            </div>
-            
-          </div>
-        </div>
-      )}
+        </>
+      </Modal>
     </>
   );
 }

@@ -13,6 +13,7 @@ import {
   verifyEnrollCode,
 } from "@/api/tracking";
 import { Child, deleteChild, getChildren, updateChild } from "@/api/children";
+import Modal from "@/components/Modal";
 import { toast } from "react-hot-toast";
 
 function formatLastSync(iso: string | null): string {
@@ -210,22 +211,37 @@ export default function DevicesPage() {
 
 
       {/* Link Form */}
-      {showLinkForm && (
-        <div className="modal-overlay open" onClick={() => setShowLinkForm(false)}>
-          <div className="device-modal add-device-modal" onClick={e => e.stopPropagation()}>
-
-            <div className="add-device-modal-header">
-              <div>
-                <h2>Qurilmani bog'lash</h2>
-                <p id="addDeviceStepLabel">
-                  {linkStep === 1 ? "1-qadam: Farzandni tanlang" : linkStep === 2 ? "2-qadam: Kodni kiriting" : "3-qadam: Tayyor"}
-                </p>
-              </div>
-              <button className="close-btn" onClick={() => setShowLinkForm(false)}>
-                <iconify-icon icon="solar:close-circle-linear"></iconify-icon>
+      <Modal
+        open={showLinkForm}
+        onClose={() => setShowLinkForm(false)}
+        title="Qurilmani bog'lash"
+        subtitle={linkStep === 1 ? "1-qadam: Farzandni tanlang" : linkStep === 2 ? "2-qadam: Kodni kiriting" : "3-qadam: Tayyor"}
+        footer={
+          <>
+            {linkStep === 1 && (
+              <button className="add-device-btn primary" disabled={!selectedChildId} onClick={() => setLinkStep(2)} style={{width: '100%'}}>
+                Davom etish
               </button>
-            </div>
-
+            )}
+            {linkStep === 2 && (
+              <>
+                <button className="add-device-btn outline" onClick={() => setLinkStep(1)}>
+                  <iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon> Orqaga
+                </button>
+                <button className="add-device-btn primary" disabled={enrollmentCode.length !== 6 || linking} onClick={onLinkDevice}>
+                  {linking ? "Bog'lanmoqda..." : "Bog'lash"}
+                </button>
+              </>
+            )}
+            {linkStep === 3 && (
+              <button className="add-device-btn primary" onClick={() => setShowLinkForm(false)} style={{width: '100%'}}>
+                <iconify-icon icon="solar:check-circle-linear"></iconify-icon> Tayyor
+              </button>
+            )}
+          </>
+        }
+      >
+        <>
             <div className="step-indicator">
               <div className={`step-dot ${linkStep >= 1 ? 'active' : ''}`}><span>1</span></div>
               <div className="step-line"></div>
@@ -330,33 +346,8 @@ export default function DevicesPage() {
                 </div>
               )}
             </div>
-
-            <div className="add-device-footer">
-              {linkStep === 1 && (
-                <button className="add-device-btn primary" disabled={!selectedChildId} onClick={() => setLinkStep(2)} style={{width: '100%'}}>
-                  Davom etish
-                </button>
-              )}
-              {linkStep === 2 && (
-                <>
-                  <button className="add-device-btn outline" onClick={() => setLinkStep(1)}>
-                    <iconify-icon icon="solar:alt-arrow-left-linear"></iconify-icon> Orqaga
-                  </button>
-                  <button className="add-device-btn primary" disabled={enrollmentCode.length !== 6 || linking} onClick={onLinkDevice}>
-                    {linking ? "Bog'lanmoqda..." : "Bog'lash"}
-                  </button>
-                </>
-              )}
-              {linkStep === 3 && (
-                <button className="add-device-btn primary" onClick={() => setShowLinkForm(false)} style={{width: '100%'}}>
-                  <iconify-icon icon="solar:check-circle-linear"></iconify-icon> Tayyor
-                </button>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
+        </>
+      </Modal>
 
       {/* Children list - Quick manage */}
       {children.length > 0 && (
@@ -391,18 +382,20 @@ export default function DevicesPage() {
       )}
 
       {/* Profile Modal */}
-      {profileChild && (
-        <div className="modal-overlay open" onClick={() => setProfileChild(null)}>
-          <div className="device-modal" style={{maxWidth: 400}} onClick={e => e.stopPropagation()}>
-            <div className="add-device-modal-header">
-              <div>
-                <h2>Farzand profili</h2>
-                <p>Ma'lumotlarni tahrirlash</p>
-              </div>
-              <button className="close-btn" onClick={() => setProfileChild(null)}>
-                <iconify-icon icon="solar:close-circle-linear"></iconify-icon>
-              </button>
-            </div>
+      <Modal
+        open={profileChild !== null}
+        onClose={() => setProfileChild(null)}
+        title="Farzand profili"
+        subtitle="Ma'lumotlarni tahrirlash"
+        maxWidth={400}
+        footer={
+          <>
+            <button className="add-device-btn secondary" onClick={() => profileChild && removeChild(profileChild)} style={{flex: 1, color: 'var(--danger)'}}>O&apos;chirish</button>
+            <button className="add-device-btn primary" onClick={saveProfile} style={{flex: 2}}>Saqlash</button>
+          </>
+        }
+      >
+        {profileChild && (
             <div className="add-device-body">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24, marginTop: 10 }}>
                 <div style={{ width: 86, height: 86, position: 'relative' }}>
@@ -448,13 +441,8 @@ export default function DevicesPage() {
               </div>
 
             </div>
-            <div className="add-device-footer" style={{display: 'flex', gap: 10}}>
-              <button className="add-device-btn secondary" onClick={() => removeChild(profileChild)} style={{flex: 1, color: 'var(--danger)'}}>O'chirish</button>
-              <button className="add-device-btn primary" onClick={saveProfile} style={{flex: 2}}>Saqlash</button>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Table */}
       <div className="card">
