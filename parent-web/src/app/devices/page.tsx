@@ -14,6 +14,7 @@ import {
 } from "@/api/tracking";
 import { Child, deleteChild, getChildren, updateChild } from "@/api/children";
 import Modal from "@/components/Modal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { toast } from "react-hot-toast";
 
 function formatLastSync(iso: string | null): string {
@@ -56,6 +57,8 @@ export default function DevicesPage() {
   const [profilePhoto, setProfilePhoto] = useState<File>();
   const [removeProfilePhoto, setRemoveProfilePhoto] = useState(false);
   const [profileGender, setProfileGender] = useState<"boy" | "girl">("boy");
+  const [confirmRemove, setConfirmRemove] = useState<Child | null>(null);
+  const [removing, setRemoving] = useState(false);
 
   const linkedDevices = devices?.filter((device) => device.status === "linked");
   const visibleDevices = childFilterId ? linkedDevices?.filter((device) => device.child_id === childFilterId) : linkedDevices;
@@ -120,14 +123,20 @@ export default function DevicesPage() {
     }
   }
 
-  async function removeChild(child: Child) {
-    if (!confirm(`${child.name}ni o'chirasizmi? Qurilmalar va tarix saqlanadi.`)) return;
+  async function removeChild() {
+    const child = confirmRemove;
+    if (!child) return;
+    setRemoving(true);
     try {
       await deleteChild(child.id);
       await load();
+      setConfirmRemove(null);
       setProfileChild(null);
+      toast.success(`${child.name} o'chirildi.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Farzand o'chirilmadi");
+    } finally {
+      setRemoving(false);
     }
   }
 
@@ -390,7 +399,7 @@ export default function DevicesPage() {
         maxWidth={400}
         footer={
           <>
-            <button className="add-device-btn secondary" onClick={() => profileChild && removeChild(profileChild)} style={{flex: 1, color: 'var(--danger)'}}>O&apos;chirish</button>
+            <button className="add-device-btn secondary" onClick={() => setConfirmRemove(profileChild)} style={{flex: 1, color: 'var(--danger)'}}>O&apos;chirish</button>
             <button className="add-device-btn primary" onClick={saveProfile} style={{flex: 2}}>Saqlash</button>
           </>
         }
@@ -443,6 +452,17 @@ export default function DevicesPage() {
             </div>
         )}
       </Modal>
+
+      <ConfirmDialog
+        open={confirmRemove !== null}
+        title="Farzandni o'chirish"
+        message={`${confirmRemove?.name ?? ""}ni o'chirasizmi? Qurilmalar va faoliyat tarixi saqlanadi.`}
+        confirmLabel="O'chirish"
+        danger
+        busy={removing}
+        onConfirm={removeChild}
+        onCancel={() => setConfirmRemove(null)}
+      />
 
       {/* Table */}
       <div className="card">

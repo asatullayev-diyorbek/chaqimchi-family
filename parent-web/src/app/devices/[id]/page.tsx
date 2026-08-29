@@ -10,6 +10,7 @@ import { Child, getChildren } from "@/api/children";
 import { toast } from "react-hot-toast";
 import TopbarActions from "@/components/layout/TopbarActions";
 import AppIcon from "@/components/AppIcon";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { appDisplay } from "@/lib/appDisplay";
 
 function formatTime(value: string | null) {
@@ -40,6 +41,7 @@ function DeviceDetailContent() {
   const [children, setChildren] = useState<Child[]>([]);
   const [saving, setSaving] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
+  const [confirmUnlink, setConfirmUnlink] = useState(false);
 
   async function load() {
     const [devices, childList] = await Promise.all([getDevices(), getChildren()]);
@@ -101,7 +103,6 @@ function DeviceDetailContent() {
 
   async function handleUnlink() {
     if (!device) return;
-    if (!confirm(`Qurilmani uzasizmi? Guard xizmati o'chadi, ammo faoliyat tarixi saqlanadi. Qayta ulash uchun installer'dan yangi kod kerak bo'ladi.`)) return;
     setUnlinking(true);
     try {
       await unlinkDevice(device.id);
@@ -110,6 +111,7 @@ function DeviceDetailContent() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Qurilma uzilmadi");
       setUnlinking(false);
+      setConfirmUnlink(false);
     }
   }
 
@@ -278,7 +280,7 @@ function DeviceDetailContent() {
           </div>
 
           <div className="card device-detail-footer">
-            <button className="danger-btn" onClick={handleUnlink} disabled={unlinking}>
+            <button className="danger-btn" onClick={() => setConfirmUnlink(true)} disabled={unlinking}>
               <iconify-icon icon="solar:link-broken-linear"></iconify-icon>
               {unlinking ? "Uzilmoqda..." : "Qurilmani uzish"}
             </button>
@@ -289,6 +291,17 @@ function DeviceDetailContent() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmUnlink}
+        title="Qurilmani uzish"
+        message="Guard xizmati o'chadi, ammo faoliyat tarixi saqlanadi. Qayta ulash uchun installerdan yangi kod kerak bo'ladi."
+        confirmLabel="Uzish"
+        danger
+        busy={unlinking}
+        onConfirm={handleUnlink}
+        onCancel={() => setConfirmUnlink(false)}
+      />
     </AppShell>
   );
 }
