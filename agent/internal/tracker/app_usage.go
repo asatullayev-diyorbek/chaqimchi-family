@@ -36,20 +36,29 @@ const (
 // determined (no window focused, permission denied, or — importantly —
 // being called from Session 0, which has no interactive foreground window).
 func ForegroundProcessName() string {
+	name, _ := ForegroundProcessInfo()
+	return name
+}
+
+// ForegroundProcessInfo returns both the executable base name and its full
+// path for the process owning the foreground window. Either is "" when it
+// can't be determined. The path feeds icon extraction (app_icon_windows.go);
+// the name is the app_id the rest of the pipeline uses.
+func ForegroundProcessInfo() (name, path string) {
 	hwnd, _, _ := procGetForegroundWindow.Call()
 	if hwnd == 0 {
-		return ""
+		return "", ""
 	}
 
 	var pid uint32
 	procGetWindowThreadProcessId.Call(hwnd, uintptr(unsafe.Pointer(&pid)))
 	if pid == 0 {
-		return ""
+		return "", ""
 	}
 
 	handle, _, _ := procOpenProcess.Call(processQueryLimitedInformation, 0, uintptr(pid))
 	if handle == 0 {
-		return ""
+		return "", ""
 	}
 	defer procCloseHandle.Call(handle)
 
@@ -59,16 +68,16 @@ func ForegroundProcessName() string {
 		handle, 0, uintptr(unsafe.Pointer(&buf[0])), uintptr(unsafe.Pointer(&size)),
 	)
 	if ret == 0 {
-		return ""
+		return "", ""
 	}
 
 	full := syscall.UTF16ToString(buf[:size])
 	for i := len(full) - 1; i >= 0; i-- {
 		if full[i] == '\\' {
-			return full[i+1:]
+			return full[i+1:], full
 		}
 	}
-	return full
+	return full, full
 }
 
 // RunAppUsage polls the foreground app every pollInterval and appends an
@@ -80,6 +89,7 @@ func ForegroundProcessName() string {
 // RunAppUsageFromObservations from a session helper instead.
 func RunAppUsage(ctx context.Context, store *buffer.Store, pollInterval time.Duration, onPoll func(app string)) {
 	obs := make(chan string)
+	icons := NewIconObserver()
 	go func() {
 		ticker := time.NewTicker(pollInterval)
 		defer ticker.Stop()
@@ -88,8 +98,12 @@ func RunAppUsage(ctx context.Context, store *buffer.Store, pollInterval time.Dur
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
+				name, path := ForegroundProcessInfo()
+				icons.Observe(name, path, func(appID, sha, b64 string) {
+					AppendIconEvent(store, appID, sha, b64)
+				})
 				select {
-				case obs <- ForegroundProcessName():
+				case obs <- name:
 				case <-ctx.Done():
 					return
 				}

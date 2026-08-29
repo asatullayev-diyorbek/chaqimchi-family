@@ -31,6 +31,8 @@ class TopAppSerializer(serializers.Serializer):
     app = serializers.CharField()
     minutes = serializers.IntegerField()
     last_used_at = serializers.DateTimeField(allow_null=True)
+    # data:image/png;base64,... extracted from the app's exe, or null.
+    icon = serializers.CharField(allow_null=True, required=False)
 
 
 class DayBreakdownSerializer(serializers.Serializer):
@@ -58,6 +60,7 @@ class ActivityHistorySerializer(serializers.Serializer):
     event_type = serializers.CharField()
     app_name = serializers.CharField(allow_blank=True, allow_null=True)
     app_id = serializers.CharField(allow_blank=True, allow_null=True)
+    icon = serializers.CharField(allow_null=True, required=False)
     started_at = serializers.DateTimeField(allow_null=True)
     ended_at = serializers.DateTimeField(allow_null=True)
     duration_seconds = serializers.IntegerField(min_value=0, allow_null=True)

@@ -29,9 +29,22 @@ type Status struct {
 }
 
 // ForegroundReport is the POST /v1/foreground body. App is an executable
-// name like "chrome.exe", or "" when nothing is focused.
+// name like "chrome.exe", or "" when nothing is focused. The Icon* fields
+// are optional: the session reporter fills them the first time it sees a
+// new app so the service can persist that app's icon.
 type ForegroundReport struct {
-	App string `json:"app"`
+	App        string `json:"app"`
+	IconAppID  string `json:"icon_app_id,omitempty"`
+	IconSHA256 string `json:"icon_sha256,omitempty"`
+	IconPNGB64 string `json:"icon_png_b64,omitempty"`
+}
+
+// AppIconReport is one extracted app icon on its way from the session
+// reporter to the service's buffer.
+type AppIconReport struct {
+	AppID  string
+	SHA256 string
+	PNGB64 string
 }
 
 // Handler builds the IPC routes. If foreground is non-nil, POST
@@ -39,7 +52,7 @@ type ForegroundReport struct {
 // the channel is momentarily full, so a slow consumer can never block the
 // reporter); if nil, that route responds 404. Split out from Serve so tests
 // can drive it through httptest without binding the fixed Address.
-func Handler(status func() Status, foreground chan<- string) http.Handler {
+func Handler(status func() Status, foreground chan<- string, icons chan<- AppIconReport) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/status", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -59,14 +72,22 @@ func Handler(status func() Status, foreground chan<- string) http.Handler {
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			return
 		}
+		// An icon PNG rides this body as base64 (~4-10 KB); allow headroom
+		// but still cap it so a misbehaving reporter can't stream forever.
 		var report ForegroundReport
-		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&report); err != nil {
+		if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 512*1024)).Decode(&report); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 		select {
 		case foreground <- report.App:
 		default:
+		}
+		if icons != nil && report.IconAppID != "" && report.IconSHA256 != "" && report.IconPNGB64 != "" {
+			select {
+			case icons <- AppIconReport{AppID: report.IconAppID, SHA256: report.IconSHA256, PNGB64: report.IconPNGB64}:
+			default:
+			}
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
@@ -75,8 +96,8 @@ func Handler(status func() Status, foreground chan<- string) http.Handler {
 
 // Serve runs the local IPC server on the fixed loopback Address until ctx is
 // cancelled.
-func Serve(ctx context.Context, status func() Status, foreground chan<- string) error {
-	s := &http.Server{Handler: Handler(status, foreground), ReadHeaderTimeout: 3 * time.Second}
+func Serve(ctx context.Context, status func() Status, foreground chan<- string, icons chan<- AppIconReport) error {
+	s := &http.Server{Handler: Handler(status, foreground, icons), ReadHeaderTimeout: 3 * time.Second}
 	ln, err := net.Listen("tcp4", Address)
 	if err != nil {
 		return err

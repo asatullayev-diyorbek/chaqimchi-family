@@ -316,3 +316,103 @@ class ActivityHistoryTests(TestCase):
         self.client.force_authenticate(user=self.parent)
         self.assertEqual(self.client.get(self.url, {"limit": 0}).status_code, 400)
         self.assertEqual(self.client.get(self.url, {"offset": -1}).status_code, 400)
+
+
+# A real 1x1 PNG — enough to pass the magic-byte + base64 checks.
+_PNG_B64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk"
+    "+M9QDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
+
+
+class AppIconIngestTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(
+            email="icon@example.com", password="supersecret123"
+        )
+        self.device = ChildDevice.objects.create(
+            status=ChildDevice.STATUS_LINKED, family=self.parent.family
+        )
+        self.ingest_url = reverse("ingest")
+        self.summary_url = reverse("summary", kwargs={"device_id": self.device.id})
+
+    def _icon_event(self, app_id="chrome.exe", b64=_PNG_B64):
+        import base64
+        import hashlib
+
+        return {
+            "type": "app_icon",
+            "app_id": app_id,
+            "sha256": hashlib.sha256(base64.b64decode(b64)).hexdigest(),
+            "png_b64": b64,
+        }
+
+    def _ingest(self, events, batch_id="b-icon"):
+        return self.client.post(
+            self.ingest_url,
+            {"device_id": str(self.device.id), "batch_id": batch_id, "events": events},
+            format="json",
+            **auth_header(self.device),
+        )
+
+    def test_app_icon_event_is_stored_not_as_event_row(self):
+        from .models import DeviceAppIcon
+
+        response = self._ingest([self._icon_event()])
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["icons_updated"], 1)
+        self.assertEqual(Event.objects.filter(event_type="app_icon").count(), 0)
+        self.assertEqual(DeviceAppIcon.objects.filter(device=self.device, app_id="chrome.exe").count(), 1)
+
+    def test_resending_same_icon_is_a_noop(self):
+        self._ingest([self._icon_event()], batch_id="b1")
+        response = self._ingest([self._icon_event()], batch_id="b2")
+        self.assertEqual(response.json()["icons_updated"], 0)
+
+    def test_invalid_icon_payload_is_skipped(self):
+        bad = {"type": "app_icon", "app_id": "x.exe", "sha256": "nothex", "png_b64": "zzzz"}
+        response = self._ingest([bad])
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["icons_updated"], 0)
+        self.assertEqual(response.json()["events_skipped"], 1)
+
+    def test_oversized_icon_is_rejected(self):
+        response = self._ingest([self._icon_event(b64="A" * (200 * 1024))])
+        self.assertEqual(response.json()["icons_updated"], 0)
+
+    def test_summary_top_apps_include_icon_data_uri(self):
+        self._ingest(
+            [
+                {
+                    "type": "app_usage",
+                    "app_id": "chrome.exe",
+                    "started_at": "2026-07-28T10:00:00Z",
+                    "ended_at": "2026-07-28T10:10:00Z",
+                    "duration_seconds": 600,
+                },
+                self._icon_event(),
+            ]
+        )
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.summary_url, {"date": "2026-07-28"})
+        self.assertEqual(response.status_code, 200)
+        top = response.json()["top_apps"][0]
+        self.assertEqual(top["app"], "chrome.exe")
+        self.assertTrue(top["icon"].startswith("data:image/png;base64,"))
+
+    def test_summary_icon_is_null_when_unknown(self):
+        self._ingest(
+            [
+                {
+                    "type": "app_usage",
+                    "app_id": "mystery.exe",
+                    "started_at": "2026-07-28T10:00:00Z",
+                    "ended_at": "2026-07-28T10:10:00Z",
+                    "duration_seconds": 600,
+                }
+            ]
+        )
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.summary_url, {"date": "2026-07-28"})
+        self.assertIsNone(response.json()["top_apps"][0]["icon"])

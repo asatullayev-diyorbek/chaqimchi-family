@@ -6,6 +6,8 @@ import AppShell from "@/components/layout/AppShell";
 import { getAccessToken } from "@/api/client";
 import { ActivityHistoryItem, Device, DeviceSummary, SummaryRange, getActivityHistory, getDevices, getSummary } from "@/api/tracking";
 import { toast } from "react-hot-toast";
+import AppIcon from "@/components/AppIcon";
+import { appDisplay } from "@/lib/appDisplay";
 
 const RANGE_LABELS: Record<SummaryRange, string> = {
   day: "Bugun",
@@ -172,9 +174,10 @@ function ActivityContent() {
                 {!historyLoading && !historyError && history.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column" }}>
                     {history.map((item) => (
-                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 0", borderBottom: "1px solid rgba(37,99,235,.08)" }}>
-                        <time style={{ width: 48, color: "var(--muted)", fontSize: 13 }}>{formatActivityTime(item.started_at || item.created_at)}</time>
-                        <span style={{ flex: 1, fontWeight: 700, color: "var(--foreground)" }}>{item.app_name || item.app_id || "Noma’lum ilova"}</span>
+                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(37,99,235,.08)" }}>
+                        <time style={{ width: 44, color: "var(--muted)", fontSize: 13 }}>{formatActivityTime(item.started_at || item.created_at)}</time>
+                        <AppIcon appId={item.app_id} appName={item.app_name} icon={item.icon} size={30} />
+                        <span style={{ flex: 1, fontWeight: 700, color: "var(--foreground)" }}>{appDisplay(item.app_id, item.app_name).label}</span>
                         <span style={{ color: "var(--muted)", fontSize: 13 }}>{item.duration_seconds == null ? "—" : formatMinutes(Math.round(item.duration_seconds / 60))}</span>
                       </div>
                     ))}
@@ -299,15 +302,19 @@ function ActivityContent() {
                   <h3>Ilovalar bo'yicha foydalanish</h3>
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column'}}>
-                  {sortedApps.map((app) => (
+                  {sortedApps.map((app) => {
+                    const d = appDisplay(app.app);
+                    return (
                     <div className="activity-item" key={app.app} style={{display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', borderBottom: '1px solid rgba(37,99,235,.08)'}}>
-                       <span className="app-icon" style={{display: 'grid', placeItems: 'center', width: 34, height: 34, borderRadius: 10, background: 'var(--cat-blue-bg)', color: 'var(--cat-blue)'}}>
-                         <iconify-icon icon="solar:smartphone-linear" style={{fontSize: 18}}></iconify-icon>
+                       <AppIcon appId={app.app} icon={app.icon} size={34} />
+                       <span style={{flex: 1, minWidth: 0}}>
+                         <span style={{display: 'block', fontWeight: 700, fontSize: 14, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{d.label}</span>
+                         <span style={{fontSize: 12, color: d.color}}>{d.categoryLabel}</span>
                        </span>
-                       <span style={{flex: 1, fontWeight: 700, fontSize: 14, color: 'var(--foreground)'}}>{app.app}</span>
                        <em style={{color: 'var(--muted)', fontStyle: 'normal', fontSize: 13, fontWeight: 600}}>{formatMinutes(app.minutes)}</em>
                     </div>
-                  ))}
+                    );
+                  })}
                   {sortedApps.length === 0 && <p style={{color: 'var(--muted)', fontSize: 13, margin: '10px 0'}}>Bu davrda ma'lumot yo'q</p>}
                 </div>
               </div>

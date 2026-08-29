@@ -9,8 +9,9 @@ import { Device, DeviceSummary, getDevices, getSummary } from "@/api/tracking";
 import { getDailyLimitMinutes, getRules, Rule } from "@/api/rules";
 import { Alert, getAlerts } from "@/api/alerts";
 import { toast } from "react-hot-toast";
+import AppIcon from "@/components/AppIcon";
+import { appDisplay, CATEGORY_META } from "@/lib/appDisplay";
 
-const APP_COLORS = ["#2fc8ad", "#6f97f0", "#f5c04e", "#c7cfd8"];
 const WEEKDAYS_UZ = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"];
 
 function formatMinutes(minutes: number) {
@@ -22,15 +23,6 @@ function formatMinutes(minutes: number) {
 
 function shortDay(date: string) {
   return WEEKDAYS_UZ[new Date(`${date}T00:00:00`).getDay()];
-}
-
-function getAppDisplayInfo(appName: string, index: number) {
-  const lower = appName.toLowerCase();
-  if (lower.includes("youtube")) return { icon: "logos:youtube-icon", tag: "Boshqa", color: "#6b7a86", bg: "#eaeef0", wrapperBg: "transparent" };
-  if (lower.includes("code") || lower.includes("py")) return { icon: "logos:visual-studio-code", tag: "Dasturlash", color: "#3b6fd6", bg: "#e6edfc", wrapperBg: "transparent" };
-  if (lower.includes("telegram")) return { icon: "logos:telegram", tag: "Boshqa", color: "#6b7a86", bg: "#eaeef0", wrapperBg: "transparent" };
-  if (lower.includes("roblox") || lower.includes("minecraft") || lower.includes("game")) return { icon: "fluent-emoji-flat:video-game", tag: "O'yinlar", color: "#d97706", bg: "#fef3c7", wrapperBg: "transparent" };
-  return { icon: "solar:smartphone-linear", tag: "Ilova", color: "#3b6fd6", bg: "#e6edfc", wrapperBg: APP_COLORS[index % APP_COLORS.length] };
 }
 
 function OverviewContent() {
@@ -81,12 +73,23 @@ function OverviewContent() {
   const limitMinutes = getDailyLimitMinutes(rules);
   
   const appTotal = summary?.top_apps?.reduce((total, app) => total + app.minutes, 0) ?? 0;
-  const categories = (summary?.top_apps ?? []).slice(0, 4).map((app, index) => ({
-    label: app.app,
-    minutes: app.minutes,
-    color: APP_COLORS[index % APP_COLORS.length],
-    percent: appTotal ? Math.round((app.minutes / appTotal) * 100) : 0,
-  }));
+  const byCategory = new Map<string, number>();
+  for (const app of summary?.top_apps ?? []) {
+    const cat = appDisplay(app.app).category;
+    byCategory.set(cat, (byCategory.get(cat) ?? 0) + app.minutes);
+  }
+  const categories = [...byCategory.entries()]
+    .map(([cat, minutes]) => {
+      const meta = CATEGORY_META[cat as keyof typeof CATEGORY_META];
+      return {
+        label: meta.label,
+        minutes,
+        color: meta.color,
+        percent: appTotal ? Math.round((minutes / appTotal) * 100) : 0,
+      };
+    })
+    .sort((a, b) => b.minutes - a.minutes)
+    .slice(0, 4);
   
   // Server breakdown is already the last 7 calendar days in the account's
   // timezone — use it directly instead of rebuilding dates client-side (which
@@ -207,15 +210,13 @@ function OverviewContent() {
 
 
 
-          {(summary?.top_apps ?? []).slice(0, 4).map((app, index) => {
-            const info = getAppDisplayInfo(app.app, index);
+          {(summary?.top_apps ?? []).slice(0, 4).map((app) => {
+            const d = appDisplay(app.app);
             return (
               <div className="activity-item" key={app.app}>
-                <span className="app-icon" style={{background: info.wrapperBg}}>
-                  <iconify-icon icon={info.icon}></iconify-icon>
-                </span>
-                <span>{app.app}</span>
-                <em className="cat-tag" style={{color: info.color, background: info.bg}}>{info.tag}</em>
+                <AppIcon appId={app.app} icon={app.icon} size={34} />
+                <span>{d.label}</span>
+                <em className="cat-tag" style={{color: d.color, background: d.bg}}>{d.categoryLabel}</em>
                 <small>{app.last_used_at ? new Date(app.last_used_at).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }) : "Bugun"}</small>
               </div>
             );

@@ -29,6 +29,28 @@ import (
 // itself is whatever the producer uses. Timing of the emitted events comes
 // from when observations arrive, so a stalled producer simply stops
 // advancing the current interval rather than mis-attributing time.
+// AppendIconEvent stores an "app_icon" event carrying a base64 PNG the agent
+// extracted from an app's exe. Ingest folds these into one current icon per
+// app (DeviceAppIcon) instead of a time series, and dedupes by sha256, so
+// sending the same icon again is a cheap no-op.
+func AppendIconEvent(store *buffer.Store, appID, sha256hex, pngB64 string) {
+	if appID == "" || sha256hex == "" || pngB64 == "" {
+		return
+	}
+	payload, _ := json.Marshal(map[string]any{
+		"type":    "app_icon",
+		"app_id":  appID,
+		"sha256":  sha256hex,
+		"png_b64": pngB64,
+	})
+	store.Append(buffer.Event{
+		ID:        uuid.NewString(),
+		Type:      "app_icon",
+		Payload:   payload,
+		CreatedAt: time.Now(),
+	})
+}
+
 func RunAppUsageFromObservations(ctx context.Context, store *buffer.Store, obs <-chan string, onPoll func(app string)) {
 	var currentApp string
 	var startedAt time.Time

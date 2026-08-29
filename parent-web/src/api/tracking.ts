@@ -4,6 +4,8 @@ export type TopApp = {
   app: string;
   minutes: number;
   last_used_at: string | null;
+  /** data:image/png;base64,... extracted from the app's exe, or null */
+  icon: string | null;
 };
 
 export type DayBreakdown = {
@@ -44,6 +46,7 @@ export type ActivityHistoryItem = {
   event_type: "app_usage";
   app_name: string;
   app_id: string;
+  icon: string | null;
   started_at: string | null;
   ended_at: string | null;
   duration_seconds: number | null;

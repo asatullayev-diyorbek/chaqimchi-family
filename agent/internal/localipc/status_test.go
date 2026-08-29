@@ -17,9 +17,55 @@ func TestStatusIsDisplayOnly(t *testing.T) {
 
 func testServer(t *testing.T, foreground chan<- string) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, foreground))
+	return testServerWithIcons(t, foreground, nil)
+}
+
+func testServerWithIcons(t *testing.T, foreground chan<- string, icons chan<- AppIconReport) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, foreground, icons))
 	t.Cleanup(srv.Close)
 	return srv
+}
+
+func TestAppIconRidesForegroundReport(t *testing.T) {
+	fg := make(chan string, 1)
+	icons := make(chan AppIconReport, 1)
+	srv := testServerWithIcons(t, fg, icons)
+
+	body := `{"app":"chrome.exe","icon_app_id":"chrome.exe","icon_sha256":"abc","icon_png_b64":"iVBOR"}`
+	resp, err := http.Post(srv.URL+"/v1/foreground", "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("post: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("want 204, got %d", resp.StatusCode)
+	}
+	select {
+	case got := <-icons:
+		if got.AppID != "chrome.exe" || got.SHA256 != "abc" || got.PNGB64 != "iVBOR" {
+			t.Fatalf("unexpected icon report: %+v", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("icon report never reached the channel")
+	}
+}
+
+func TestForegroundReportWithoutIconLeavesIconChannelEmpty(t *testing.T) {
+	fg := make(chan string, 1)
+	icons := make(chan AppIconReport, 1)
+	srv := testServerWithIcons(t, fg, icons)
+
+	resp, err := http.Post(srv.URL+"/v1/foreground", "application/json", strings.NewReader(`{"app":"chrome.exe"}`))
+	if err != nil {
+		t.Fatalf("post: %v", err)
+	}
+	resp.Body.Close()
+	select {
+	case got := <-icons:
+		t.Fatalf("did not expect an icon report, got %+v", got)
+	case <-time.After(100 * time.Millisecond):
+	}
 }
 
 func TestForegroundReportReachesChannel(t *testing.T) {

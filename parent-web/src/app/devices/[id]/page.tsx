@@ -9,6 +9,8 @@ import { Device, DeviceSummary, getDevices, getSummary, unlinkDevice, updateDevi
 import { Child, getChildren } from "@/api/children";
 import { toast } from "react-hot-toast";
 import TopbarActions from "@/components/layout/TopbarActions";
+import AppIcon from "@/components/AppIcon";
+import { appDisplay } from "@/lib/appDisplay";
 
 function formatTime(value: string | null) {
   if (!value) return "Noma'lum";
@@ -244,8 +246,9 @@ function DeviceDetailContent() {
             {summary && summary.top_apps.length > 0 ? (
               <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 10 }}>
                 {summary.top_apps.slice(0, 6).map((app) => (
-                  <li key={app.app} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
-                    <span style={{ fontWeight: 600 }}>{app.app}</span>
+                  <li key={app.app} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
+                    <AppIcon appId={app.app} icon={app.icon} size={28} />
+                    <span style={{ flex: 1, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appDisplay(app.app).label}</span>
                     <span style={{ color: "var(--muted)" }}>{formatMinutes(app.minutes)}</span>
                   </li>
                 ))}

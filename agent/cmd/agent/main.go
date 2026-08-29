@@ -16,6 +16,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -78,10 +79,13 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	startedAt := time.Now().UTC().Format(time.RFC3339)
 
 	// In service (session 0) mode the foreground probe runs in a helper
-	// process in the user's session and reports app names here.
+	// process in the user's session and reports app names — and, the first
+	// time it sees each app, that app's extracted icon — here.
 	var foregroundCh chan string
+	var iconCh chan localipc.AppIconReport
 	if !interactive {
 		foregroundCh = make(chan string, 8)
+		iconCh = make(chan localipc.AppIconReport, 8)
 	}
 	go func() {
 		if err := localipc.Serve(ctx, func() localipc.Status {
@@ -90,7 +94,7 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 				Monitoring: []string{"Ekran vaqti", "Ilova nomlari", "Qurilma holati"},
 				RecentLogs: []string{"Service Started: " + startedAt, "Automatic updates: disabled until signed-update support"},
 			}
-		}, foregroundCh); err != nil && ctx.Err() == nil {
+		}, foregroundCh, iconCh); err != nil && ctx.Err() == nil {
 			log.Printf("local desktop IPC: %v", err)
 		}
 	}()
@@ -171,6 +175,16 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 			log.Printf("cannot locate own executable for session reporter: %v", exeErr)
 		}
 		go tracker.RunAppUsageFromObservations(ctx, store, foregroundCh, onPoll)
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case rep := <-iconCh:
+					tracker.AppendIconEvent(store, rep.AppID, rep.SHA256, rep.PNGB64)
+				}
+			}
+		}()
 	}
 
 	<-ctx.Done()
@@ -202,8 +216,29 @@ func runForegroundReporter(parentPID int) {
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 	fails := 0
+
+	// Icons are extracted once per exe path, then attached to the report for
+	// the matching app until one POST succeeds carrying them (the service
+	// acks with 2xx). A fresh reporter re-extracts, and the backend dedupes
+	// by sha256, so an occasional lost icon is self-healing.
+	type iconPayload struct{ sha, b64 string }
+	extracted := map[string]bool{}
+	pendingIcons := map[string]iconPayload{}
+
 	for range ticker.C {
-		body, _ := json.Marshal(localipc.ForegroundReport{App: tracker.ForegroundProcessName()})
+		name, path := tracker.ForegroundProcessInfo()
+		report := localipc.ForegroundReport{App: name}
+		if name != "" && path != "" && !extracted[path] {
+			extracted[path] = true
+			if pngBytes, sha, iconErr := tracker.ExtractIconPNG(path); iconErr == nil && len(pngBytes) > 0 {
+				pendingIcons[name] = iconPayload{sha: sha, b64: base64.StdEncoding.EncodeToString(pngBytes)}
+			}
+		}
+		if ic, ok := pendingIcons[name]; ok {
+			report.IconAppID, report.IconSHA256, report.IconPNGB64 = name, ic.sha, ic.b64
+		}
+
+		body, _ := json.Marshal(report)
 		req, err := http.NewRequest(http.MethodPost, endpointURL, bytes.NewReader(body))
 		if err != nil {
 			continue
@@ -217,6 +252,9 @@ func runForegroundReporter(parentPID int) {
 			continue
 		}
 		resp.Body.Close()
+		if resp.StatusCode/100 == 2 && report.IconAppID != "" {
+			delete(pendingIcons, report.IconAppID)
+		}
 		fails = 0
 	}
 }
