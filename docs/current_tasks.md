@@ -502,10 +502,35 @@ Local qism bajarildi, VirusTotal foydalanuvchining API kaliti / qo'lda yuklashin
 
 - [x] **SHA-256 builddan keyin o'zgarmagan:** `9D5743764B8A8B027FCFD293712F3145277057F08487911ADB477B45E6E8BD35` (22 397 929 bayt). `releases/windows/ChaqimchiAI Guard Setup.exe.sha256` sidecar yaratildi (`sign-release.ps1` formatida: `<hash>  <name>`).
 - [x] **Windows Defender local scan clean:** `MpCmdRun.exe -Scan -ScanType 3` — final installer + uchala ichki EXE (`ChaqimchiAI Guard.exe`, `... Installer.exe`, `... Desktop.exe`) → hammasi "found no threats", exit 0. Real-time protection yoqilgan holatda build qilingan, quarantine bo'lmagan. Signature 1.457.286.0 (2026-08-22).
-- [ ] **VirusTotal:** yuklanmagan — VT API kaliti yo'q. Eslatma: installer **imzolanmagan** (CT-08 "unsigned MVP"). Imzolanmagan Go binariylar VT'da odatda bir nechta evristik false-positive oladi (Go-specific: "Wacatac", "Trojan.Generic" kabi) — 2–10 detection kutilishi mumkin, bu MVP uchun normal, lekin qayd etilishi kerak.
-- [ ] Detection tahlili / BLOCKED qarori / false-positive submission — VT natijasidan keyin.
+- [x] **VirusTotal — 2026-08-29:** aynan public artifact yuborildi (yuklashdan
+      oldin SHA-256 `release.json` bilan solishtirildi, mos keldi).
+      Natija: **0 malicious / 0 suspicious / 69 undetected**
+      (1 failure, 5 type-unsupported — bular engine nosozligi, detection emas).
 
-**CT-09 holati:** `PARTIAL PASS` — integrity ✅, Defender ✅; VirusTotal ochiq.
+      Hisobot:
+      <https://www.virustotal.com/gui/file/9d5743764b8a8b027fcfd293712f3145277057f08487911adb477b45e6e8bd35>
+
+      Kutilgan 2–10 evristik false-positive **umuman chiqmadi** — imzolanmagan
+      Go binariysi uchun bu kutilganidan ancha yaxshi natija.
+- [x] **Maqsad 0–1 detection:** bajarildi (0).
+- [x] Detection tahlili / BLOCKED qarori: detection yo'q, release bloklanmaydi.
+- [x] False-positive submission: kerak emas.
+
+**CT-09 holati:** `PASS` — integrity ✅, Defender ✅, VirusTotal 0/69 ✅.
+
+**Muhim cheklov:** bu natija **shu build**ning (`0.4.0-rc.1`,
+SHA-256 `9D57…BD35`) bir paytdagi holati. Har yangi build — yangi bayt, yangi
+hash — qaytadan skanerlanishi kerak; VT natijasi build'lar orasida ko'chmaydi.
+
+**VT ≠ SmartScreen.** Nol detection SmartScreen ogohlantirishini olib
+tashlamaydi: SmartScreen reputatsiyasi imzo va yuklab olishlar hajmiga
+qarab yig'iladi, antivirus natijasiga emas. Foydalanuvchi baribir
+"More info → Run anyway" bosadi (CT-08 qarori).
+
+**Kichik nomuvofiqlik tuzatildi:** yuqorida fayl hajmi 22 397 929 bayt deb
+yozilgan edi; haqiqiy artifact 23 589 642 bayt (`release.json` bilan bir xil).
+SHA-256 aynan mos kelgani uchun fayl o'sha faylning o'zi — hajm raqami
+xato yozilgan bo'lган.
 
 ---
 
