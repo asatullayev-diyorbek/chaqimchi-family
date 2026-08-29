@@ -279,9 +279,9 @@ export default function DayTimeline({
                 <div style={{ position: "absolute", left: pct(cursor), top: 12, height: 10 + lanes.length * ROW_H, width: 1.5, background: "var(--brand-blue, #2563eb)", pointerEvents: "none", zIndex: 5 }}>
                   <span
                     style={{
-                      position: "absolute", top: -13, left: 0, transform: `translateX(${edgeShift})`,
-                      fontSize: 10, fontWeight: 800, letterSpacing: 0.3, color: "#fff",
-                      background: "var(--brand-blue, #2563eb)", padding: "1px 5px", borderRadius: 5, whiteSpace: "nowrap",
+                      position: "absolute", top: -20, left: 0, transform: `translateX(${edgeShift})`,
+                      fontSize: 12.5, fontWeight: 800, letterSpacing: 0.3, color: "#fff",
+                      background: "var(--brand-blue, #2563eb)", padding: "2px 7px", borderRadius: 6, whiteSpace: "nowrap",
                     }}
                   >
                     {fmtHm(cursor)}
