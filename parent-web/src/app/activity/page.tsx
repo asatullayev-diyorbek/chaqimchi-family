@@ -197,18 +197,23 @@ function ActivityContent() {
             {tab === "history" && (
               <>
               <div className="card" style={{ padding: 20, marginBottom: 16 }}>
-                <div className="card-header" style={{ marginBottom: 14 }}>
-                  <h3>Kunlik vaqt jadvali</h3>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                    <button className="btn-view" style={{ padding: "4px 8px" }} onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, -1)); }}>‹</button>
-                    <span style={{ minWidth: 96, textAlign: "center", fontWeight: 600, fontSize: 13 }}>{humanDay(historyDate)}</span>
-                    <button className="btn-view" style={{ padding: "4px 8px" }} disabled={historyDate >= todayISO()} onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, 1)); }}>›</button>
-                  </div>
-                </div>
                 {timelineLoading ? (
-                  <p style={{ color: "var(--muted)" }}>Yuklanmoqda...</p>
+                  <p style={{ color: "var(--muted)", padding: "20px 0" }}>Yuklanmoqda...</p>
                 ) : (
-                  <DayTimeline segments={timeline} isToday={historyDate === todayISO()} />
+                  <DayTimeline
+                    segments={timeline}
+                    isToday={historyDate === todayISO()}
+                    dateISO={historyDate}
+                    dateTitle={humanDay(historyDate)}
+                    dateSubtitle={new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long", weekday: "long" }).format(new Date(historyDate + "T00:00:00"))}
+                    nav={
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <button className="btn-view" style={{ padding: "4px 9px" }} onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, -1)); }} aria-label="Oldingi kun">‹</button>
+                        <span style={{ minWidth: 88, textAlign: "center", fontWeight: 700, fontSize: 13 }}>{humanDay(historyDate)}</span>
+                        <button className="btn-view" style={{ padding: "4px 9px" }} disabled={historyDate >= todayISO()} onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, 1)); }} aria-label="Keyingi kun">›</button>
+                      </div>
+                    }
+                  />
                 )}
               </div>
 
