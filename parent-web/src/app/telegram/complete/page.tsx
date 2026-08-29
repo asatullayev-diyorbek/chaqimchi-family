@@ -5,12 +5,28 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { telegramComplete } from "@/api/auth";
 import { getAccessToken } from "@/api/client";
+import TransparencyTable from "@/components/TransparencyTable";
 import { toast } from "react-hot-toast";
+
+const PREFILL_KEY = "telegram_prefill";
+
+/** Name/username the bot already knows, stashed by the login page. */
+function readPrefill(): { username?: string; full_name?: string } {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(sessionStorage.getItem(PREFILL_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
 
 export default function TelegramCompletePage() {
   const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [fullName, setFullName] = useState("");
+  // Lazy initialisers instead of setting state from an effect: the prefill is
+  // already in sessionStorage when this page mounts, so there is nothing to
+  // wait for and the fields render filled on the first paint.
+  const [username, setUsername] = useState(() => readPrefill().username ?? "");
+  const [fullName, setFullName] = useState(() => readPrefill().full_name ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -18,22 +34,7 @@ export default function TelegramCompletePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.replace("/login");
-      return;
-    }
-    setTimeout(() => {
-      try {
-        const raw = sessionStorage.getItem("telegram_prefill");
-        if (raw) {
-          const prefill = JSON.parse(raw) as { username?: string; full_name?: string };
-          setUsername(prefill.username || "");
-          setFullName(prefill.full_name || "");
-        }
-      } catch {
-        // No prefill available — fields stay editable and empty.
-      }
-    }, 0);
+    if (!getAccessToken()) router.replace("/login");
   }, [router]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -47,7 +48,7 @@ export default function TelegramCompletePage() {
     setLoading(true);
     try {
       await telegramComplete({ username, full_name: fullName, password });
-      sessionStorage.removeItem("telegram_prefill");
+      sessionStorage.removeItem(PREFILL_KEY);
       router.replace("/overview");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Xatolik yuz berdi";
@@ -106,6 +107,13 @@ export default function TelegramCompletePage() {
             <div className="auth-input-wrap"><iconify-icon icon="lucide:lock-keyhole" />
               <input id="tg-password-confirm" type={showPassword ? "text" : "password"} required minLength={8} autoComplete="new-password" placeholder="Parolni qayta kiriting" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
             </div>
+          </div>
+
+          {/* Shown at the one moment a parent is actually signing up, which
+              is what the design docs ask for — it used to sit on the unused
+              email/password signup page instead. */}
+          <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
+            <TransparencyTable />
           </div>
 
           {error && <div className="auth-error" role="alert">{error}</div>}
