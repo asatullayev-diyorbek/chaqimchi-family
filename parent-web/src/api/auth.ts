@@ -55,8 +55,12 @@ export type TelegramStatus =
     };
 
 export async function telegramStatus(token: string): Promise<TelegramStatus> {
+  // Polled on a loop by the login page: must never be served from the GET
+  // cache, or the poll keeps seeing the first "pending" until the TTL runs
+  // out and the login appears to hang.
   const result = (await apiFetch(`/api/auth/telegram/status/${token}/`, {
     skipAuth: true,
+    noCache: true,
   })) as TelegramStatus;
   if (result.status === "linked") {
     setTokens(result.access, result.refresh);

@@ -68,7 +68,10 @@ function isTokenExpired(token: string | null): boolean {
 	}
 }
 
-type ApiFetchOptions = RequestInit & { skipAuth?: boolean };
+// noCache opts a GET out of the response cache and the in-flight dedup —
+// required for anything polled in a loop, where a cached "still pending"
+// would hide the state change the poll exists to detect.
+type ApiFetchOptions = RequestInit & { skipAuth?: boolean; noCache?: boolean };
 
 const GET_CACHE_TTL_MS = 60_000;
 const REQUEST_TIMEOUT_MS = 25_000;
@@ -126,15 +129,18 @@ async function fetchWithTimeout(url: string, init: RequestInit): Promise<Respons
   }
 }
 
-export async function apiFetch(path: string, { skipAuth = false, ...options }: ApiFetchOptions = {}) {
+export async function apiFetch(path: string, { skipAuth = false, noCache = false, ...options }: ApiFetchOptions = {}) {
   const method = (options.method ?? "GET").toUpperCase();
   let token = skipAuth ? null : getAccessToken();
   // Refresh up front when the token is missing or (nearly) expired, so a
   // burst of parallel requests doesn't each trigger its own 401 → refresh.
   if (!skipAuth && isTokenExpired(token)) token = await refreshAccessToken();
   const isGet = method === "GET";
-  const key = isGet ? cacheKey(path, token) : "";
-  if (isGet) {
+  // Two separate properties that used to share one flag: a GET is always
+  // safe to retry, but only a non-polled one may be served from cache.
+  const isCacheable = isGet && !noCache;
+  const key = isCacheable ? cacheKey(path, token) : "";
+  if (isCacheable) {
     const cached = getCache.get(key);
     if (cached && cached.expiresAt > Date.now()) return cached.value;
     const pending = inFlightGets.get(key);
@@ -186,12 +192,14 @@ export async function apiFetch(path: string, { skipAuth = false, ...options }: A
       throw new Error(errorMessage);
     }
     const value = response.status === 204 ? null : await response.json();
-    if (isGet) getCache.set(key, { expiresAt: Date.now() + GET_CACHE_TTL_MS, value });
-    else clearApiCache();
+    if (isCacheable) getCache.set(key, { expiresAt: Date.now() + GET_CACHE_TTL_MS, value });
+    // Only a mutation invalidates cached reads. A polled GET is still a
+    // read — it must not wipe everyone else's cache on every tick.
+    else if (!isGet) clearApiCache();
     return value;
   })();
 
-  if (isGet) {
+  if (isCacheable) {
     inFlightGets.set(key, request);
     request.then(
       () => inFlightGets.delete(key),
