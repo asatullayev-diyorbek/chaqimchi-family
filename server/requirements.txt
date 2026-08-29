@@ -9,3 +9,4 @@ psycopg2-binary==2.9.12
 PyJWT==2.13.0
 redis==8.0.1
 django-cors-headers==4.9.0
+tzdata==2025.2

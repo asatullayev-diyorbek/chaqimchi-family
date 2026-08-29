@@ -56,9 +56,22 @@ export function getAccessToken(): string | null {
 	return token;
 }
 
+function isTokenExpired(token: string | null): boolean {
+	if (!token) return true;
+	try {
+		const payload = JSON.parse(atob(token.split(".")[1]));
+		// Treat a token that dies within 30s as already expired so we refresh
+		// once up front instead of eating a 401 round trip mid-request.
+		return typeof payload.exp !== "number" || payload.exp * 1000 <= Date.now() + 30_000;
+	} catch {
+		return true;
+	}
+}
+
 type ApiFetchOptions = RequestInit & { skipAuth?: boolean };
 
-const GET_CACHE_TTL_MS = 15_000;
+const GET_CACHE_TTL_MS = 60_000;
+const REQUEST_TIMEOUT_MS = 25_000;
 const getCache = new Map<string, { expiresAt: number; value: unknown }>();
 const inFlightGets = new Map<string, Promise<unknown>>();
 
@@ -77,25 +90,48 @@ function requestHeaders(options: RequestInit, token: string | null): Record<stri
   return headers;
 }
 
+let inFlightRefresh: Promise<string | null> | null = null;
+
 async function refreshAccessToken(): Promise<string | null> {
+  // Parallel requests (the dashboard fires several at once) must share a
+  // single refresh call — otherwise each one POSTs the refresh token and
+  // hammers the single-worker backend, and the responses race.
+  if (inFlightRefresh) return inFlightRefresh;
   const refresh = getRefreshToken();
   if (!refresh) return null;
+  inFlightRefresh = (async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login/refresh/`, { method: "POST", headers: requestHeaders({}, null), body: JSON.stringify({ refresh }) });
+      if (!response.ok) throw new Error("Refresh token invalid");
+      const data = await response.json() as { access: string };
+      setAccessToken(data.access);
+      return data.access;
+    } catch {
+      clearTokens();
+      return null;
+    } finally {
+      inFlightRefresh = null;
+    }
+  })();
+  return inFlightRefresh;
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login/refresh/`, { method: "POST", headers: requestHeaders({}, null), body: JSON.stringify({ refresh }) });
-    if (!response.ok) throw new Error("Refresh token invalid");
-    const data = await response.json() as { access: string };
-    setAccessToken(data.access);
-    return data.access;
-  } catch {
-    clearTokens();
-    return null;
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 export async function apiFetch(path: string, { skipAuth = false, ...options }: ApiFetchOptions = {}) {
   const method = (options.method ?? "GET").toUpperCase();
   let token = skipAuth ? null : getAccessToken();
-  if (!skipAuth && !token) token = await refreshAccessToken();
+  // Refresh up front when the token is missing or (nearly) expired, so a
+  // burst of parallel requests doesn't each trigger its own 401 → refresh.
+  if (!skipAuth && isTokenExpired(token)) token = await refreshAccessToken();
   const isGet = method === "GET";
   const key = isGet ? cacheKey(path, token) : "";
   if (isGet) {
@@ -106,10 +142,24 @@ export async function apiFetch(path: string, { skipAuth = false, ...options }: A
   }
 
   const request = (async () => {
-    let response = await fetch(`${API_BASE_URL}${path}`, { ...options, method, headers: requestHeaders(options, token) });
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(`${API_BASE_URL}${path}`, { ...options, method, headers: requestHeaders(options, token) });
+    } catch (err) {
+      const timedOut = err instanceof Error && err.name === "AbortError";
+      const friendly = new Error("So‘rov javob bermadi. Internet aloqasini tekshiring va qayta urinib ko‘ring.");
+      // Timeout or network drop. GETs are safe to retry once — the free host
+      // occasionally stalls a request while it wakes a worker.
+      if (!isGet) throw timedOut ? friendly : err;
+      try {
+        response = await fetchWithTimeout(`${API_BASE_URL}${path}`, { ...options, method, headers: requestHeaders(options, token) });
+      } catch (retryErr) {
+        throw retryErr instanceof Error && retryErr.name === "AbortError" ? friendly : retryErr;
+      }
+    }
     if (response.status === 401 && !skipAuth) {
       const refreshed = await refreshAccessToken();
-      if (refreshed) response = await fetch(`${API_BASE_URL}${path}`, { ...options, method, headers: requestHeaders(options, refreshed) });
+      if (refreshed) response = await fetchWithTimeout(`${API_BASE_URL}${path}`, { ...options, method, headers: requestHeaders(options, refreshed) });
     }
     if (!response.ok) {
       const bodyText = await response.text();

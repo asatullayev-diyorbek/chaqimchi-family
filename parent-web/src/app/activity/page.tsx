@@ -62,16 +62,21 @@ function ActivityContent() {
 
   const activeDeviceId = deviceId ?? devices?.find((d) => d.child_id === childId && d.status === "linked")?.id ?? devices?.find((d) => d.status === "linked")?.id ?? null;
 
+  const onSummaryTab = tab === "screen" || tab === "apps";
   useEffect(() => {
-    if (!activeDeviceId || (tab !== "screen" && tab !== "apps")) return;
-    setTimeout(() => {
+    if (!activeDeviceId || !onSummaryTab) return;
+    let cancelled = false;
+    const start = setTimeout(() => {
+      if (cancelled) return;
       setSummaryLoading(true);
       setSummaryError(false);
     }, 0);
     (async () => {
       try {
-        setSummary(await getSummary(activeDeviceId, { range }));
+        const data = await getSummary(activeDeviceId, { range });
+        if (!cancelled) setSummary(data);
       } catch (err) {
+        if (cancelled) return;
         setSummaryError(true);
         toast.error(
           err instanceof Error
@@ -79,19 +84,19 @@ function ActivityContent() {
           : "Ma'lumotlar yangilanmadi, birozdan keyin qayta urinib ko'ring"
         );
       } finally {
-        setSummaryLoading(false);
+        if (!cancelled) setSummaryLoading(false);
       }
     })();
-  }, [activeDeviceId, range, tab, summaryRetry]);
+    return () => { cancelled = true; clearTimeout(start); };
+  }, [activeDeviceId, range, onSummaryTab, summaryRetry]);
 
   useEffect(() => {
     if (!activeDeviceId || tab !== "history") return;
     let cancelled = false;
-    setTimeout(() => {
-      if (!cancelled) {
-        setHistoryLoading(true);
-        setHistoryError(false);
-      }
+    const start = setTimeout(() => {
+      if (cancelled) return;
+      setHistoryLoading(true);
+      setHistoryError(false);
     }, 0);
     getActivityHistory(activeDeviceId, { limit: 50, offset: historyOffset })
       .then((data) => {
@@ -106,7 +111,7 @@ function ActivityContent() {
       .finally(() => {
         if (!cancelled) setHistoryLoading(false);
       });
-    return () => { cancelled = true; };
+    return () => { cancelled = true; clearTimeout(start); };
   }, [activeDeviceId, historyOffset, tab]);
 
   const sortedApps = summary ? [...summary.top_apps].sort((a, b) => b.minutes - a.minutes) : [];
@@ -157,7 +162,7 @@ function ActivityContent() {
                 </div>
                 {historyLoading && <p style={{ color: "var(--muted)" }}>Faoliyat yuklanmoqda...</p>}
                 {historyError && <p style={{ color: "var(--danger, #dc2626)" }}>Faoliyatni yuklab bo‘lmadi. Qayta urinib ko‘ring.</p>}
-                {!historyLoading && !historyError && history.length === 0 && <p style={{ color: "var(--muted)" }}>Bugun hali faoliyat mavjud emas.</p>}
+                {!historyLoading && !historyError && history.length === 0 && <p style={{ color: "var(--muted)" }}>Hali faoliyat mavjud emas.</p>}
                 {!historyLoading && !historyError && history.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column" }}>
                     {history.map((item) => (

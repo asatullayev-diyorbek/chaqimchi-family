@@ -3,6 +3,7 @@ Django settings for ChaqimchiAI Family server (Bosqich 0 — enrollment).
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from corsheaders.defaults import default_headers
@@ -130,7 +131,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+# Single-region product (Uzbekistan). Storing UTC but grouping the daily
+# breakdown by this zone keeps evening activity on the right calendar day.
+TIME_ZONE = os.environ.get("DJANGO_TIME_ZONE", "Asia/Tashkent")
 USE_I18N = True
 USE_TZ = True
 
@@ -164,6 +167,15 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "apps.devices.authentication.DeviceSecretAuthentication",
     ),
+}
+
+# The default 5-minute access token made the dashboard 401 → refresh on
+# almost every navigation; on the single-worker free host that burst of
+# refresh calls is what makes pages hang or fail to load. A longer access
+# token plus a long refresh window removes that storm.
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=12),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
 }
 
 # Redis-backed channel layer in prod; falls back to in-memory for local dev

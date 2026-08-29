@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 
 from django.db import IntegrityError, transaction
 from django.shortcuts import get_object_or_404
@@ -22,6 +22,19 @@ logger = logging.getLogger(__name__)
 # there's no real-time push in this phase (that's deferred to the Alerts
 # bosqich), so this is a heuristic based on last successful ingest contact.
 ONLINE_THRESHOLD = timedelta(minutes=5)
+
+
+def _day_bounds(first_date, last_date):
+    """Aware [start, end] datetimes spanning first_date..last_date inclusive.
+
+    Filtering on a datetime range lets SQLite use the
+    (device, event_type, occurred_at) index; an ``occurred_at__date`` lookup
+    wraps every row in a date() call and forces a full scan.
+    """
+    tz = timezone.get_current_timezone()
+    start = timezone.make_aware(datetime.combine(first_date, time.min), tz)
+    end = timezone.make_aware(datetime.combine(last_date, time.max), tz)
+    return start, end
 
 
 def _occurred_at(event: dict):
@@ -187,11 +200,13 @@ class SummaryView(APIView):
         combined_minutes_per_app = defaultdict(float)
         daily_minutes = defaultdict(float)
         last_used_at = {}
+        range_start, range_end = _day_bounds(dates[0], target_date)
+        current_tz = timezone.get_current_timezone()
         events = Event.objects.filter(
             device=device,
             event_type="app_usage",
-            occurred_at__date__gte=dates[0],
-            occurred_at__date__lte=target_date,
+            occurred_at__gte=range_start,
+            occurred_at__lte=range_end,
         ).only("payload", "occurred_at")
         for event in events:
             payload = event.payload or {}
@@ -204,7 +219,7 @@ class SummaryView(APIView):
                 ended = parse_datetime(payload.get("ended_at") or "")
                 minutes = (ended - started).total_seconds() / 60 if started and ended and ended > started else 0
             combined_minutes_per_app[app] += minutes
-            daily_minutes[event.occurred_at.date()] += minutes
+            daily_minutes[timezone.localtime(event.occurred_at, current_tz).date()] += minutes
             if app not in last_used_at or event.occurred_at > last_used_at[app]:
                 last_used_at[app] = event.occurred_at
 
@@ -293,7 +308,8 @@ class ActivityHistoryView(APIView):
             target_date = parse_date(date_param)
             if target_date is None:
                 return Response({"detail": "Noto‘g‘ri sana formati (YYYY-MM-DD kerak)"}, status=status.HTTP_400_BAD_REQUEST)
-            queryset = queryset.filter(occurred_at__date=target_date)
+            day_start, day_end = _day_bounds(target_date, target_date)
+            queryset = queryset.filter(occurred_at__gte=day_start, occurred_at__lte=day_end)
 
         total = queryset.count()
         events = queryset.select_related("batch").order_by("-occurred_at", "-batch__received_at")[offset : offset + limit]
