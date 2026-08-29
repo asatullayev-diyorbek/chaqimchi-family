@@ -25,6 +25,16 @@ function shortDay(date: string) {
   return WEEKDAYS_UZ[new Date(`${date}T00:00:00`).getDay()];
 }
 
+function formatLastSync(value: string | null): string {
+  if (!value) return "Hali yo'q";
+  const min = Math.floor((Date.now() - new Date(value).getTime()) / 60000);
+  if (min < 1) return "Hozirgina";
+  if (min < 60) return `${min} daqiqa oldin`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr} soat oldin`;
+  return `${Math.floor(hr / 24)} kun oldin`;
+}
+
 function OverviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -71,6 +81,7 @@ function OverviewContent() {
   if (devices === null) return <AppShell><p>Yuklanmoqda...</p></AppShell>;
   const totalToday = summary?.total_screen_minutes ?? 0;
   const limitMinutes = getDailyLimitMinutes(rules);
+  const isOnline = summary?.device_status === "online";
   
   const appTotal = summary?.top_apps?.reduce((total, app) => total + app.minutes, 0) ?? 0;
   const byCategory = new Map<string, number>();
@@ -148,6 +159,20 @@ function OverviewContent() {
             <span>Ogohlantirish</span>
             <h2>{alerts.length} ta</h2>
             <small><Link href={`/alerts?device=${summary?.device_id ?? ""}`}>Batafsil →</Link></small>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className={`icon ${isOnline ? "green" : "slate"}`}>
+            <iconify-icon icon={isOnline ? "solar:verified-check-linear" : "solar:close-circle-linear"}></iconify-icon>
+          </div>
+          <div>
+            <span>Qurilma holati</span>
+            <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span className={`status ${isOnline ? "online" : "offline"}`}></span>
+              {isOnline ? "Onlayn" : "Oflayn"}
+            </h2>
+            <small>Oxirgi aloqa: {formatLastSync(summary?.last_sync ?? null)}</small>
           </div>
         </div>
       </section>

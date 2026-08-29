@@ -3243,7 +3243,9 @@ transition:all .35s ease;
 
 .stats-grid{
     display:grid;
-    grid-template-columns:repeat(3,1fr);
+    /* Adapts to the card count per page (overview 4, activity/device 2-3);
+       the media queries below still cap it at 2 on narrower viewports. */
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
     gap:16px;
 }
 
