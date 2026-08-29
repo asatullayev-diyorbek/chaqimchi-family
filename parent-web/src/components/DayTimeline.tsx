@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { TimelineSegment } from "@/api/tracking";
 import AppIcon from "@/components/AppIcon";
 import { appDisplay, AppCategory } from "@/lib/appDisplay";
@@ -86,7 +86,27 @@ export default function DayTimeline({
   nav: ReactNode;
 }) {
   const [activeOnly, setActiveOnly] = useState(false);
-  const [hover, setHover] = useState<{ lane: number; block: number } | null>(null);
+  // Interactive scrub cursor: minute-of-day under the mouse, or null.
+  const [cursor, setCursor] = useState<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const pendingFrac = useRef<number | null>(null);
+  useEffect(() => () => { if (rafRef.current != null) cancelAnimationFrame(rafRef.current); }, []);
+
+  const onTrackMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    pendingFrac.current = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    if (rafRef.current == null) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        if (pendingFrac.current != null) setCursor(Math.round(pendingFrac.current * 1440));
+      });
+    }
+  };
+  const onTrackLeave = () => {
+    if (rafRef.current != null) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    pendingFrac.current = null;
+    setCursor(null);
+  };
 
   const allLanes = useMemo<Lane[]>(() => {
     const byApp = new Map<string, TimelineSegment[]>();
@@ -129,6 +149,20 @@ export default function DayTimeline({
   const nowMin = isToday && dateISO === todayISO() ? new Date().getHours() * 60 + new Date().getMinutes() : null;
   const pct = (min: number) => `${(min / 1440) * 100}%`;
   const usedBuckets = new Set(allLanes.map((l) => l.bucket));
+
+  // Which lane/block sits under the cursor right now (usually 0 or 1 — one
+  // app is foreground at a time — but folded blocks can overlap).
+  const activeAt = cursor == null
+    ? []
+    : lanes
+        .map((lane, laneIdx) => {
+          const block = lane.blocks.find((b) => cursor >= b.start && cursor <= b.end);
+          return block ? { lane, laneIdx, block } : null;
+        })
+        .filter((x): x is { lane: Lane; laneIdx: number; block: Block } => x !== null);
+  const activeLaneIdx = new Set(activeAt.map((a) => a.laneIdx));
+  // Keep the cursor readout inside the card.
+  const edgeShift = cursor == null ? "-50%" : cursor / 1440 < 0.1 ? "0%" : cursor / 1440 > 0.9 ? "-100%" : "-50%";
 
   return (
     <div>
@@ -215,7 +249,12 @@ export default function DayTimeline({
               })}
             </div>
 
-            <div style={{ position: "relative", flex: 1, minWidth: 0 }}>
+            <div
+              style={{ position: "relative", flex: 1, minWidth: 0 }}
+              onMouseMove={onTrackMove}
+              onMouseLeave={onTrackLeave}
+              onClick={onTrackMove}
+            >
               {/* hour axis */}
               <div style={{ position: "relative", height: 22 }}>
                 {AXIS_HOURS.map((h) => (
@@ -235,81 +274,102 @@ export default function DayTimeline({
                 )}
               </div>
 
-              {/* lanes */}
-              {lanes.map((lane, laneIdx) => (
-                <div key={lane.app_id} style={{ position: "relative", height: ROW_H }}>
-                  <div style={{ position: "absolute", left: 0, right: 0, top: (ROW_H - TRACK_H) / 2, height: TRACK_H, borderRadius: 7, background: "rgba(37,99,235,.04)" }} />
-                  {lane.blocks.map((b, blockIdx) => {
-                    const w = ((b.end - b.start) / 1440) * 100;
-                    const tiny = b.end - b.start < 6;
-                    const wide = w > 7;
-                    const isHover = hover?.lane === laneIdx && hover?.block === blockIdx;
-                    return (
-                      <div
-                        key={blockIdx}
-                        onMouseEnter={() => setHover({ lane: laneIdx, block: blockIdx })}
-                        onMouseLeave={() => setHover(null)}
-                        style={{
-                          position: "absolute",
-                          left: pct(b.start),
-                          width: tiny ? 4 : `${w}%`,
-                          top: (ROW_H - TRACK_H) / 2,
-                          height: TRACK_H,
-                          borderRadius: tiny ? 2 : 7,
-                          background: lane.color,
-                          opacity: hover && !isHover ? 0.35 : 1,
-                          boxShadow: isHover ? "0 3px 10px rgba(37,99,235,.3)" : "none",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          overflow: "hidden",
-                          transition: "opacity .12s",
-                        }}
-                      >
-                        {wide && !tiny && (
-                          <span style={{ fontSize: 10.5, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", padding: "0 6px" }}>
-                            {fmtHm(b.start)} – {fmtHm(b.end)}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-
-              {/* tooltip */}
-              {hover && lanes[hover.lane]?.blocks[hover.block] && (() => {
-                const lane = lanes[hover.lane];
-                const b = lane.blocks[hover.block];
-                const d = appDisplay(lane.app_id, lane.app_name);
-                return (
-                  <div
+              {/* interactive scrub cursor — independent of the HOZIR line */}
+              {cursor !== null && (
+                <div style={{ position: "absolute", left: pct(cursor), top: 12, height: 10 + lanes.length * ROW_H, width: 1.5, background: "var(--brand-blue, #2563eb)", pointerEvents: "none", zIndex: 5 }}>
+                  <span
                     style={{
-                      position: "absolute",
-                      left: pct((b.start + b.end) / 2),
-                      top: 22 + hover.lane * ROW_H - 6,
-                      transform: "translate(-50%, -100%)",
-                      zIndex: 6,
-                      pointerEvents: "none",
-                      background: "var(--foreground, #1f2b3a)",
-                      color: "#fff",
-                      padding: "8px 11px",
-                      borderRadius: 10,
-                      fontSize: 12,
-                      lineHeight: 1.55,
-                      whiteSpace: "nowrap",
-                      boxShadow: "0 10px 28px rgba(0,0,0,.2)",
+                      position: "absolute", top: -13, left: 0, transform: `translateX(${edgeShift})`,
+                      fontSize: 10, fontWeight: 800, letterSpacing: 0.3, color: "#fff",
+                      background: "var(--brand-blue, #2563eb)", padding: "1px 5px", borderRadius: 5, whiteSpace: "nowrap",
                     }}
                   >
-                    <strong>{d.label}</strong>
-                    <br />
-                    {fmtHm(b.start)} – {fmtHm(b.end)}
-                    <br />
-                    <span style={{ opacity: 0.8 }}>Davomiyligi: {fmtDur(b.end - b.start)}</span>
-                    {b.sessions > 1 && <><br /><span style={{ opacity: 0.8 }}>Sessionlar: {b.sessions} ta</span></>}
+                    {fmtHm(cursor)}
+                  </span>
+                </div>
+              )}
+
+              {/* lanes */}
+              {lanes.map((lane, laneIdx) => {
+                const dimmed = cursor !== null && !activeLaneIdx.has(laneIdx);
+                return (
+                  <div key={lane.app_id} style={{ position: "relative", height: ROW_H }}>
+                    <div style={{ position: "absolute", left: 0, right: 0, top: (ROW_H - TRACK_H) / 2, height: TRACK_H, borderRadius: 7, background: "rgba(37,99,235,.04)" }} />
+                    {lane.blocks.map((b, blockIdx) => {
+                      const w = ((b.end - b.start) / 1440) * 100;
+                      const tiny = b.end - b.start < 6;
+                      const wide = w > 7;
+                      const isUnderCursor = cursor !== null && cursor >= b.start && cursor <= b.end;
+                      return (
+                        <div
+                          key={blockIdx}
+                          style={{
+                            position: "absolute",
+                            left: pct(b.start),
+                            width: tiny ? 4 : `${w}%`,
+                            top: (ROW_H - TRACK_H) / 2,
+                            height: TRACK_H,
+                            borderRadius: tiny ? 2 : 7,
+                            background: lane.color,
+                            opacity: dimmed ? 0.4 : 1,
+                            boxShadow: isUnderCursor ? "0 3px 10px rgba(37,99,235,.32)" : "none",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            overflow: "hidden",
+                            transition: "opacity .12s",
+                          }}
+                        >
+                          {wide && !tiny && (
+                            <span style={{ fontSize: 10.5, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", padding: "0 6px" }}>
+                              {fmtHm(b.start)} – {fmtHm(b.end)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
-              })()}
+              })}
+
+              {/* cursor tooltip — follows the mouse X, clamped to the card */}
+              {cursor !== null && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: pct(cursor),
+                    top: 28,
+                    transform: `translateX(${edgeShift})`,
+                    zIndex: 7,
+                    pointerEvents: "none",
+                    background: "var(--foreground, #1f2b3a)",
+                    color: "#fff",
+                    padding: "8px 11px",
+                    borderRadius: 10,
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    whiteSpace: "nowrap",
+                    boxShadow: "0 10px 28px rgba(0,0,0,.22)",
+                  }}
+                >
+                  {activeAt.length === 0 ? (
+                    <>
+                      <strong>{fmtHm(cursor)}</strong>
+                      <br />
+                      <span style={{ opacity: 0.75 }}>Faoliyat yo&apos;q</span>
+                    </>
+                  ) : (
+                    activeAt.slice(0, 3).map(({ lane, block }, i) => (
+                      <div key={lane.app_id} style={{ marginTop: i ? 6 : 0 }}>
+                        <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: lane.color, marginRight: 6 }} />
+                        <strong>{appDisplay(lane.app_id, lane.app_name).label}</strong>
+                        <br />
+                        <span style={{ opacity: 0.8 }}>{fmtHm(block.start)} – {fmtHm(block.end)} · {fmtDur(block.end - block.start)}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </>
