@@ -3995,15 +3995,9 @@ svg.graph{
    those keep working since they're translucent overlays, just over a
    dark base now. */
 
-:root[data-theme="dark"]{
-    color-scheme:dark;
-}
-
-[data-theme="dark"] body{
-    background:#111827;
-}
-
-[data-theme="dark"] body::before,
+/* color-scheme, the page background and the page gradient are all tokens
+   now (globals.css) — body/body::before need no override here. Only the
+   sidebar's decorative glows still do. */
 [data-theme="dark"] .sidebar::before,
 [data-theme="dark"] .sidebar::after{
     opacity:.5;

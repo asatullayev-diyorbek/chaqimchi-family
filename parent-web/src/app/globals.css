@@ -49,6 +49,91 @@
   --glass-sidebar-bg: rgba(255, 255, 255, 0.55);
   --glass-sidebar-border: rgba(255, 255, 255, 0.75);
   --glass-sidebar-highlight: rgba(255, 255, 255, 0.5);
+
+  /* Chart surface tokens. Charts are drawn in JS (SVG/absolute divs), so
+     they can't inherit component CSS — they read these instead of baking
+     in hex, which is what kept them light-only in dark mode. */
+  --chart-grid: rgba(37, 99, 235, 0.12);
+  --chart-track: rgba(37, 99, 235, 0.05);
+  --chart-axis: #9aa6b6;
+  --chart-bar: #a9c9fb;
+  --chart-bar-active: #2563eb;
+  --tooltip-bg: #1f2b3a;
+  --tooltip-fg: #ffffff;
+  --tooltip-accent: #93b4ff;
+
+  /* Day-timeline activity buckets — a deliberately small, fixed set so the
+     chart stays calm instead of one hue per app. */
+  --bucket-app: #2563eb;
+  --bucket-work: #8b5cf6;
+  --bucket-system: #f97316;
+  --bucket-blocked: #94a3b8;
+
+  --page-gradient: linear-gradient(135deg, #d6f3ee 0%, #e4f0fb 34%, #eef1fb 62%, #f3ecfb 100%);
+}
+
+/* Dark theme redefines the token set itself, rather than re-skinning each
+   selector. That's what makes the ~92 inline var(--surface)/var(--foreground)
+   usages inside the TSX adapt — they can't be reached by a selector-based
+   override. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #111827;
+  --surface: #1b2534;
+  --foreground: #e8edf5;
+  --muted: #94a3b8;
+  --border: #2b3648;
+  --accent: #34d3b8;
+  --accent-dark: #2fbfa6;
+  --brand-blue: #60a5fa;
+  --warning: #fbbf24;
+  --danger: #f87171;
+
+  --sidebar-bg: rgba(27, 37, 52, 0.72);
+  --sidebar-fg: #a8b4c4;
+  --sidebar-active-fg: #93c5fd;
+  --sidebar-active-bg: linear-gradient(120deg, rgba(96, 165, 250, 0.2), rgba(129, 140, 248, 0.12));
+  --sidebar-active-border: rgba(96, 165, 250, 0.3);
+  --sidebar-disabled: #5b6878;
+
+  --cat-teal: #2fd8bb;
+  --cat-teal-bg: rgba(47, 200, 173, 0.16);
+  --cat-blue: #8ab4ff;
+  --cat-blue-bg: rgba(111, 151, 240, 0.18);
+  --cat-amber: #f7cd6b;
+  --cat-amber-bg: rgba(245, 192, 78, 0.16);
+  --cat-purple: #c4b5fd;
+  --cat-purple-bg: rgba(167, 139, 250, 0.18);
+  --cat-slate: #94a3b8;
+  --cat-slate-bg: rgba(148, 163, 184, 0.16);
+
+  --glass-bg: rgba(27, 37, 52, 0.62);
+  --glass-bg-strong: rgba(27, 37, 52, 0.86);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --glass-sidebar-bg: rgba(27, 37, 52, 0.72);
+  --glass-sidebar-border: rgba(255, 255, 255, 0.08);
+  --glass-sidebar-highlight: rgba(255, 255, 255, 0.05);
+
+  --chart-grid: rgba(148, 163, 184, 0.18);
+  --chart-track: rgba(148, 163, 184, 0.1);
+  --chart-axis: #7b8798;
+  --chart-bar: #3b5a86;
+  --chart-bar-active: #60a5fa;
+  --tooltip-bg: #0b1220;
+  --tooltip-fg: #e8edf5;
+  --tooltip-accent: #93c5fd;
+
+  --bucket-app: #60a5fa;
+  --bucket-work: #a78bfa;
+  --bucket-system: #fb923c;
+  --bucket-blocked: #94a3b8;
+
+  /* Same diagonal as light, re-voiced in deep blues so the page keeps its
+     depth instead of going flat charcoal. */
+  --page-gradient: linear-gradient(135deg, #10261f 0%, #12203a 34%, #141a2e 62%, #1d1630 100%);
 }
 
 * {
@@ -80,7 +165,7 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(135deg, #d6f3ee 0%, #e4f0fb 34%, #eef1fb 62%, #f3ecfb 100%);
+  background: var(--page-gradient);
 }
 
 a {
