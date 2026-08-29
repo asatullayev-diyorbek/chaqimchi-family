@@ -496,16 +496,31 @@ class TimelineTests(TestCase):
         self.assertEqual(segs[1]["app_id"], "code.exe")
         self.assertEqual((segs[1]["start_minute"], segs[1]["end_minute"]), (840, 900))
 
-    def test_timeline_merges_adjacent_same_app(self):
+    def test_timeline_merges_into_sessions_with_counts(self):
         self._ingest_usage([
             ("chrome.exe", "2026-08-30T10:00:00+05:00", "2026-08-30T10:05:00+05:00"),
-            ("chrome.exe", "2026-08-30T10:05:30+05:00", "2026-08-30T10:12:00+05:00"),
+            ("chrome.exe", "2026-08-30T10:05:30+05:00", "2026-08-30T10:09:00+05:00"),
+            # 3-minute gap: under the 5-minute session threshold, still one session.
+            ("chrome.exe", "2026-08-30T10:12:00+05:00", "2026-08-30T10:18:00+05:00"),
         ])
         self.client.force_authenticate(user=self.parent)
         resp = self.client.get(self.url, {"date": "2026-08-30"})
         segs = resp.json()["segments"]
         self.assertEqual(len(segs), 1)
-        self.assertEqual((segs[0]["start_minute"], segs[0]["end_minute"]), (600, 612))
+        self.assertEqual((segs[0]["start_minute"], segs[0]["end_minute"]), (600, 618))
+        self.assertEqual(segs[0]["session_count"], 3)
+        # active < span because of the small gaps
+        self.assertLess(segs[0]["active_seconds"], segs[0]["duration_seconds"])
+
+    def test_timeline_splits_on_a_long_gap(self):
+        self._ingest_usage([
+            ("chrome.exe", "2026-08-30T10:00:00+05:00", "2026-08-30T10:05:00+05:00"),
+            # 20-minute gap: a new session.
+            ("chrome.exe", "2026-08-30T10:25:00+05:00", "2026-08-30T10:35:00+05:00"),
+        ])
+        self.client.force_authenticate(user=self.parent)
+        resp = self.client.get(self.url, {"date": "2026-08-30"})
+        self.assertEqual(len(resp.json()["segments"]), 2)
 
     def test_timeline_rejects_other_family(self):
         other = ParentUser.objects.create_user(email="tl-other@example.com", password="supersecret123")

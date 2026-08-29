@@ -3,128 +3,187 @@
 import { useMemo, useState } from "react";
 import { TimelineSegment } from "@/api/tracking";
 import AppIcon from "@/components/AppIcon";
-import { appDisplay } from "@/lib/appDisplay";
+import { appDisplay, AppCategory } from "@/lib/appDisplay";
 
-// One lane per app: its name + total on the left, its usage blocks placed
-// along a shared 24-hour track on the right. Reads directly as
-// "Chrome — 09:00-10:00, 14:00-15:00".
-export default function DayTimeline({ segments }: { segments: TimelineSegment[] }) {
-  const [active, setActive] = useState<string | null>(null);
+const ROW_H = 38;
+const TRACK_H = 18;
+const LABEL_W = 176;
+const AXIS_HOURS = [0, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 
-  const lanes = useMemo(() => {
-    const byApp = new Map<string, { app_id: string; app_name: string; icon: string | null; total: number; parts: TimelineSegment[] }>();
+// The dashboard is a calm blue system — collapse the per-app categories into
+// three muted buckets rather than a rainbow.
+function bucketColor(category: AppCategory): string {
+  if (category === "brauzer") return "#2563eb"; // browser / web — primary blue
+  if (category === "tizim") return "#94a3b8"; // system — neutral slate
+  return "#6366f1"; // everything else — a quiet indigo for "an app"
+}
+
+type Lane = {
+  app_id: string;
+  app_name: string;
+  icon: string | null;
+  color: string;
+  totalMin: number;
+  sessions: number;
+  parts: TimelineSegment[];
+};
+
+export default function DayTimeline({ segments, isToday = false }: { segments: TimelineSegment[]; isToday?: boolean }) {
+  const [hover, setHover] = useState<{ laneIdx: number; partIdx: number } | null>(null);
+
+  const lanes = useMemo<Lane[]>(() => {
+    const byApp = new Map<string, Lane>();
     for (const s of segments) {
-      const l = byApp.get(s.app_id) ?? { app_id: s.app_id, app_name: s.app_name, icon: s.icon, total: 0, parts: [] };
-      l.total += s.end_minute - s.start_minute;
+      const d = appDisplay(s.app_id, s.app_name);
+      const l = byApp.get(s.app_id) ?? {
+        app_id: s.app_id, app_name: s.app_name, icon: s.icon,
+        color: bucketColor(d.category), totalMin: 0, sessions: 0, parts: [],
+      };
+      l.totalMin += s.end_minute - s.start_minute;
+      l.sessions += s.session_count || 1;
       l.parts.push(s);
       if (s.icon) l.icon = s.icon;
       byApp.set(s.app_id, l);
     }
-    return [...byApp.values()].sort((a, b) => b.total - a.total).slice(0, 10);
+    return [...byApp.values()].sort((a, b) => b.totalMin - a.totalMin).slice(0, 10);
   }, [segments]);
 
   if (!segments.length) {
-    return <p style={{ color: "var(--muted)", fontSize: 14, margin: "8px 0" }}>Bu kuni faoliyat qayd etilmagan.</p>;
+    return (
+      <div style={{ padding: "36px 16px", textAlign: "center" }}>
+        <div style={{ width: 44, height: 44, margin: "0 auto 12px", display: "grid", placeItems: "center", borderRadius: 14, background: "var(--cat-blue-bg, #e6edfc)", color: "var(--brand-blue, #2563eb)" }}>
+          <iconify-icon icon="solar:calendar-linear" style={{ fontSize: 22 }}></iconify-icon>
+        </div>
+        <strong style={{ display: "block", fontSize: 15 }}>Bu kuni faoliyat qayd etilmagan</strong>
+        <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 6 }}>Qurilma o&apos;chirilgan yoki sinxronlanmagan bo&apos;lishi mumkin.</p>
+      </div>
+    );
   }
 
-  const HOURS = [0, 6, 12, 18, 24];
   const totalMin = segments.reduce((s, x) => s + (x.end_minute - x.start_minute), 0);
   const first = Math.min(...segments.map((s) => s.start_minute));
   const last = Math.max(...segments.map((s) => s.end_minute));
+  const totalSessions = segments.reduce((s, x) => s + (x.session_count || 1), 0);
+  const nowMin = isToday ? Math.min(1440, new Date().getHours() * 60 + new Date().getMinutes()) : null;
+
+  const pct = (min: number) => `${(min / 1440) * 100}%`;
+  const hovered = hover ? lanes[hover.laneIdx]?.parts[hover.partIdx] : null;
 
   return (
-    <div style={{ overflowX: "auto" }}>
-      <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 10px" }}>
+    <div>
+      {/* summary */}
+      <p style={{ fontSize: 13, color: "var(--muted)", margin: "0 0 4px" }}>
         {fmtHm(first)}–{fmtHm(last)} orasida, jami <strong style={{ color: "var(--foreground)" }}>{fmtDur(totalMin)}</strong>
       </p>
-      <div style={{ minWidth: 560 }}>
-        {lanes.map((lane) => {
-          const d = appDisplay(lane.app_id, lane.app_name);
-          return (
-            <div key={lane.app_id} style={{ display: "grid", gridTemplateColumns: "168px 1fr", alignItems: "center", gap: 12, padding: "7px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                <AppIcon appId={lane.app_id} appName={lane.app_name} icon={lane.icon} size={24} />
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ display: "block", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.label}</span>
-                  <span style={{ fontSize: 11.5, color: "var(--muted)" }}>{fmtDur(lane.total)}</span>
-                </span>
+      <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 14px" }}>
+        {totalSessions} ta session · {lanes.length} ta ilova
+      </p>
+
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ minWidth: 640, display: "flex" }}>
+          {/* left: app labels */}
+          <div style={{ width: LABEL_W, flex: `0 0 ${LABEL_W}px` }}>
+            {lanes.map((lane) => {
+              const d = appDisplay(lane.app_id, lane.app_name);
+              return (
+                <div key={lane.app_id} style={{ height: ROW_H, display: "flex", alignItems: "center", gap: 8, paddingRight: 12, minWidth: 0 }}>
+                  <AppIcon appId={lane.app_id} appName={lane.app_name} icon={lane.icon} size={22} />
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontWeight: 700, fontSize: 12.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{d.label}</span>
+                    <span style={{ fontSize: 11, color: "var(--muted)" }}>{fmtDur(lane.totalMin)}</span>
+                  </span>
+                </div>
+              );
+            })}
+            <div style={{ height: 16 }} />
+          </div>
+
+          {/* right: shared 24h track area */}
+          <div style={{ position: "relative", flex: 1 }}>
+            {/* hour guides */}
+            {AXIS_HOURS.map((h) => (
+              <div key={h} style={{ position: "absolute", left: pct(h * 60), top: 0, bottom: 16, width: 1, background: "rgba(37,99,235,.08)" }} />
+            ))}
+
+            {/* now marker */}
+            {nowMin !== null && (
+              <div style={{ position: "absolute", left: pct(nowMin), top: -2, bottom: 16, width: 2, background: "var(--brand-blue, #2563eb)", zIndex: 3 }}>
+                <span style={{ position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", fontSize: 9.5, fontWeight: 800, letterSpacing: 0.4, color: "var(--brand-blue, #2563eb)", background: "var(--surface, #fff)", padding: "0 4px", borderRadius: 4, whiteSpace: "nowrap" }}>HOZIR</span>
               </div>
-              <div
-                style={{
-                  position: "relative",
-                  height: 20,
-                  borderRadius: 6,
-                  background: "rgba(37,99,235,.05)",
-                  backgroundImage: "repeating-linear-gradient(to right, transparent 0, transparent calc(25% - 1px), rgba(37,99,235,.10) calc(25% - 1px), rgba(37,99,235,.10) 25%)",
-                }}
-              >
-                {lane.parts.map((p, i) => {
-                  const key = `${lane.app_id}-${i}`;
+            )}
+
+            {/* lanes */}
+            {lanes.map((lane, laneIdx) => (
+              <div key={lane.app_id} style={{ position: "relative", height: ROW_H }}>
+                <div style={{ position: "absolute", left: 0, right: 0, top: (ROW_H - TRACK_H) / 2, height: TRACK_H, borderRadius: 6, background: "rgba(37,99,235,.045)" }} />
+                {lane.parts.map((p, partIdx) => {
+                  const isHover = hover?.laneIdx === laneIdx && hover?.partIdx === partIdx;
                   return (
-                    <button
-                      key={key}
-                      title={`${d.label} · ${fmtHm(p.start_minute)}–${fmtHm(p.end_minute)} (${fmtDur(p.end_minute - p.start_minute)})`}
-                      onClick={() => setActive(active === key ? null : key)}
+                    <div
+                      key={partIdx}
+                      onMouseEnter={() => setHover({ laneIdx, partIdx })}
+                      onMouseLeave={() => setHover(null)}
                       style={{
                         position: "absolute",
-                        left: `${(p.start_minute / 1440) * 100}%`,
-                        width: `max(3px, ${((p.end_minute - p.start_minute) / 1440) * 100}%)`,
-                        top: 2,
-                        bottom: 2,
-                        border: "none",
-                        padding: 0,
-                        borderRadius: 4,
-                        background: d.color,
-                        opacity: active && active !== key ? 0.4 : 1,
-                        cursor: "pointer",
+                        left: pct(p.start_minute),
+                        width: `max(4px, ${((p.end_minute - p.start_minute) / 1440) * 100}%)`,
+                        top: (ROW_H - TRACK_H) / 2,
+                        height: TRACK_H,
+                        borderRadius: 5,
+                        background: lane.color,
+                        opacity: hover && !isHover ? 0.4 : 1,
+                        boxShadow: isHover ? "0 2px 8px rgba(37,99,235,.35)" : "none",
+                        transition: "opacity .12s",
+                        cursor: "default",
                       }}
                     />
                   );
                 })}
-                {lane.parts.map((p, i) => {
-                  const key = `${lane.app_id}-${i}`;
-                  if (active !== key) return null;
-                  return (
-                    <span
-                      key={`lbl-${key}`}
-                      style={{
-                        position: "absolute",
-                        left: `${(p.start_minute / 1440) * 100}%`,
-                        top: -20,
-                        fontSize: 11,
-                        fontWeight: 700,
-                        color: d.color,
-                        whiteSpace: "nowrap",
-                        transform: p.start_minute > 1080 ? "translateX(-100%)" : undefined,
-                      }}
-                    >
-                      {fmtHm(p.start_minute)}–{fmtHm(p.end_minute)}
-                    </span>
-                  );
-                })}
               </div>
-            </div>
-          );
-        })}
+            ))}
 
-        {/* shared hour axis */}
-        <div style={{ display: "grid", gridTemplateColumns: "168px 1fr", gap: 12, marginTop: 4 }}>
-          <span />
-          <div style={{ position: "relative", height: 14 }}>
-            {HOURS.map((h) => (
-              <span
-                key={h}
+            {/* axis labels */}
+            <div style={{ position: "relative", height: 16 }}>
+              {AXIS_HOURS.map((h) => (
+                <span key={h} style={{ position: "absolute", left: pct(h * 60), top: 2, fontSize: 10, color: "#9aa6b6", transform: h === 0 ? "none" : h === 24 ? "translateX(-100%)" : "translateX(-50%)" }}>
+                  {String(h).padStart(2, "0")}:00
+                </span>
+              ))}
+            </div>
+
+            {/* tooltip */}
+            {hovered && hover && (
+              <div
                 style={{
                   position: "absolute",
-                  left: `${(h / 24) * 100}%`,
-                  fontSize: 10,
-                  color: "#9aa6b6",
-                  transform: h === 0 ? "none" : h === 24 ? "translateX(-100%)" : "translateX(-50%)",
+                  left: pct((hovered.start_minute + hovered.end_minute) / 2),
+                  top: hover.laneIdx * ROW_H - 8,
+                  transform: `translate(-50%, -100%)`,
+                  zIndex: 5,
+                  pointerEvents: "none",
+                  background: "var(--foreground, #1f2b3a)",
+                  color: "#fff",
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  fontSize: 12,
+                  lineHeight: 1.5,
+                  whiteSpace: "nowrap",
+                  boxShadow: "0 8px 24px rgba(0,0,0,.18)",
                 }}
               >
-                {String(h).padStart(2, "0")}:00
-              </span>
-            ))}
+                <strong style={{ fontSize: 12.5 }}>{appDisplay(hovered.app_id, hovered.app_name).label}</strong>
+                <br />
+                {fmtHm(hovered.start_minute)} — {fmtHm(hovered.end_minute)}
+                <br />
+                <span style={{ opacity: 0.8 }}>Davomiyligi: {fmtDur(hovered.end_minute - hovered.start_minute)}</span>
+                {hovered.session_count > 1 && (
+                  <>
+                    <br />
+                    <span style={{ opacity: 0.8 }}>Sessionlar: {hovered.session_count} ta</span>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -140,6 +199,7 @@ function fmtHm(min: number): string {
 
 function fmtDur(min: number): string {
   min = Math.round(min);
+  if (min < 1) return "1 daqiqadan kam";
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60);
   const m = min % 60;

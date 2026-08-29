@@ -61,7 +61,12 @@ export type TimelineSegment = {
   icon: string | null;
   start_minute: number;
   end_minute: number;
+  /** span of the session, first start -> last end */
   duration_seconds: number;
+  /** summed raw usage inside the session (span minus small gaps) */
+  active_seconds: number;
+  /** number of raw app_usage events folded into this session */
+  session_count: number;
 };
 
 export type TimelineResponse = {

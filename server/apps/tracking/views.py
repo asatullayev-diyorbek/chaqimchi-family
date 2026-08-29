@@ -399,10 +399,12 @@ class ActivityHistoryView(APIView):
         )
 
 
-# Adjacent same-app segments closer than this are merged, so a 10s poll
-# interval doesn't fragment one Chrome session into dozens of slivers.
-TIMELINE_MERGE_GAP = timedelta(seconds=120)
-TIMELINE_MAX_SEGMENTS = 800
+# Same-app runs separated by less than this collapse into one session, so
+# the parent sees "Chrome 10:00-10:18" instead of a dozen 10-second slivers.
+# 5 minutes: a short toilet/tab-switch break stays one session; a real
+# switch to something else and back starts a new one.
+TIMELINE_MERGE_GAP = timedelta(seconds=300)
+TIMELINE_MAX_SEGMENTS = 400
 
 
 class TimelineView(APIView):
@@ -454,12 +456,16 @@ class TimelineView(APIView):
             raw.append((start, end, app_id, payload.get("app_name") or payload.get("app") or app_id))
 
         raw.sort(key=lambda s: s[0])
+        # Each merged entry: [start, end, app_id, app_name, session_count, active_seconds]
         merged = []
         for start, end, app_id, app_name in raw:
+            part = (end - start).total_seconds()
             if merged and merged[-1][2] == app_id and start - merged[-1][1] <= TIMELINE_MERGE_GAP:
                 merged[-1][1] = max(merged[-1][1], end)
+                merged[-1][4] += 1
+                merged[-1][5] += part
             else:
-                merged.append([start, end, app_id, app_name])
+                merged.append([start, end, app_id, app_name, 1, part])
         merged = merged[:TIMELINE_MAX_SEGMENTS]
 
         icons = _icons_for_device(device, {m[2] for m in merged})
@@ -475,8 +481,12 @@ class TimelineView(APIView):
                 "icon": icons.get(app_id),
                 "start_minute": max(0, minute_of(start)),
                 "end_minute": min(1440, minute_of(end)),
+                # Span of the session (first start -> last end); active_seconds
+                # is the summed raw usage inside it (span minus the small gaps).
                 "duration_seconds": int((end - start).total_seconds()),
+                "active_seconds": int(active),
+                "session_count": count,
             }
-            for start, end, app_id, app_name in merged
+            for start, end, app_id, app_name, count, active in merged
         ]
         return Response({"date": target_date, "segments": [s for s in segments if s["end_minute"] > s["start_minute"]]})

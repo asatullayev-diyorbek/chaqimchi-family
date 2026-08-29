@@ -208,7 +208,7 @@ function ActivityContent() {
                 {timelineLoading ? (
                   <p style={{ color: "var(--muted)" }}>Yuklanmoqda...</p>
                 ) : (
-                  <DayTimeline segments={timeline} />
+                  <DayTimeline segments={timeline} isToday={historyDate === todayISO()} />
                 )}
               </div>
 
