@@ -29,9 +29,19 @@ boshqaruvida bir nechta real bug bor, va CSS 7 900 qatorlik yagona faylда.
 **Bajarilish holati (2026-08-30):** 1- va 2-bosqich yakunlandi.
 Yopilgan: **P0-1…P0-4**, **P1-1, P1-2, P1-3, P1-5, P1-8, P1-9**, **P3-1, P3-2, P3-3**.
 Hammasi productionга deploy qilindi. Batafsil: `fix-plan.md` §1–2.
-3-bosqich ham yakunlandi: **P1-6, P1-7, P2-3, P2-7, P2-8, P2-9**.
-Keyingisi — 4-bosqich (texnik qarz): P2-1 query qatlami (P1-4 ni ham yopadi),
-P2-2 AuthGuard, P2-4 o'lik kod, P2-5 CSS bo'lish, P2-6 inline style, P3-7 testlar.
+3-bosqich: **P1-6, P1-7, P2-3, P2-7, P2-8, P2-9**.
+4-bosqichdan: **P2-2** (AuthGuard endi `(dashboard)/layout.tsx` da), **P2-4**
+(o'lik kod), **P2-10** (qobiq bir marta mount bo'ladi, har navigatsiyada
+qayta so'rov yo'q), **P2-11** (media proxy stream).
+
+Reja tashqarisida qo'shimcha qilinganlar: sidebar animatsiyasi har menyu
+bosilganda qayta o'ynashi (ildizi — `AppShell` sahifa ichida edi), 38 ta
+`transition: all`, dark rejim uchun qolgan literal ranglar, yo'q
+`.add-device-btn.secondary` qoidasi, `.child-pick-item.active`/`.selected`
+nomlar mos kelmasligi.
+
+**Qolgan (faqat texnik qarz):** P1-4 + P2-1 (query qatlami), P2-5 (CSS bo'lish),
+P2-6 (inline style), P3-7 (testlar).
 
 ---
 
@@ -233,7 +243,7 @@ Har sahifада bir xil naqsh takrorlanadi: `useEffect` + `getAccessToken()` tek
 **Yechim:** `useApiQuery(fn, deps)` hook'i (loading / error / retry / cancel bir
 joyда) yoki SWR / TanStack Query. Bu P1-4 ni ham yopadi.
 
-### [ ] P2-2. Auth guard'i sahifаda emas, layoutда bo'lishi kerak
+### [x] P2-2. Auth guard'i sahifаda emas, layoutда bo'lishi kerak
 
 Har sahifа o'zi `getAccessToken()` tekshiradi. Token yo'q bo'lsa sahifа bir lahza
 **ko'rinадi**, keyin redirect bo'ladi (flash). Markazlashган `<AuthGuard>`
@@ -298,7 +308,7 @@ Sahifада `21.4 MB`, haqiqiy fayl **22.5 MB** (23 589 642 bayt).
 SHA-256 to'g'ri (tekshirildi) — faqat hajm eski.
 Build skripti bu qiymatlarni avtomatik yozishi kerak, qo'lда emas.
 
-### [ ] P2-10. `TopbarActions` har sahifада ortiqcha so'rov qiladi
+### [x] P2-10. `TopbarActions` har sahifада ortiqcha so'rov qiladi
 
 **Fayl:** `TopbarActions.tsx:56-57`
 
