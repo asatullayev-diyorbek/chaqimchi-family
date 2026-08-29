@@ -332,8 +332,8 @@ export default function DayTimeline({
                 );
               })}
 
-              {/* cursor tooltip — follows the mouse X, clamped to the card */}
-              {cursor !== null && (
+              {/* cursor tooltip — only over real activity, follows mouse X */}
+              {cursor !== null && activeAt.length > 0 && (
                 <div
                   style={{
                     position: "absolute",
@@ -344,7 +344,7 @@ export default function DayTimeline({
                     pointerEvents: "none",
                     background: "var(--foreground, #1f2b3a)",
                     color: "#fff",
-                    padding: "8px 11px",
+                    padding: "9px 12px",
                     borderRadius: 10,
                     fontSize: 12,
                     lineHeight: 1.5,
@@ -352,22 +352,15 @@ export default function DayTimeline({
                     boxShadow: "0 10px 28px rgba(0,0,0,.22)",
                   }}
                 >
-                  {activeAt.length === 0 ? (
-                    <>
-                      <strong>{fmtHm(cursor)}</strong>
-                      <br />
-                      <span style={{ opacity: 0.75 }}>Faoliyat yo&apos;q</span>
-                    </>
-                  ) : (
-                    activeAt.slice(0, 3).map(({ lane, block }, i) => (
-                      <div key={lane.app_id} style={{ marginTop: i ? 6 : 0 }}>
-                        <span style={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", background: lane.color, marginRight: 6 }} />
-                        <strong>{appDisplay(lane.app_id, lane.app_name).label}</strong>
-                        <br />
-                        <span style={{ opacity: 0.8 }}>{fmtHm(block.start)} – {fmtHm(block.end)} · {fmtDur(block.end - block.start)}</span>
-                      </div>
-                    ))
-                  )}
+                  {activeAt.slice(0, 3).map(({ lane, block }, i) => (
+                    <div key={lane.app_id} style={{ display: "flex", alignItems: "center", gap: 8, marginTop: i ? 8 : 0 }}>
+                      <AppIcon appId={lane.app_id} appName={lane.app_name} icon={lane.icon} size={22} />
+                      <span>
+                        <strong style={{ display: "block" }}>{appDisplay(lane.app_id, lane.app_name).label}</strong>
+                        <span style={{ opacity: 0.8, fontSize: 11.5 }}>{fmtHm(block.start)} – {fmtHm(block.end)} · {fmtDur(block.end - block.start)}</span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
