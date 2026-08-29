@@ -3088,12 +3088,25 @@ transition:all .35s ease;
     gap:20px;
 }
 
-.topbar{
+.topbar,
+.content-header{
     display:flex;
     align-items:flex-start;
     justify-content:space-between;
     gap:16px;
     flex-wrap:wrap;
+
+    /* Stay pinned to the top of every page on scroll, floating on a
+       blurred glass panel so page content scrolls cleanly underneath. */
+    position:sticky;
+    top:0;
+    z-index:30;
+    padding:10px 8px;
+    border-radius:14px;
+    background:var(--glass-bg-strong, rgba(255,255,255,.82));
+    backdrop-filter:blur(20px) saturate(1.4);
+    -webkit-backdrop-filter:blur(20px) saturate(1.4);
+    box-shadow:0 6px 20px rgba(90,120,170,.07);
 }
 
 .welcome h1{
