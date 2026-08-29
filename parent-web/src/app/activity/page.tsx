@@ -169,6 +169,7 @@ function ActivityContent() {
 
 
       {/* Tabs */}
+      <div className="tabs-bar">
       <div className="activity-tabs">
         <button className={`tab ${tab === "screen" ? "active" : ""}`} onClick={() => setTab("screen")}>
           <iconify-icon icon="solar:clock-circle-linear"></iconify-icon>
@@ -186,6 +187,7 @@ function ActivityContent() {
           <iconify-icon icon="solar:global-linear"></iconify-icon>
           <span>Web-saytlar</span>
         </button>
+      </div>
       </div>
 
       <section className="tab-content active" data-tab-panel="screen">
