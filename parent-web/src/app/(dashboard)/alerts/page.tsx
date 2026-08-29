@@ -32,7 +32,7 @@ function AlertsContent() {
   const alerts: Alert[] = (alertsQuery.data ?? []).map((a) =>
     seenOverride.has(a.id) ? { ...a, seen: true } : a,
   );
-  const loading = devicesLoading || alertsQuery.loading;
+  const loading = devicesLoading || alertsQuery.isInitialLoad;
 
   useEffect(() => {
     if (alertsQuery.error) toast.error(alertsQuery.error.message);

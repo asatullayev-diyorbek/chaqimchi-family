@@ -5304,3 +5304,35 @@ body{
     font-weight:700;
     font-size:13px;
 }
+
+/* ---- Tab panel transition ---------------------------------------------
+   Switching tabs was a hard cut. Opacity only, and shorter than the page
+   transition: this content is already on screen, so anything longer reads
+   as lag rather than polish. No transform — the panels differ in height,
+   and sliding one in makes that height change look like a jump. */
+.tab-transition{
+    animation:tabIn .16s ease both;
+}
+
+@keyframes tabIn{
+    from{ opacity:0; }
+    to{ opacity:1; }
+}
+
+/* ---- Reduced motion ----------------------------------------------------
+   The app animates in a lot of places: page transitions, the sidebar entry,
+   chart bars, hover lifts. For someone who has asked their OS to reduce
+   motion, that is not polish — it can cause nausea and vertigo. Honour it
+   globally rather than per-component, so a new animation added later cannot
+   forget to. Durations are near-zero rather than `none` so that animations
+   using `both` still apply their final state. */
+@media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+        animation-duration:.01ms !important;
+        animation-delay:0ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.01ms !important;
+        transition-delay:0ms !important;
+        scroll-behavior:auto !important;
+    }
+}

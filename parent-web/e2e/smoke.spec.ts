@@ -228,3 +228,75 @@ test.describe("activity layout", () => {
   });
 });
 
+test.describe("smooth data changes", () => {
+  test("changing the period keeps the old list on screen", async ({ page }) => {
+    await page.goto("/activity");
+    await page.getByRole("button", { name: "Web-saytlar" }).click();
+    await expect(page.getByText("youtube.com")).toBeVisible();
+
+    // Make the next request slow so the in-flight window is observable.
+    // A different range is a different URL, so this is a real fetch rather
+    // than a 60s-cache hit.
+    let release: () => void = () => {};
+    const inFlight = new Promise<void>((resolve) => { release = resolve; });
+    await page.route("**/api/tracking/sites/**", async (route) => {
+      await inFlight;
+      await route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ device_id: "d1", date: "2026-08-29", total_minutes: 41, count: 1,
+          results: [{ domain: "instagram.com", minutes: 41, visits: 9, last_visited_at: null }] }),
+      });
+    });
+
+    await page.getByRole("button", { name: "30 kun" }).click();
+
+    // The regression: the page threw away data it still had and replaced the
+    // list with a loading line, so the card collapsed and re-expanded.
+    await expect(page.getByText("youtube.com")).toBeVisible();
+    await expect(page.getByText("Saytlar yuklanmoqda...")).toHaveCount(0);
+
+    release();
+    await expect(page.getByText("instagram.com")).toBeVisible();
+    await expect(page.getByText("youtube.com")).toHaveCount(0);
+  });
+
+  test("returning to a cached tab shows it without a loading state", async ({ page }) => {
+    await page.goto("/activity");
+    await page.getByRole("button", { name: "Web-saytlar" }).click();
+    await expect(page.getByText("youtube.com")).toBeVisible();
+
+    await page.getByRole("button", { name: "Ekran vaqti" }).click();
+    await page.getByRole("button", { name: "Web-saytlar" }).click();
+
+    // Leaving the tab legitimately unmounts the list. Coming back within the
+    // 60s GET cache must restore it without passing through a skeleton.
+    await expect(page.getByText("youtube.com")).toBeVisible();
+    await expect(page.getByText("Saytlar yuklanmoqda...")).toHaveCount(0);
+  });
+});
+
+test.describe("reduced motion", () => {
+  test("content is still visible when animations are suppressed", async ({ page }) => {
+    // emulateMedia rather than test.use: the project-level `use` in
+    // playwright.config.ts wins over a file-level one here, so test.use
+    // silently left prefers-reduced-motion unset and the test proved nothing.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    // Every entry animation starts at opacity 0 and relies on `both` to land
+    // at 1. Near-zero durations keep that true; `animation: none` would not,
+    // and would leave the whole page invisible.
+    await page.goto("/overview");
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+
+    await page.goto("/activity");
+    await expect(page.getByRole("heading", { name: /ekran vaqti/i })).toBeVisible();
+
+    await page.getByRole("button", { name: "Web-saytlar" }).click();
+    await expect(page.getByText("youtube.com")).toBeVisible();
+
+    const opacity = await page.locator(".tab-content").evaluate(
+      (el) => getComputedStyle(el).opacity,
+    );
+    expect(opacity).toBe("1");
+  });
+});
+

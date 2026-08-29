@@ -74,7 +74,7 @@ function ActivityContent() {
     { enabled: Boolean(activeDeviceId) && onSummaryTab },
   );
   const summary = summaryQuery.data;
-  const summaryLoading = summaryQuery.loading;
+  const summaryLoading = summaryQuery.isInitialLoad;
   const summaryError = summaryQuery.error !== null;
 
   // Daily limit, for the screen-time cards' progress bars.
@@ -93,7 +93,7 @@ function ActivityContent() {
   const history: ActivityHistoryItem[] = historyQuery.data?.results ?? [];
   const historyCount = historyQuery.data?.count ?? 0;
   const historyNextOffset = historyQuery.data?.next_offset ?? null;
-  const historyLoading = historyQuery.loading;
+  const historyLoading = historyQuery.isInitialLoad;
   const historyError = historyQuery.error !== null;
 
   // Sites are device-scoped like everything else: two devices browsing the
@@ -104,7 +104,7 @@ function ActivityContent() {
     { enabled: Boolean(activeDeviceId) && tab === "sites" },
   );
   const sites: SiteUsage[] = sitesQuery.data?.results ?? [];
-  const sitesLoading = sitesQuery.loading;
+  const sitesLoading = sitesQuery.isInitialLoad;
   const sitesError = sitesQuery.error !== null;
 
   const timelineQuery = useApiQuery(
@@ -113,7 +113,7 @@ function ActivityContent() {
     { enabled: Boolean(activeDeviceId) && onHistoryTab },
   );
   const timeline: TimelineSegment[] = timelineQuery.data?.segments ?? [];
-  const timelineLoading = timelineQuery.loading;
+  const timelineLoading = timelineQuery.isInitialLoad;
 
   useEffect(() => {
     if (summaryQuery.error) toast.error(summaryQuery.error.message);
@@ -187,7 +187,7 @@ function ActivityContent() {
         </div>
       </div>
 
-      <section className="tab-content active" data-tab-panel={tab}>
+      <section key={tab} className="tab-content active tab-transition" data-tab-panel={tab}>
         {allDevices ? (
           // Deliberately not an aggregate: two devices used in the same hour
           // would double-count, so we ask rather than invent a total.

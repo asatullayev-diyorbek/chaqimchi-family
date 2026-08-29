@@ -35,7 +35,22 @@ function reducer<T>(state: State<T>, action: Action<T>): State<T> {
   }
 }
 
-export type ApiQuery<T> = State<T> & { refetch: () => void };
+export type ApiQuery<T> = State<T> & {
+  refetch: () => void;
+  /**
+   * True only until the first response arrives — the one moment there is
+   * genuinely nothing to show, so the only moment a skeleton is right.
+   */
+  isInitialLoad: boolean;
+  /**
+   * True while a refresh runs with data already on screen. Render the data,
+   * not a spinner: the reducer deliberately keeps it, and pages that swap it
+   * for "Yuklanmoqda..." undo that and make the card collapse and re-expand.
+   * A GET is cached for 60s, so this is usually over within a frame — long
+   * enough to see the layout jump, not long enough to read the message.
+   */
+  isRefreshing: boolean;
+};
 
 export function useApiQuery<T>(
   fetcher: () => Promise<T>,
@@ -75,5 +90,10 @@ export function useApiQuery<T>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, nonce, enabled]);
 
-  return { ...state, refetch: useCallback(() => bump(), []) };
+  return {
+    ...state,
+    isInitialLoad: state.loading && state.data === null,
+    isRefreshing: state.loading && state.data !== null,
+    refetch: useCallback(() => bump(), []),
+  };
 }

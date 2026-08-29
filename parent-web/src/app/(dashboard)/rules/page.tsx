@@ -112,7 +112,7 @@ function RulesContent() {
     }
   }
 
-  const loading = devicesLoading || rulesQuery.loading;
+  const loading = devicesLoading || rulesQuery.isInitialLoad;
   const blockedApps = rules.filter((rule) => rule.rule_type === "blocked_app");
   
   return (

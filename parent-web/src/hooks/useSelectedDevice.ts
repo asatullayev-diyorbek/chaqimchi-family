@@ -21,7 +21,7 @@ export function useSelectedDevice() {
   const requestedDeviceId = searchParams.get("device");
   const requestedChildId = searchParams.get("child");
 
-  const { data, loading, error, refetch } = useApiQuery(() => getDevices(), []);
+  const { data, isInitialLoad, error, refetch } = useApiQuery(() => getDevices(), []);
   const all: Device[] = data ?? [];
   const linked = all.filter((d) => d.status === "linked");
 
@@ -53,7 +53,11 @@ export function useSelectedDevice() {
     deviceId: effectiveDevice?.id ?? "",
     /** True when no single device is chosen and the child owns more than one. */
     allDevices: effectiveDevice === null && childDevices.length > 1,
-    loading,
+    /**
+     * Only the first load, never a background refresh. Blanking a page
+     * that already knows its devices makes every revisit flash.
+     */
+    loading: isInitialLoad,
     error,
     refetch,
   };
