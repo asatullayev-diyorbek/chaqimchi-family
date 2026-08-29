@@ -24,16 +24,6 @@ function shortDay(date: string) {
   return WEEKDAYS_UZ[new Date(`${date}T00:00:00`).getDay()];
 }
 
-function getLast7Days() {
-  const result = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    result.push(d.toISOString().split("T")[0]);
-  }
-  return result;
-}
-
 function getAppDisplayInfo(appName: string, index: number) {
   const lower = appName.toLowerCase();
   if (lower.includes("youtube")) return { icon: "logos:youtube-icon", tag: "Boshqa", color: "#6b7a86", bg: "#eaeef0", wrapperBg: "transparent" };
@@ -98,6 +88,11 @@ function OverviewContent() {
     percent: appTotal ? Math.round((app.minutes / appTotal) * 100) : 0,
   }));
   
+  // Server breakdown is already the last 7 calendar days in the account's
+  // timezone — use it directly instead of rebuilding dates client-side (which
+  // would be in UTC and drift near midnight).
+  const weekDays = (weekSummary?.breakdown ?? []).slice(-7);
+
   const hasLimitRule = limitMinutes !== null;
   const blockedAppCount = rules.filter((r) => r.rule_type === "blocked_app").length;
 
@@ -250,21 +245,20 @@ function OverviewContent() {
               <text x="8" y="158">0</text>
             </g>
             <g>
-              {getLast7Days().map((dateStr, index, arr) => {
-                 const dayData = weekSummary?.breakdown.find(d => d.date === dateStr);
-                 const minutes = dayData?.total_minutes || 0;
+              {weekDays.map((day, index, arr) => {
+                 const minutes = day.total_minutes || 0;
                  const maxMins = 5 * 60; // 5 hours max on graph
                  const cappedMins = Math.min(minutes, maxMins);
                  const height = (cappedMins / maxMins) * (154 - 10);
                  const y = 154 - height;
                  return (
-                   <rect key={dateStr} x={60 + index * 70} y={y} width="30" height={Math.max(height, 2)} rx="8" fill={index === arr.length - 1 ? "#2563eb" : "#60a5fa"}/>
+                   <rect key={day.date} x={60 + index * 70} y={y} width="30" height={Math.max(height, 2)} rx="8" fill={index === arr.length - 1 ? "#2563eb" : "#60a5fa"}/>
                  );
               })}
             </g>
             <g fontFamily="Inter" fontSize="11" fontWeight="600" fill="#7a8698" textAnchor="middle">
-              {getLast7Days().map((dateStr, index) => (
-                <text key={dateStr} x={75 + index * 70} y="174">{shortDay(dateStr)}</text>
+              {weekDays.map((day, index) => (
+                <text key={day.date} x={75 + index * 70} y="174">{shortDay(day.date)}</text>
               ))}
             </g>
           </svg>
