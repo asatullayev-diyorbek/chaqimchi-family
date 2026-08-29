@@ -7,6 +7,7 @@ import { getAlerts, Alert } from "@/api/alerts";
 import { Device, getDevices } from "@/api/tracking";
 import { Child, createChild, getChildren } from "@/api/children";
 import { mediaUrl } from "@/api/client";
+import { applyTheme, readTheme } from "@/lib/theme";
 import WheelPicker from "@/components/WheelPicker";
 import toast from "react-hot-toast";
 
@@ -41,9 +42,10 @@ export default function TopbarActions() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfiles, setShowProfiles] = useState(false);
   
+  // Seeded from whatever the pre-hydration script already stamped on <html>,
+  // so the toggle icon matches the painted theme on the very first render.
   const [dark, setDark] = useState(false);
-  const [themeReady, setThemeReady] = useState(false);
-  
+
   const notifRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -55,11 +57,9 @@ export default function TopbarActions() {
   useEffect(() => {
     getDevices().then(setDevices).catch(() => setDevices([])); 
     getChildren().then(setChildren).catch(() => setChildren([]));
-    queueMicrotask(() => {
-      setDark(document.documentElement.getAttribute("data-theme") === "dark");
-      setThemeReady(true);
-    });
-    
+    queueMicrotask(() => setDark(readTheme() === "dark"));
+
+
     function handleClickOutside(event: MouseEvent) {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setShowNotifications(false);
@@ -76,10 +76,11 @@ export default function TopbarActions() {
     if (selectedDeviceId) getAlerts(selectedDeviceId).then(setAlerts).catch(() => setAlerts([]));
   }, [selectedDeviceId]);
 
-  useEffect(() => {
-    if (!themeReady) return;
-    document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
-  }, [dark, themeReady]);
+  function toggleTheme() {
+    const next = readTheme() === "dark" ? "light" : "dark";
+    applyTheme(next);
+    setDark(next === "dark");
+  }
 
   function selectDevice(deviceId: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -158,7 +159,14 @@ export default function TopbarActions() {
           </div>
         </div>
 
-        <button className="icon-btn" data-theme-toggle title="Dark/Light rejim" onClick={() => setDark(!dark)}>
+        <button
+          className="icon-btn"
+          data-theme-toggle
+          title={dark ? "Yorug' rejimga o'tish" : "Tungi rejimga o'tish"}
+          aria-label={dark ? "Yorug' rejimga o'tish" : "Tungi rejimga o'tish"}
+          aria-pressed={dark}
+          onClick={toggleTheme}
+        >
           <iconify-icon icon={dark ? "solar:sun-linear" : "solar:moon-linear"}></iconify-icon>
         </button>
 

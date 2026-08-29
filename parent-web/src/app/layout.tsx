@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Toaster } from "react-hot-toast";
+import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 import "./style.css";
 
@@ -10,14 +11,26 @@ export const metadata: Metadata = {
   description: "Bolalar qurilmalarini monitoring qilish tizimi",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#eef1fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#111827" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="uz" data-theme="light">
+    // data-theme is stamped by the bootstrap script below, before paint, so
+    // the server markup deliberately has no value for React to match.
+    <html lang="uz" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOTSTRAP_SCRIPT }} />
         <Script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" strategy="afterInteractive" />
       </head>
       <body>
