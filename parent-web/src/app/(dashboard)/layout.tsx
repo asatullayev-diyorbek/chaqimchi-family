@@ -29,7 +29,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const signedIn = useSyncExternalStore(noSubscribe, hasTokenNow, hasTokenOnServer);
 
   useEffect(() => {
-    if (!signedIn) router.replace("/login");
+    // Read the token fresh rather than trusting `signedIn` from this render.
+    // On a page load the first client render still holds the *server*
+    // snapshot (false), and this effect runs in that same commit — using it
+    // would bounce every refresh through /login and straight back.
+    if (!getAccessToken()) router.replace("/login");
   }, [signedIn, router]);
 
   // Render nothing without a token — otherwise a logged-out visitor sees a
