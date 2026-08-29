@@ -195,7 +195,7 @@ export default function DevicesPage() {
     const d = new Date(date); const now = new Date();
     let value = now.getFullYear() - d.getFullYear();
     if (now < new Date(now.getFullYear(), d.getMonth(), d.getDate())) value--;
-    return `${value} yosh`;
+    return `(${value} yosh)`;
   }
 
   return (
