@@ -5,237 +5,10 @@
     font-family:Inter, "Segoe UI", Arial, sans-serif;
 }
 
-body{
-    background:#eef5ff;
-    display:flex;
-    /* min-height:100vh; */
-    padding:30px;
-}
-
-.sidebar{
-    width:230px;
-
-    /* Fixed to the viewport (not a normal flow child) so it never moves
-       when the page around it scrolls — top/left/bottom mirror the
-       body's own 30px padding so the sidebar keeps the same inset it
-       had in flow. */
-    position:fixed;
-    top:30px;
-    left:30px;
-    bottom:30px;
-
-    display:flex;
-    flex-direction:column;
-    justify-content:space-between;
-
-    padding:22px;
-
-    border-radius:32px;
-
-    background:rgba(255,255,255,.55);
-
-    backdrop-filter:blur(40px);
-    -webkit-backdrop-filter:blur(40px);
-
-    border:1px solid rgba(255,255,255,.8);
-
-    box-shadow:
-    0 10px 40px rgba(31,90,255,.10),
-    inset 0 1px 1px rgba(255,255,255,.8),
-    inset 0 -1px 1px rgba(255,255,255,.3);
-
-    overflow:hidden;
-}
-
-.sidebar::before{
-    content:"";
-    position:absolute;
-
-    top:-120px;
-    left:-120px;
-
-    width:260px;
-    height:260px;
-
-    border-radius:50%;
-
-    background:rgba(77,130,255,.18);
-
-    filter:blur(80px);
-}
-
-.sidebar::after{
-    content:"";
-    position:absolute;
-
-    right:-100px;
-    bottom:-120px;
-
-    width:240px;
-    height:240px;
-
-    border-radius:50%;
-
-    background:rgba(120,170,255,.15);
-
-    filter:blur(90px);
-}
-
-.logo{
-    display:flex;
-    align-items:center;
-    gap:14px;
-    margin-bottom:30px;
-    position:relative;
-    z-index:2;
-}
-
-.logo img{
-    width:52px;
-    height:52px;
-}
-
-.logo h3{
-    font-size:19px;
-    font-weight:700;
-    color:#163b83;
-}
-
-.logo span{
-    font-size:13px;
-    color:#7b8ba7;
-}
-
-.menu{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-    position:relative;
-    z-index:2;
-}
-
-.menu-item{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-
-    text-decoration:none;
-
-    padding:14px 16px;
-
-    border-radius:18px;
-
-    color:var(--body-text);
-
-    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
-}
-
 .menu-item .left{
     display:flex;
     align-items:center;
     gap:14px;
-}
-
-.menu-item iconify-icon{
-    font-size:23px;
-}
-
-.menu-item span{
-    font-size:15px;
-    font-weight:500;
-}
-
-.menu-item:hover{
-    background:rgba(255,255,255,.55);
-    transform:translateX(6px);
-    color:#2563eb;
-}
-
-.menu-item.active{
-
-    background:
-    linear-gradient(
-        135deg,
-        rgba(255,255,255,.85),
-        rgba(255,255,255,.45)
-    );
-
-    color:#2563eb;
-
-    border:1px solid rgba(255,255,255,.9);
-
-    box-shadow:
-    inset 0 1px 1px rgba(255,255,255,.8),
-    0 10px 25px rgba(37,99,235,.15);
-}
-
-.profile{
-
-    margin-top:22px;
-
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-
-    padding:14px;
-
-    border-radius:18px;
-
-    background:rgba(255,255,255,.45);
-
-    backdrop-filter:blur(25px);
-
-    border:1px solid rgba(255,255,255,.8);
-
-    position:relative;
-    z-index:2;
-}
-
-.profile-image img{
-    width:52px;
-    height:52px;
-    border-radius:50%;
-    object-fit:cover;
-}
-
-.profile-info{
-    flex:1;
-    margin-left:14px;
-}
-
-.profile-info h4{
-    color:#204181;
-    font-size:16px;
-}
-
-.profile-info span{
-    color:var(--muted);
-    font-size:13px;
-}
-
-.profile-menu{
-
-    width:42px;
-    height:42px;
-
-    border:none;
-
-    border-radius:14px;
-
-    background:rgba(255,255,255,.75);
-
-    cursor:pointer;
-
-    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
-}
-
-.profile-menu iconify-icon{
-    font-size:22px;
-}
-
-.profile-menu:hover{
-    background:#2563eb;
-    color:white;
 }
 
 /* ===== Smooth Scroll ===== */
@@ -247,13 +20,6 @@ body{
 ::-webkit-scrollbar-thumb{
     background:#b7cbff;
     border-radius:20px;
-}
-
-/* ===== Active Indicator ===== */
-
-.menu-item{
-    position:relative;
-    overflow:hidden;
 }
 
 .menu-item::before{
@@ -279,14 +45,6 @@ body{
     );
 
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
-}
-
-.menu-item.active::before{
-    height:60%;
-}
-
-.menu-item:hover::before{
-    height:40%;
 }
 
 /* ===== Hover Shine ===== */
@@ -321,101 +79,24 @@ body{
     left:130%;
 }
 
-/* ===== Icon ===== */
-
-.menu-item iconify-icon{
-
-    transition:
-    transform .35s,
-    color .35s;
-}
-
-.menu-item:hover iconify-icon{
-
-    transform:scale(1.18);
-
-    color:#2563eb;
-}
-
-.menu-item.active iconify-icon{
-
-    transform:scale(1.12);
-}
-
-/* ===== Text ===== */
-
-.menu-item span{
-
-    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
-}
-
 .menu-item:hover span{
 
     letter-spacing:.2px;
 }
-
-/* ===== Profile ===== */
-
-.profile{
-
-    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
-}
-
-.profile:hover{
-
-    transform:translateY(-4px);
-
-    box-shadow:
-
-    0 15px 35px rgba(37,99,235,.15);
-}
-
-.profile-image{
-
-    position:relative;
-}
-
-.profile-image::before{
-
-    content:"";
-
-    position:absolute;
-
-    inset:-4px;
-
-    border-radius:50%;
-
-    background:
-
-    linear-gradient(
-        135deg,
-        #60a5fa,
-        #2563eb
-    );
-
-    z-index:-1;
-}
-
-.profile-image img{
-
-    border:3px solid white;
-}
-
-/* ===== Logo ===== */
-
 .logo{
-
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:30px;
+    position:relative;
+    z-index:2;
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
+
 
 .logo:hover{
 
     transform:translateX(4px);
-}
-
-.logo img{
-
-    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .logo:hover img{
@@ -531,35 +212,8 @@ display:none;
 
 }
 
-/* ========================= */
-/* MENU GROUP SPACING */
-/* ========================= */
-
-.menu{
-    flex:1;
-    overflow-y:auto;
-    overflow-x:hidden;
-    padding-right:6px;
-}
-
 .menu-item + .menu-item{
     margin-top:4px;
-}
-
-/* ========================= */
-/* GLASS BORDER */
-/* ========================= */
-
-.sidebar{
-    isolation:isolate;
-}
-
-.sidebar::before{
-    animation:glowOne 10s linear infinite;
-}
-
-.sidebar::after{
-    animation:glowTwo 14s linear infinite;
 }
 
 @keyframes glowOne{
@@ -591,166 +245,6 @@ display:none;
     100%{
         transform:translate(0,0);
     }
-
-}
-
-/* ========================= */
-/* MENU HOVER */
-/* ========================= */
-
-.menu-item{
-
-    cursor:pointer;
-
-    backdrop-filter:blur(12px);
-
-    border:1px solid transparent;
-}
-
-.menu-item:hover{
-
-    border-color:rgba(255,255,255,.55);
-
-}
-
-.menu-item.active{
-
-    position:relative;
-
-}
-
-.menu-item.active::after{
-
-    content:"";
-
-    position:absolute;
-
-    inset:0;
-
-    border-radius:18px;
-
-    padding:1px;
-
-    background:
-
-    linear-gradient(
-        135deg,
-        rgba(255,255,255,.9),
-        rgba(110,170,255,.5)
-    );
-
-    -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-
-    -webkit-mask-composite:xor;
-
-            mask-composite:exclude;
-
-}
-
-/* ========================= */
-/* ICON BACKGROUND */
-/* ========================= */
-
-.menu-item iconify-icon{
-
-    width:40px;
-    height:40px;
-
-    display:flex;
-
-    align-items:center;
-
-    justify-content:center;
-
-    border-radius:12px;
-
-    background:rgba(255,255,255,.45);
-
-    backdrop-filter:blur(20px);
-
-}
-
-.menu-item.active iconify-icon{
-
-    background:
-
-    linear-gradient(
-        135deg,
-        #60a5fa,
-        #2563eb
-    );
-
-    color:white;
-
-    box-shadow:
-    0 10px 25px rgba(37,99,235,.35);
-
-}
-
-/* ========================= */
-/* PROFILE */
-/* ========================= */
-
-.profile{
-
-    gap:12px;
-
-}
-
-.profile-menu{
-
-    display:flex;
-
-    justify-content:center;
-
-    align-items:center;
-
-}
-
-.profile-menu:hover{
-
-    transform:rotate(90deg);
-
-}
-
-.profile-menu{
-
-    transition:
-    .35s transform,
-    .35s background,
-    .35s color;
-
-}
-
-/* ========================= */
-/* ONLINE DOT */
-/* ========================= */
-
-.profile-image{
-
-    position:relative;
-
-}
-
-.profile-image::after{
-
-    content:"";
-
-    position:absolute;
-
-    width:12px;
-    height:12px;
-
-    border-radius:50%;
-
-    background:#22c55e;
-
-    right:4px;
-    bottom:4px;
-
-    border:2px solid white;
 
 }
 
@@ -810,22 +304,6 @@ left:520px;
 }
 
 /* ========================= */
-/* GLASS NOISE */
-/* ========================= */
-
-.sidebar{
-
-background-image:
-
-radial-gradient(
-rgba(255,255,255,.18) 1px,
-transparent 1px);
-
-background-size:18px 18px;
-
-}
-
-/* ========================= */
 /* MENU CLICK */
 /* ========================= */
 
@@ -874,37 +352,11 @@ box-shadow:
     }
 
 }
-
-/* ========================================= */
-/* MENU RIPPLE */
-/* ========================================= */
-
-.menu-item{
-
-    isolation:isolate;
-}
-
-.menu-item span{
-
-    position:relative;
-    z-index:2;
-}
-
-.menu-item iconify-icon{
-
-    position:relative;
-    z-index:2;
-}
-
-.menu-item:hover{
-
-    overflow:hidden;
-}
-
 .menu-item:hover::before{
-
+    height:40%;
     animation:ripple .45s ease;
 }
+
 
 @keyframes ripple{
 
@@ -930,86 +382,22 @@ box-shadow:
 
 }
 
-/* ========================================= */
-/* PROFILE EFFECT */
-/* ========================================= */
-
-.profile{
-
-    overflow:hidden;
-}
-
-.profile::before{
-
-    content:"";
-
-    position:absolute;
-
-    width:220px;
-    height:220px;
-
-    border-radius:50%;
-
-    top:-170px;
-    right:-120px;
-
-    background:
-
-    rgba(96,165,250,.18);
-
-    filter:blur(45px);
-
-}
-
 .profile>*{
 
     position:relative;
     z-index:2;
 }
-
-/* ========================================= */
-/* LOGO */
-/* ========================================= */
-
-.logo img{
-
-    filter:
-
-    drop-shadow(
-    0 10px 20px
-    rgba(37,99,235,.18)
-    );
-
-}
-
-.logo h3{
-
-    letter-spacing:.3px;
-}
-
 .logo span{
-
+    font-size:13px;
+    color:#7b8ba7;
     display:block;
     margin-top:2px;
 }
 
-/* ========================================= */
-/* MENU ACTIVE GLOW */
-/* ========================================= */
-
-.menu-item.active{
-
-    overflow:hidden;
-}
 
 .menu-item.active::selection{
 
     background:transparent;
-}
-
-.menu-item.active{
-
-    animation:activeGlow 2.5s ease infinite;
 }
 
 @keyframes activeGlow{
@@ -1048,15 +436,6 @@ box-shadow:
 
 }
 
-/* ========================================= */
-/* MENU SPACING */
-/* ========================================= */
-
-.menu-item{
-
-    min-height:56px;
-}
-
 .menu-item:not(.active){
 
     background:transparent;
@@ -1068,15 +447,6 @@ box-shadow:
 
     rgba(255,255,255,.45);
 
-}
-
-/* ========================================= */
-/* ICON ANIMATION */
-/* ========================================= */
-
-.menu-item:hover iconify-icon{
-
-    animation:iconJump .45s ease;
 }
 
 @keyframes iconJump{
@@ -1108,24 +478,6 @@ box-shadow:
 }
 
 /* ========================================= */
-/* PROFILE TEXT */
-/* ========================================= */
-
-.profile-info h4{
-
-    margin-bottom:4px;
-
-}
-
-.profile-info span{
-
-    display:block;
-
-    opacity:.75;
-
-}
-
-/* ========================================= */
 /* GLASS TRANSITION */
 /* ========================================= */
 
@@ -1153,114 +505,6 @@ box-shadow:
 
 .sidebar::marker{
     display:none;
-}
-
-/* ================================= */
-/* MENU GLASS */
-/* ================================= */
-
-.menu-item{
-
-    background:
-    linear-gradient(
-        180deg,
-        rgba(255,255,255,.18),
-        rgba(255,255,255,.05)
-    );
-
-}
-
-.menu-item:hover{
-
-    background:
-
-    linear-gradient(
-        135deg,
-        rgba(255,255,255,.55),
-        rgba(255,255,255,.25)
-    );
-
-}
-
-.menu-item.active{
-
-    background:
-
-    linear-gradient(
-        135deg,
-        rgba(255,255,255,.95),
-        rgba(255,255,255,.55)
-    );
-
-}
-
-/* ================================= */
-/* GLASS BORDER */
-/* ================================= */
-
-.menu-item{
-
-    border:1px solid
-    rgba(255,255,255,.15);
-
-}
-
-.menu-item:hover{
-
-    border-color:
-    rgba(255,255,255,.7);
-
-}
-
-.profile{
-
-    border:1px solid
-    rgba(255,255,255,.55);
-
-}
-
-/* ================================= */
-/* ICON SHADOW */
-/* ================================= */
-
-.menu-item iconify-icon{
-
-    box-shadow:
-
-    inset 0 1px 2px rgba(255,255,255,.6),
-
-    0 6px 15px rgba(37,99,235,.08);
-
-}
-
-.menu-item:hover iconify-icon{
-
-    box-shadow:
-
-    0 12px 25px rgba(37,99,235,.20);
-
-}
-
-/* ================================= */
-/* PROFILE */
-/* ================================= */
-
-.profile-image{
-
-    flex-shrink:0;
-
-}
-
-.profile-menu{
-
-    flex-shrink:0;
-
-}
-
-.profile:hover .profile-image{
-
-    transform:scale(1.06);
-
 }
 
 @keyframes badgePulse{
@@ -1300,123 +544,19 @@ box-shadow:
     rgba(255,255,255,.25);
 
 }
-
-/* ================================= */
-/* TEXT */
-/* ================================= */
-
-.menu-item span{
-
-    white-space:nowrap;
-
-}
-
-.profile-info h4{
-
-    font-weight:600;
-
-}
-
-.profile-info span{
-
-    font-weight:500;
-
-}
-
-.profile{
-
-    transition:
-    transform .35s,
-    box-shadow .35s;
-
-}
-
-/* ================================= */
-/* BACKDROP */
-/* ================================= */
-
-.sidebar{
-
-    backdrop-filter:
-    blur(45px)
-    saturate(180%);
-
-    -webkit-backdrop-filter:
-    blur(45px)
-    saturate(180%);
-
-}
-
-/* ================================= */
-/* BORDER HIGHLIGHT */
-/* ================================= */
-
-.sidebar{
-
-    outline:1px solid
-    rgba(255,255,255,.25);
-
-    outline-offset:-1px;
-
-}
-
-/* ================================= */
-/* ACTIVE ICON */
-/* ================================= */
-
-.menu-item.active iconify-icon{
-
-    animation:none;
-
-}
-
-/* ================================= */
-/* HOVER SCALE */
-/* ================================= */
-
-.menu-item:hover{
-
-    transform:
-    translateX(8px)
-    scale(1.015);
-
-}
-
-/* ================================= */
-/* MENU SPACING */
-/* ================================= */
-
-.menu{
-
-    gap:10px;
-
-}
-
-/* ================================= */
-/* PROFILE GLASS */
-/* ================================= */
-
-.profile{
-
-    backdrop-filter:
-    blur(30px);
-
-}
-
-/* ================================= */
-/* END */
-/* ================================= */
-
-
-/* ========================================= */
-/* LIQUID GLASS HIGHLIGHT */
-/* ========================================= */
-
 .sidebar::before{
-
+    content:"";
+    position:absolute;
+    top:-120px;
+    left:-120px;
+    width:260px;
+    height:260px;
+    border-radius:50%;
+    background:rgba(77,130,255,.18);
+    filter:blur(80px);
     animation:glassGlow 12s ease-in-out infinite;
-
 }
+
 
 @keyframes glassGlow{
 
@@ -1436,26 +576,10 @@ box-shadow:
 
 }
 
-/* ========================================= */
-/* MENU ACTIVE BACKGROUND */
-/* ========================================= */
-
-.menu-item.active{
-
-    overflow:hidden;
-
-}
-
 .menu-item.active .left{
 
     position:relative;
     z-index:2;
-
-}
-
-.menu-item.active::after{
-
-    animation:activeShine 4s linear infinite;
 
 }
 
@@ -1474,28 +598,30 @@ box-shadow:
     }
 
 }
-
-/* ========================================= */
-/* MENU ICON CIRCLE */
-/* ========================================= */
-
-.menu-item iconify-icon{
-
-    border:1px solid rgba(255,255,255,.45);
-
-}
-
 .menu-item:hover iconify-icon{
-
     transform:rotate(-8deg) scale(1.15);
+    color:#2563eb;
+    animation:iconJump .45s ease;
+    box-shadow:
 
+    0 12px 25px rgba(37,99,235,.20);
 }
 
 .menu-item.active iconify-icon{
-
     transform:scale(1.08);
+    background:
 
+    linear-gradient(
+        135deg,
+        #60a5fa,
+        #2563eb
+    );
+    color:white;
+    box-shadow:
+    0 10px 25px rgba(37,99,235,.35);
+    animation:none;
 }
+
 
 @keyframes buttonLight{
 
@@ -1512,28 +638,10 @@ transform:translateX(140%);
 }
 
 }
-
-/* ========================================= */
-/* PROFILE AVATAR */
-/* ========================================= */
-
-.profile-image{
-
-    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
-
-}
-
 .profile:hover .profile-image{
-
     transform:rotate(-5deg);
-
 }
 
-.profile:hover img{
-
-    transform:scale(1.08);
-
-}
 
 @keyframes badgeRing{
 
@@ -1553,50 +661,6 @@ transform:scale(1.9);
 
 }
 
-/* ========================================= */
-/* PROFILE CARD */
-/* ========================================= */
-
-.profile{
-
-    overflow:hidden;
-
-}
-
-.profile::after{
-
-    content:"";
-
-    position:absolute;
-
-    width:70px;
-    height:220px;
-
-    left:-100px;
-    top:-30px;
-
-    transform:rotate(25deg);
-
-    background:
-
-    linear-gradient(
-
-    transparent,
-
-    rgba(255,255,255,.45),
-
-    transparent
-
-    );
-
-}
-
-.profile:hover::after{
-
-    animation:profileLight .8s linear;
-
-}
-
 @keyframes profileLight{
 
 0%{
@@ -1612,68 +676,24 @@ left:420px;
 }
 
 }
-
-/* ========================================= */
-/* MENU SHADOW */
-/* ========================================= */
-
-.menu-item{
-
-box-shadow:
-
-0 2px 6px rgba(0,0,0,.02);
-
-}
-
-.menu-item:hover{
-
-box-shadow:
-
-0 10px 24px rgba(37,99,235,.08);
-
-}
-
 .menu-item.active{
+    background:
 
-box-shadow:
+    linear-gradient(
+        135deg,
+        rgba(255,255,255,.95),
+        rgba(255,255,255,.55)
+    );
+    color:#2563eb;
+    border:1px solid rgba(255,255,255,.9);
+    box-shadow:
 
 0 14px 30px rgba(37,99,235,.15);
-
+    position:relative;
+    overflow:hidden;
+    animation:activeGlow 2.5s ease infinite;
 }
 
-/* ========================================= */
-/* SIDEBAR INNER LIGHT */
-/* ========================================= */
-
-.sidebar{
-
-box-shadow:
-
-inset 0 1px 1px rgba(255,255,255,.8),
-
-inset 0 -1px 0 rgba(255,255,255,.4),
-
-0 20px 50px rgba(37,99,235,.12);
-
-}
-
-/* ========================================= */
-/* HOVER ANIMATION */
-/* ========================================= */
-
-.menu-item{
-
-transition:
-
-background .35s,
-
-transform .35s,
-
-box-shadow .35s,
-
-border-color .35s;
-
-}
 .profile,
 .profile-menu,
 .family-card button{
@@ -1681,82 +701,19 @@ border-color .35s;
 transition:all .35s ease;
 
 }
-
-/* ========================================= */
-/* GLASS DEPTH */
-/* ========================================= */
-
-.sidebar{
-
-    transform-style:preserve-3d;
-
-    perspective:1200px;
-
-}
-
-/* ========================================= */
-/* MENU */
-/* ========================================= */
-
-.menu-item{
-
-    position:relative;
-
-    transform:translateZ(0);
-
-}
-
-.menu-item:hover{
-
-    transform:
-        translateX(8px)
-        translateZ(15px);
-
-}
-
-/* ========================================= */
-/* ICON GLOW */
-/* ========================================= */
-
-.menu-item iconify-icon{
-
-    position:relative;
-
-}
-
-.menu-item.active iconify-icon::after{
-
-    content:"";
-
-    position:absolute;
-
-    inset:-8px;
-
-    border-radius:50%;
-
-    background:rgba(59,130,246,.18);
-
-    filter:blur(12px);
-
-    z-index:-1;
-
-}
-
-/* ========================================= */
-/* GLASS BORDER ANIMATION */
-/* ========================================= */
-
-.sidebar{
-
-    background-clip:padding-box;
-
-}
-
 .sidebar::after{
-
+    content:"";
+    position:absolute;
+    right:-100px;
+    bottom:-120px;
+    width:240px;
+    height:240px;
+    border-radius:50%;
+    background:rgba(120,170,255,.15);
+    filter:blur(90px);
     animation:borderMove 8s linear infinite;
-
 }
+
 
 @keyframes borderMove{
 
@@ -1779,91 +736,19 @@ transition:all .35s ease;
     }
 
 }
-
-/* ========================================= */
-/* MENU HOVER LIGHT */
-/* ========================================= */
-
-.menu-item:hover{
-
-    background-image:
-
-        linear-gradient(
-            135deg,
-            rgba(255,255,255,.65),
-            rgba(255,255,255,.25)
-        );
-
-}
-
-/* ========================================= */
-/* PROFILE */
-/* ========================================= */
-
-.profile{
-
-    position:relative;
-
-}
-
-.profile:hover{
-
-    border-color:
-
-        rgba(96,165,250,.45);
-
-}
-
-.profile-menu{
-
-    border:1px solid
-
-        rgba(255,255,255,.4);
-
-}
-
-/* ========================================= */
-/* ICON TRANSITION */
-/* ========================================= */
-
-.menu-item iconify-icon{
-
-    transition:
-
-        transform .35s,
-
-        background .35s,
-
-        color .35s,
-
-        box-shadow .35s;
-
-}
-
-/* ========================================= */
-/* SIDEBAR SHADOW */
-/* ========================================= */
-
-.sidebar{
-
-    filter:
-
-        drop-shadow(
-            0 30px 50px
-            rgba(37,99,235,.12)
-        );
-
-}
-
-/* ========================================= */
-/* MENU SPACING */
-/* ========================================= */
-
 .menu{
-
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    position:relative;
+    z-index:2;
+    flex:1;
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding-right:6px;
     padding-bottom:16px;
-
 }
+
 
 /* ========================================= */
 /* GLASS FADE */
@@ -1930,332 +815,254 @@ transition:all .35s ease;
         transform .4s ease;
 
 }
-
 .profile:hover img{
-
     transform:
 
         scale(1.08);
-
-}
-
-/* ========================= */
-/* PREMIUM PROFILE CARD */
-/* ========================= */
-
-.profile{
-
-    position:relative;
-
-    display:flex;
-    align-items:center;
-    gap:14px;
-
-    padding:16px;
-
-    border-radius:22px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255,255,255,.65),
-            rgba(255,255,255,.30)
-        );
-
-    backdrop-filter:blur(35px);
-    -webkit-backdrop-filter:blur(35px);
-
-    border:1px solid rgba(255,255,255,.65);
-
-    box-shadow:
-        inset 0 1px 1px rgba(255,255,255,.8),
-        0 15px 35px rgba(37,99,235,.12);
-
-    overflow:hidden;
-
-    transition:.4s ease;
 }
 
 .profile::before{
-
     content:"";
-
     position:absolute;
-
     width:180px;
     height:180px;
-
+    border-radius:50%;
     top:-110px;
     right:-80px;
-
-    border-radius:50%;
-
     background:rgba(96,165,250,.20);
-
     filter:blur(45px);
 }
 
 .profile::after{
-
     content:"";
-
     position:absolute;
-
-    left:-120px;
-    top:-40px;
-
     width:70px;
     height:250px;
-
+    left:-120px;
+    top:-40px;
     transform:rotate(25deg);
-
     background:linear-gradient(
         transparent,
         rgba(255,255,255,.45),
         transparent
     );
-
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .profile:hover::after{
-
+    animation:profileLight .8s linear;
     left:380px;
-
 }
 
 .profile:hover{
-
     transform:translateY(-5px);
-
     box-shadow:
         0 25px 45px rgba(37,99,235,.18),
         inset 0 1px 1px rgba(255,255,255,.9);
+    border-color:
 
-}
-
-/* ========================= */
-/* AVATAR */
-/* ========================= */
-
-.profile-image{
-
-    position:relative;
-
-    width:58px;
-    height:58px;
-
-    flex-shrink:0;
+        rgba(96,165,250,.45);
 }
 
 .profile-image img{
-
     width:100%;
     height:100%;
-
-    object-fit:cover;
-
     border-radius:50%;
-
+    object-fit:cover;
     border:3px solid rgba(255,255,255,.9);
-
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
 
 .profile-image::before{
-
     content:"";
-
     position:absolute;
-
     inset:-4px;
-
     border-radius:50%;
-
     background:linear-gradient(
         135deg,
         #60a5fa,
         #2563eb
     );
-
     z-index:-1;
 }
 
 .profile-image::after{
-
     content:"";
-
     position:absolute;
-
     width:13px;
     height:13px;
-
+    border-radius:50%;
+    background:#22c55e;
     right:3px;
     bottom:4px;
-
-    border-radius:50%;
-
-    background:#22c55e;
-
     border:2px solid white;
 }
+
 
 .profile:hover .profile-image img{
 
     transform:scale(1.08);
 
 }
-
-/* ========================= */
-/* INFO */
-/* ========================= */
-
-.profile-info{
-
-    flex:1;
-
-    position:relative;
-    z-index:2;
-}
-
-.profile-info h4{
-
-    font-size:16px;
-    font-weight:700;
-
-    color:#204181;
-
-    margin-bottom:4px;
-}
-
-.profile-info span{
-
-    font-size:13px;
-
-    color:#7a8ca8;
-}
-
-/* ========================= */
-/* MENU BUTTON */
-/* ========================= */
-
-.profile-menu{
-
-    width:42px;
-    height:42px;
-
-    display:flex;
-    align-items:center;
-    justify-content:center;
-
-    border:none;
-
-    border-radius:14px;
-
-    background:rgba(255,255,255,.55);
-
-    backdrop-filter:blur(20px);
-
-    border:1px solid rgba(255,255,255,.7);
-
-    cursor:pointer;
-
-    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
-}
-
 .profile-menu iconify-icon{
-
     font-size:22px;
-
     color:#2563eb;
 }
 
 .profile-menu:hover{
-
     background:#2563eb;
-
+    color:white;
     transform:rotate(90deg) scale(1.08);
-
 }
+
 
 .profile-menu:hover iconify-icon{
 
     color:white;
 
 }
-
-/* ========================= */
-/* FINAL SIZES */
-/* ========================= */
-/* Was a stack of duplicate overrides ending in transform:scale(.88) on
-   .sidebar — scale() shrinks rendered content into the top-left corner
-   without resizing the element's actual box, so the sidebar kept its
-   full-height layout footprint while its content rendered small and
-   crammed, leaving dead space below. Consolidated to the single set of
-   sizes that stack actually intended, with no scale hack. */
-.sidebar{
-    width:230px;
-    padding:18px;
-}
-
 .logo img{
     width:42px;
     height:42px;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
+    filter:
+
+    drop-shadow(
+    0 10px 20px
+    rgba(37,99,235,.18)
+    );
 }
 
 .logo h3{
     font-size:17px;
+    font-weight:700;
+    color:#163b83;
+    letter-spacing:.3px;
 }
 
 .menu-item{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    text-decoration:none;
     padding:8px 12px;
+    border-radius:18px;
+    color:var(--body-text);
+    transition:
+
+background .35s,
+
+transform .35s,
+
+box-shadow .35s,
+
+border-color .35s;
+    position:relative;
+    overflow:hidden;
+    cursor:pointer;
+    backdrop-filter:blur(12px);
+    border:1px solid
+    rgba(255,255,255,.15);
+    isolation:isolate;
     min-height:44px;
+    background:
+    linear-gradient(
+        180deg,
+        rgba(255,255,255,.18),
+        rgba(255,255,255,.05)
+    );
+    box-shadow:
+
+0 2px 6px rgba(0,0,0,.02);
+    transform:translateZ(0);
 }
 
 .menu-item iconify-icon{
+    font-size:17px;
+    transition:
+
+        transform .35s,
+
+        background .35s,
+
+        color .35s,
+
+        box-shadow .35s;
     width:28px;
     height:28px;
-    font-size:17px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:12px;
+    background:rgba(255,255,255,.45);
+    backdrop-filter:blur(20px);
+    position:relative;
+    z-index:2;
+    box-shadow:
+
+    inset 0 1px 2px rgba(255,255,255,.6),
+
+    0 6px 15px rgba(37,99,235,.08);
+    border:1px solid rgba(255,255,255,.45);
 }
 
 .menu-item span{
     font-size:13px;
+    font-weight:500;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
+    position:relative;
+    z-index:2;
+    white-space:nowrap;
 }
-.profile{
-    padding:10px;
-    gap:8px;
-}
+
 .profile-image{
+    position:relative;
+    flex-shrink:0;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
     width:36px;
     height:36px;
 }
+
 .profile-info{
-    /* Flex items default to min-width:auto, which floors their shrink
-       at the unwrapped text width — with the card this narrow that was
-       forcing the row wider than the card and pushing .profile-menu
-       out past its right edge (the "buzilib qoldi" break). min-width:0
-       lets it actually shrink; nowrap+ellipsis on the name keeps it to
-       one line instead of wrapping into the row below. */
+    flex:1;
+    margin-left:14px;
+    position:relative;
+    z-index:2;
     min-width:0;
 }
+
 .profile-info h4{
+    color:#204181;
     font-size:13px;
+    margin-bottom:4px;
+    font-weight:700;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
 }
+
 .profile-info span{
+    color:#7a8ca8;
     font-size:11px;
+    display:block;
+    opacity:.75;
+    font-weight:500;
 }
+
 .profile-menu{
     width:28px;
     height:28px;
+    border:1px solid rgba(255,255,255,.7);
+    border-radius:14px;
+    background:rgba(255,255,255,.55);
+    cursor:pointer;
+    transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
+    display:flex;
+    justify-content:center;
+    align-items:center;
     flex-shrink:0;
+    backdrop-filter:blur(20px);
 }
-
-/* ========================= */
-/* PROFILE DROPDOWN */
-/* ========================= */
 
 /* .profile clips its own corner-glow blobs with overflow:hidden (see the
    PROFILE/PROFILE CARD sections above) — the dropdown needs to escape
@@ -2263,8 +1070,31 @@ transition:all .35s ease;
    after every earlier overflow:hidden declaration on .profile so this
    one wins the cascade. */
 .profile{
+    margin-top:22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px;
+    border-radius:22px;
+    background:
+        linear-gradient(
+            145deg,
+            rgba(255,255,255,.65),
+            rgba(255,255,255,.30)
+        );
+    backdrop-filter:blur(35px);
+    border:1px solid rgba(255,255,255,.65);
+    position:relative;
+    z-index:2;
+    transition:.4s ease;
+    gap:8px;
     overflow:visible;
+    -webkit-backdrop-filter:blur(35px);
+    box-shadow:
+        inset 0 1px 1px rgba(255,255,255,.8),
+        0 15px 35px rgba(37,99,235,.12);
 }
+
 
 /* Avatar's gradient ring border (::before) and green "online" status dot
    (::after) both removed — just the plain photo now. */
@@ -3286,24 +2116,17 @@ svg.graph{
 [data-theme="dark"] .card-header a{
     color:#9db3ff;
 }
-
-/* ========================================= */
-/* ACTIVE MENU ITEM INDICATOR — FULL HEIGHT */
-/* ========================================= */
 /* Was height:60% (top:50% + translateY(-50%)), so the little glass/blue
    accent bar on the active item's left edge stopped partway up and down
    instead of spanning the full row. Full height needs top:0 instead of
    the vertical-centering transform, or the 100% would still center on a
    0-height box. */
 .menu-item.active::before{
+    height:100%;
     top:0;
     transform:none;
-    height:100%;
 }
 
-/* ========================================= */
-/* ACTIVE ICON GLOW — REMOVED */
-/* ========================================= */
 /* Reverted the overflow:visible attempt above: .menu-item needs
    overflow:hidden to keep its hover-shine sweep (a skewed white gradient
    bar parked off-canvas at left:-140% until hover) actually hidden when
@@ -3315,11 +2138,14 @@ svg.graph{
    is lost, and there's no glow left to clip. */
 .menu-item.active iconify-icon::after{
     content:none;
+    position:absolute;
+    inset:-8px;
+    border-radius:50%;
+    background:rgba(59,130,246,.18);
+    filter:blur(12px);
+    z-index:-1;
 }
 
-/* ========================================= */
-/* ACTIVE ITEM "GLASS" GHOST SHAPE — ROOT CAUSE */
-/* ========================================= */
 /* This was the real bug. Two separate rules both target the SAME
    pseudo-element on .menu-item.active — the base .menu-item::after
    (the hover-shine sweep: a 90px-wide skewed bar parked at left:-140%,
@@ -3336,7 +2162,25 @@ svg.graph{
    top of being broken — dropped entirely instead of patched. */
 .menu-item.active::after{
     content:none;
+    position:absolute;
+    inset:0;
+    border-radius:18px;
+    padding:1px;
+    background:
+
+    linear-gradient(
+        135deg,
+        rgba(255,255,255,.9),
+        rgba(110,170,255,.5)
+    );
+    -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;
+    mask-composite:exclude;
+    animation:activeShine 4s linear infinite;
 }
+
 
 /* ========================================= */
 /* PROFILE CARD HOVER SWEEP — REMOVED */
@@ -3353,28 +2197,92 @@ svg.graph{
 .profile:hover::after{
     content:none;
 }
-
-/* ========================================= */
-/* MENU ITEM HOVER SHIFT — REMOVED */
-/* ========================================= */
 /* Several .menu-item:hover rules accumulated transform (translateX,
    scale, translateZ) — the "items slide over on hover" effect. Zeroed
    out rather than hunting down/deleting every duplicate. */
 .menu-item:hover{
+    background:
+
+    linear-gradient(
+        135deg,
+        rgba(255,255,255,.55),
+        rgba(255,255,255,.25)
+    );
     transform:none;
+    color:#2563eb;
+    border-color:
+    rgba(255,255,255,.7);
+    overflow:hidden;
+    box-shadow:
+
+0 10px 24px rgba(37,99,235,.08);
+    background-image:
+
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,.65),
+            rgba(255,255,255,.25)
+        );
 }
 
-/* ========================================= */
-/* SIDEBAR HEIGHT — SMALLER TOP/BOTTOM MARGIN */
-/* ========================================= */
+/* Was a stack of duplicate overrides ending in transform:scale(.88) on
+   .sidebar — scale() shrinks rendered content into the top-left corner
+   without resizing the element's actual box, so the sidebar kept its
+   full-height layout footprint while its content rendered small and
+   crammed, leaving dead space below. Consolidated to the single set of
+   sizes that stack actually intended, with no scale hack. */
 /* Was top:30px/bottom:30px (matching body's side padding), which read as
    too cramped vertically. Kept a small gap instead of going flush to
    100vh (top:0/bottom:0) — just a smaller one than before. Left stays
    at 30px, matching the body padding used for the horizontal gap. */
 .sidebar{
+    width:230px;
+    position:fixed;
     top:14px;
+    left:30px;
     bottom:14px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    padding:18px;
+    border-radius:32px;
+    background:rgba(255,255,255,.55);
+    backdrop-filter:
+    blur(45px)
+    saturate(180%);
+    -webkit-backdrop-filter:
+    blur(45px)
+    saturate(180%);
+    border:1px solid rgba(255,255,255,.8);
+    box-shadow:
+
+inset 0 1px 1px rgba(255,255,255,.8),
+
+inset 0 -1px 0 rgba(255,255,255,.4),
+
+0 20px 50px rgba(37,99,235,.12);
+    overflow:hidden;
+    isolation:isolate;
+    background-image:
+
+radial-gradient(
+rgba(255,255,255,.18) 1px,
+transparent 1px);
+    background-size:18px 18px;
+    outline:1px solid
+    rgba(255,255,255,.25);
+    outline-offset:-1px;
+    transform-style:preserve-3d;
+    perspective:1200px;
+    background-clip:padding-box;
+    filter:
+
+        drop-shadow(
+            0 30px 50px
+            rgba(37,99,235,.12)
+        );
 }
+
 
 /* ========================================= */
 /* ACTIVITY PAGE */
@@ -3402,12 +2310,6 @@ svg.graph{
     font-size:24px;
     font-weight:800;
     color:var(--foreground);
-}
-
-.header-title p{
-    margin-top:6px;
-    font-size:14px;
-    color:var(--muted);
 }
 
 .activity-tabs{
@@ -3484,15 +2386,12 @@ svg.graph{
     display:flex;
     flex-direction:column;
 }
-
 .chart-card svg.graph{
     flex:1;
     min-height:220px;
-}
-
-.chart-card svg.graph{
     margin-top:8px;
 }
+
 
 .table-wrap{
     overflow-x:auto;
@@ -4031,14 +2930,6 @@ tbody td:first-child{
     color:#2563eb;
 }
 
-.modal-tab-panel{
-    display:none;
-}
-
-.modal-tab-panel.active{
-    display:block;
-}
-
 .info-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -4410,8 +3301,7 @@ tbody td:first-child{
 .auth-brand{display:flex;align-items:center;gap:16px;color:#14213d}.auth-brand img{width:58px;height:58px}.auth-brand strong{display:block;font-size:27px;line-height:1.05}.auth-brand span{display:block;margin-top:4px;color:#1461e8;font-size:19px;font-weight:800}
 .auth-copy{margin-top:30px}.auth-copy h1{font-size:34px;line-height:1.3;color:#14213d;letter-spacing:-.8px}.auth-copy em{color:#1668ed;font-style:normal}.auth-copy p{margin-top:14px;color:#627494;font-size:17px;line-height:1.45}
 .auth-illustration{height:330px;margin-top:auto;display:grid;place-items:center;overflow:hidden}.auth-hero-image{width:min(100%,560px);height:auto;max-height:330px;object-fit:contain;mix-blend-mode:screen;filter:saturate(1.05) drop-shadow(0 18px 24px rgba(37,99,235,.14));}
-.auth-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.auth-benefits>div{display:flex;align-items:center;gap:10px;padding:16px 12px;border-radius:15px;background:rgba(255,255,255,.72);color:#53698f;font-size:12px}.auth-benefits iconify-icon{font-size:26px;color:#357ff1}.auth-benefits b{display:block;margin-bottom:4px;color:#192844;font-size:15px}
-.auth-card{justify-content:center;max-width:none;padding:70px 10%;border-radius:0;background:rgba(255,255,255,.9);box-shadow:none}.auth-form-heading{text-align:center;margin-bottom:12px}.auth-form-heading h2{font-size:32px;color:#14213d}.auth-form-heading p{margin-top:14px;color:#71819e;font-size:17px}.auth-input-wrap{position:relative}.auth-input-wrap>iconify-icon{position:absolute;z-index:1;top:50%;left:18px;transform:translateY(-50%);color:#8c9ab1;font-size:22px}.auth-input-wrap input{padding-left:56px!important}
+.auth-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.auth-benefits>div{display:flex;align-items:center;gap:10px;padding:16px 12px;border-radius:15px;background:rgba(255,255,255,.72);color:#53698f;font-size:12px}.auth-benefits iconify-icon{font-size:26px;color:#357ff1}.auth-benefits b{display:block;margin-bottom:4px;color:#192844;font-size:15px}.auth-form-heading{text-align:center;margin-bottom:12px}.auth-form-heading h2{font-size:32px;color:#14213d}.auth-form-heading p{margin-top:14px;color:#71819e;font-size:17px}.auth-input-wrap{position:relative}.auth-input-wrap>iconify-icon{position:absolute;z-index:1;top:50%;left:18px;transform:translateY(-50%);color:#8c9ab1;font-size:22px}.auth-input-wrap input{padding-left:56px!important}
 .auth-card > .auth-form-heading,
 .auth-card > .edit-field,
 .auth-card > .auth-error,
@@ -4493,15 +3383,19 @@ tbody td:first-child{
     font-size:21px;
     font-weight:800;
 }
-
 .auth-card{
-    width:100%;
+    justify-content:center;
     max-width:460px;
     padding:48px 40px;
+    border-radius:0;
+    background:rgba(255,255,255,.9);
+    box-shadow:none;
+    width:100%;
     display:flex;
     flex-direction:column;
     gap:24px;
 }
+
 
 .auth-card .edit-field label{
     font-size:14px;
@@ -4751,12 +3645,6 @@ body:has(.auth-page) .auth-form-heading p{
     letter-spacing:-.1px;
 }
 
-body:has(.auth-page) .auth-card .edit-field input{
-    border-color:#d8e2f3;
-    color:#17233d;
-    background:var(--surface);
-}
-
 body:has(.auth-page) .auth-card .edit-field input:focus{
     border-color:#2f73e8;
     box-shadow:0 0 0 3px rgba(47,115,232,.14);
@@ -4770,12 +3658,15 @@ body:has(.auth-page) .auth-card .auth-field-heading label{
     font-weight:700;
     letter-spacing:-.1px;
 }
-
 body:has(.auth-page) .auth-card .edit-field input{
+    border-color:#d8e2f3;
+    color:#17233d;
+    background:var(--surface);
     font-size:16px;
     font-weight:600;
     letter-spacing:-.1px;
 }
+
 
 body:has(.auth-page) .auth-submit,
 body:has(.auth-page) .google-login-button{
@@ -4876,12 +3767,15 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 .back-link:hover{
     color:#1d4ed8;
 }
-
 .header-title p{
+    margin-top:6px;
+    font-size:14px;
+    color:var(--muted);
     display:flex;
     align-items:center;
     gap:10px;
 }
+
 
 /* .edit-fields-card is also .edit-mode (display:none until editing) —
    grid-template-columns/gap here are harmless while hidden, but
@@ -4931,10 +3825,8 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     align-items:center;
     gap:8px;
 }
-
 .modal-tab-panel{
     display:none;
-
     flex-direction:column;
     gap:16px;
 }
@@ -4942,6 +3834,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 .modal-tab-panel.active{
     display:flex;
 }
+
 
 .modal-tab-panel .card h3{
     margin-bottom:14px;
@@ -5564,11 +4457,6 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     font-size:16px;
 }
 
-[data-theme="dark"] .add-device-footer{
-    background:rgba(255,255,255,.03);
-    border-top-color:rgba(255,255,255,.08);
-}
-
 [data-theme="dark"] .add-device-btn.outline{
     background:rgba(255,255,255,.06);
     border-color:rgba(255,255,255,.1);
@@ -5611,10 +4499,11 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     from{ background:rgba(37,99,235,.12); }
     to{ background:transparent; }
 }
-
 [data-theme="dark"] .add-device-footer{
+    background:rgba(255,255,255,.03);
     border-top-color:rgba(255,255,255,.08);
 }
+
 
 /* ========================================= */
 /* RESPONSIVE LAYOUT — TABLET AND MOBILE      */
@@ -6089,13 +4978,16 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
         padding:14px 18px;
     }
 }
-
 /* Alignment safeguards for the responsive layouts above. These keep a
    shorter card or a compact header control from making an otherwise even
    mobile/tablet row look visually off-centre. */
 body{
+    background:#eef5ff;
+    display:flex;
+    padding:30px;
     overflow-x:hidden;
 }
+
 
 .content-header > *,
 .topbar > *,

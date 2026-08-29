@@ -81,6 +81,34 @@ for (const theme of ["light", "dark"] as const) {
       });
     });
 
+    // Merging duplicate rules touches hover/active state that a static page
+    // screenshot never exercises — .menu-item:hover alone was declared ten
+    // times, with four competing transforms.
+    test("sidebar hover and active state render as expected", async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto("/overview");
+      // Hover first, then kill transitions: under parallel workers the
+      // screenshot could otherwise land on an in-between frame and the test
+      // flaked. Disabling transitions while already hovered pins the end state.
+      await page.getByRole("link", { name: "Qurilmalar" }).hover();
+      await stabilise(page);
+      await expect(page.locator(".sidebar")).toHaveScreenshot(`sidebar-hover-${theme}.png`, {
+        maxDiffPixels: 100,
+        threshold: 0.05,
+      });
+    });
+
+    test("child dropdown renders as expected", async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto("/overview");
+      await page.getByRole("button", { name: /Farzand:/ }).click();
+      await stabilise(page);
+      await expect(page.locator(".child-dropdown")).toHaveScreenshot(`child-dropdown-${theme}.png`, {
+        maxDiffPixels: 100,
+        threshold: 0.05,
+      });
+    });
+
     test("device link modal renders as expected", async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto("/devices");
