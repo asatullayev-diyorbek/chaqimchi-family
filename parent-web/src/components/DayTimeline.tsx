@@ -357,7 +357,7 @@ export default function DayTimeline({
                       <AppIcon appId={lane.app_id} appName={lane.app_name} icon={lane.icon} size={22} />
                       <span>
                         <strong style={{ display: "block" }}>{appDisplay(lane.app_id, lane.app_name).label}</strong>
-                        <span style={{ opacity: 0.8, fontSize: 11.5 }}>{fmtHm(block.start)} – {fmtHm(block.end)} · {fmtDur(block.end - block.start)}</span>
+                        <span style={{ opacity: 0.92, fontSize: 13, fontWeight: 600 }}>{fmtHm(block.start)} – {fmtHm(block.end)} · {fmtDur(block.end - block.start)}</span>
                       </span>
                     </div>
                   ))}
