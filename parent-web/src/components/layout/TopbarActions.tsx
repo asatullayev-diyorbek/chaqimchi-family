@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getAlerts, Alert } from "@/api/alerts";
@@ -9,6 +9,7 @@ import { Child, createChild, getChildren } from "@/api/children";
 import { mediaUrl } from "@/api/client";
 import { applyTheme, readTheme } from "@/lib/theme";
 import { useObjectUrl } from "@/hooks/useObjectUrl";
+import { useDropdown } from "@/hooks/useDropdown";
 import Modal from "@/components/Modal";
 import WheelPicker from "@/components/WheelPicker";
 import toast from "react-hot-toast";
@@ -42,15 +43,16 @@ export default function TopbarActions() {
   const [photoError, setPhotoError] = useState("");
   const [gender, setGender] = useState<"boy" | "girl">("boy");
   const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfiles, setShowProfiles] = useState(false);
+  const notifRootRef = useRef<HTMLDivElement>(null);
+  const notifTriggerRef = useRef<HTMLButtonElement>(null);
+  const profilesRootRef = useRef<HTMLDivElement>(null);
+  const profilesTriggerRef = useRef<HTMLButtonElement>(null);
+  const notif = useDropdown(notifRootRef, notifTriggerRef);
+  const profiles = useDropdown(profilesRootRef, profilesTriggerRef);
   
   // Seeded from whatever the pre-hydration script already stamped on <html>,
   // so the toggle icon matches the painted theme on the very first render.
   const [dark, setDark] = useState(false);
-
-  const notifRef = useRef<HTMLDivElement>(null);
-  const profileRef = useRef<HTMLDivElement>(null);
 
   const selectedDeviceId = searchParams.get("device") ?? devices.find((device) => device.status === "linked")?.id ?? "";
   const selectedDevice = devices.find((device) => device.id === selectedDeviceId);
@@ -61,18 +63,6 @@ export default function TopbarActions() {
     getDevices().then(setDevices).catch(() => setDevices([])); 
     getChildren().then(setChildren).catch(() => setChildren([]));
     queueMicrotask(() => setDark(readTheme() === "dark"));
-
-
-    function handleClickOutside(event: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
-        setShowNotifications(false);
-      }
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setShowProfiles(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -88,8 +78,9 @@ export default function TopbarActions() {
   function selectDevice(deviceId: string) {
     const params = new URLSearchParams(searchParams.toString());
     if (deviceId) params.set("device", deviceId); else params.delete("device");
-    setShowProfiles(false);
-    
+    profiles.close(true);
+
+
     const pathname = window.location.pathname;
     router.replace(`${pathname}${params.size ? `?${params.toString()}` : ""}`);
   }
@@ -139,16 +130,24 @@ export default function TopbarActions() {
   return (
     <>
       <div className="topbar-actions">
-        <div className={`dropdown-wrap ${showNotifications ? 'open' : ''}`} data-dropdown ref={notifRef}>
-          <button className="icon-btn" data-dropdown-toggle onClick={() => setShowNotifications(!showNotifications)}>
+        <div className={`dropdown-wrap ${notif.open ? 'open' : ''}`} data-dropdown ref={notifRootRef}>
+          <button
+            className="icon-btn"
+            data-dropdown-toggle
+            onClick={notif.toggle}
+            aria-label={unseen > 0 ? `Bildirishnomalar (${unseen} ta yangi)` : "Bildirishnomalar"}
+            aria-expanded={notif.open}
+            aria-haspopup="menu"
+            ref={notifTriggerRef}
+          >
             <iconify-icon icon="solar:bell-linear"></iconify-icon>
             {unseen > 0 && <span className="notification">{unseen}</span>}
           </button>
 
-          <div className="notif-dropdown">
+          <div className="notif-dropdown" role="menu" aria-label="Bildirishnomalar">
             <div className="notif-dropdown-header">Bildirishnomalar</div>
             {alerts.slice(0, 3).map((alert) => (
-              <Link key={alert.id} href={`/alerts?device=${selectedDeviceId}`} className="notif-item" onClick={() => setShowNotifications(false)}>
+              <Link key={alert.id} href={`/alerts?device=${selectedDeviceId}`} className="notif-item" role="menuitem" onClick={() => notif.close()}>
                 <span className={`notif-icon ${alert.alert_type === "limit_reached" ? "orange" : "blue"}`}>
                   <iconify-icon icon={alert.alert_type === "limit_reached" ? "solar:danger-triangle-linear" : "solar:shield-check-linear"}></iconify-icon>
                 </span>
@@ -173,8 +172,17 @@ export default function TopbarActions() {
           <iconify-icon icon={dark ? "solar:sun-linear" : "solar:moon-linear"}></iconify-icon>
         </button>
 
-        <div className={`dropdown-wrap ${showProfiles ? 'open' : ''}`} data-dropdown ref={profileRef}>
-          <div className="child-profile" data-dropdown-toggle role="button" tabIndex={0} onClick={() => setShowProfiles(!showProfiles)}>
+        <div className={`dropdown-wrap ${profiles.open ? 'open' : ''}`} data-dropdown ref={profilesRootRef}>
+          <button
+            type="button"
+            className="child-profile"
+            data-dropdown-toggle
+            onClick={profiles.toggle}
+            aria-label={selectedChild ? `Farzand: ${selectedChild.name}. Almashtirish` : "Farzand qo'shish"}
+            aria-expanded={profiles.open}
+            aria-haspopup="menu"
+            ref={profilesTriggerRef}
+          >
             <span className="child-avatar">
               {selectedChild?.photo_url ? (
                 <img src={mediaUrl(selectedChild.photo_url)} alt="" loading="lazy" decoding="async" />
@@ -189,14 +197,21 @@ export default function TopbarActions() {
               <span>{children.length ? "Farzand" : "Profil yarating"}</span>
             </div>
             <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
-          </div>
+          </button>
 
-            <div className="child-dropdown">
+            <div className="child-dropdown" role="menu" aria-label="Farzandlar">
               {children.map((child, index) => {
                 const device = devices.find((item) => item.child_id === child.id);
                 const isActive = device?.id === selectedDeviceId;
                 return (
-                  <a href="#" key={child.id} className={`child-dropdown-item ${isActive ? "active" : ""}`} onClick={(e) => { e.preventDefault(); if(device) selectDevice(device.id); }}>
+                  <button
+                    type="button"
+                    key={child.id}
+                    role="menuitemradio"
+                    aria-checked={isActive}
+                    className={`child-dropdown-item ${isActive ? "active" : ""}`}
+                    onClick={() => { if (device) selectDevice(device.id); else profiles.close(true); }}
+                  >
                     <span className="child-avatar small">
                       {child.photo_url ? <img src={mediaUrl(child.photo_url)} alt="" loading="lazy" decoding="async" /> : <img src={index % 2 === 0 ? "/assets/child-boy.png" : "/assets/child-girl.png"} alt="" loading="lazy" decoding="async" />}
                     </span>
@@ -205,16 +220,21 @@ export default function TopbarActions() {
                       <span>Farzand</span>
                     </div>
                     {isActive && <iconify-icon icon="solar:check-circle-bold" className="check"></iconify-icon>}
-                  </a>
+                  </button>
                 );
               })}
 
-              <a href="#" className="child-dropdown-item add" onClick={(e) => { e.preventDefault(); setShowProfiles(false); setShowAddChild(true); }}>
+              <button
+                type="button"
+                role="menuitem"
+                className="child-dropdown-item add"
+                onClick={() => { profiles.close(); setShowAddChild(true); }}
+              >
                 <span className="child-avatar small add">
                   <iconify-icon icon="solar:add-circle-linear"></iconify-icon>
                 </span>
-                <span>Farzand qo'shish</span>
-              </a>
+                <span>Farzand qo&apos;shish</span>
+              </button>
             </div>
         </div>
       </div>

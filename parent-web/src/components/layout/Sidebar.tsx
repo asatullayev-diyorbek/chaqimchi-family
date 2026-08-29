@@ -27,8 +27,7 @@ export default function Sidebar() {
       .catch(() => undefined);
   }, []);
 
-  function onLogout(e: React.MouseEvent) {
-    e.preventDefault();
+  function onLogout() {
     logout();
     router.replace("/login");
   }
@@ -87,15 +86,11 @@ export default function Sidebar() {
             <iconify-icon icon="hugeicons:more-horizontal"></iconify-icon>
           </button>
           
-          <div className="profile-dropdown">
-            <Link href="#profil" className="profile-dropdown-item">
-              <iconify-icon icon="hugeicons:user-circle"></iconify-icon>
-              <span>Profil</span>
-            </Link>
-            <a href="#" className="profile-dropdown-item logout" onClick={onLogout}>
+          <div className="profile-dropdown" role="menu">
+            <button type="button" role="menuitem" className="profile-dropdown-item logout" onClick={onLogout}>
               <iconify-icon icon="hugeicons:logout-03"></iconify-icon>
               <span>Chiqish</span>
-            </a>
+            </button>
           </div>
         </div>
       </div>
