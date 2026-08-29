@@ -26,9 +26,11 @@ boshqaruvida bir nechta real bug bor, va CSS 7 900 qatorlik yagona faylда.
 
 **Tavsiya:** P0 → P1 ni bir sprintда yopish. P2 keyingi sprint. P3 fon ishi.
 
-**Bajarilish holati (2026-08-30):** 1-bosqich yakunlandi — P0-1…P0-4, P1-2 va
-P3-1 (viewport metadata) yopildi, productionга deploy qilindi. Batafsil:
-`fix-plan.md` §1. Keyingisi — 2-bosqich (P1-1, P1-3, P1-5, P1-8, P1-9, P3-2).
+**Bajarilish holati (2026-08-30):** 1- va 2-bosqich yakunlandi.
+Yopilgan: **P0-1…P0-4**, **P1-1, P1-2, P1-3, P1-5, P1-8, P1-9**, **P3-1, P3-2, P3-3**.
+Hammasi productionга deploy qilindi. Batafsil: `fix-plan.md` §1–2.
+Keyingisi — 3-bosqich (P1-6 signup, P1-7 alerts dizayni, P2-3 o'lik boshqaruvlar,
+P2-7/P2-8, P2-9).
 
 ---
 
@@ -120,7 +122,7 @@ takrorlanишни ham yo'q qiladi.
 
 ## 2. P1 — Yuqori
 
-### [ ] P1-1. `URL.createObjectURL` xotira sizishi
+### [x] P1-1. `URL.createObjectURL` xotira sizishi
 
 **Fayl:** `TopbarActions.tsx:245`, `devices/page.tsx:410`
 
@@ -140,7 +142,7 @@ Dizayn tizimidan tashqarida, uslublanmaydi, mobil'да xunuk.
 
 **Yechim:** P0-4 dagi `<Modal>` asosида `<ConfirmDialog>`.
 
-### [ ] P1-3. Dropdown'lar klaviaturasiz
+### [x] P1-3. Dropdown'lar klaviaturasiz
 
 **Fayl:** `TopbarActions.tsx:138-208`
 
@@ -164,7 +166,7 @@ xavf bor.
 **Yechim:** to'g'ri patternga o'tish — boshlang'ich state'ni to'g'ri berish,
 `useSyncExternalStore` yoki data-fetch qatlami (P2-1).
 
-### [ ] P1-5. Rules sahifasida limit saqlash atomik emas
+### [x] P1-5. Rules sahifasida limit saqlash atomik emas
 
 **Fayl:** `rules/page.tsx:44-56`
 
@@ -202,7 +204,7 @@ havolasini qaytarish (yoki signup'ni ataylab yopiq deb hujjatlashtirish).
 - sarlavha yo'q (faqat o'ngда bitta tugma)
 - qurilma tanlagich yo'q — jimgina birinchi linked qurilmani oladi
 
-### [ ] P1-8. Ro'yxatlarда pagination yo'q
+### [x] P1-8. Ro'yxatlarда pagination yo'q
 
 **Fayl:** `alerts/page.tsx:85`, `devices/page.tsx:495`
 
@@ -210,7 +212,7 @@ Activity sahifasида 10 tadan pagination qilинdi, lekin **Alerts** (`alerts.
 — hammasi) va **Qurilmalar jadvalида** yo'q. Ogohlantirishlар vaqt o'tиши bilan
 yuzlab bo'ladi.
 
-### [ ] P1-9. `not-found` / `error` / `loading` sahifalari yo'q
+### [x] P1-9. `not-found` / `error` / `loading` sahifalari yo'q
 
 **Fayl:** `src/app/` — `not-found.tsx`, `error.tsx`, `loading.tsx` mavjud emas
 
@@ -319,9 +321,9 @@ javobда esa `max-age=3600` — ziddiyat.
 ## 4. P3 — Past / sayqal
 
 - [x] **P3-1.** `layout.tsx`да `viewport` va `themeColor` metadata yo'q; PWA manifest yo'q.
-- [ ] **P3-2.** `focus-visible` uslublari deyarli yo'q (butun CSS'да 6 ta hit) —
+- [x] **P3-2.** `focus-visible` uslublari deyarli yo'q (butun CSS'да 6 ta hit) —
   klaviatura bilan yurgan foydalanuvchi qayerдалиgини ko'rmaydi.
-- [ ] **P3-3.** `prefers-reduced-motion` hisobga olinmaган.
+- [x] **P3-3.** `prefers-reduced-motion` hisobga olinmaган.
 - [ ] **P3-4.** Imlo: `"Kamyida 8 ta belgi"` → `"Kamida"` (`signup/page.tsx:80`);
   `"yuzichadan"` → `"yuqoridagi menyudan"` (`devices/page.tsx:256`).
 - [ ] **P3-5.** `WheelPicker` ARIA ierarxiyasi noto'g'ri — `role="listbox"` va
