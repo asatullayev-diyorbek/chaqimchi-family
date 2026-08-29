@@ -19,6 +19,9 @@ const PAGES = [
   { path: "/activity", name: "activity" },
   { path: "/alerts", name: "alerts" },
   { path: "/rules", name: "rules" },
+  // Device detail owns a cluster of classes nothing else uses (edit mode,
+  // sync card, info grid); without it here, deleting dead CSS is guesswork.
+  { path: "/devices/d1", name: "device-detail" },
 ];
 
 /** Freeze anything that would differ between runs and produce false diffs. */
@@ -65,6 +68,18 @@ for (const theme of ["light", "dark"] as const) {
         });
       });
     }
+
+    test("login renders as expected", async ({ page }) => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.addInitScript(() => localStorage.removeItem("chaqimchi_access_token"));
+      await page.goto("/login");
+      await stabilise(page);
+      await expect(page).toHaveScreenshot(`login-${theme}.png`, {
+        fullPage: true,
+        maxDiffPixels: 100,
+        threshold: 0.05,
+      });
+    });
 
     test("device link modal renders as expected", async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
