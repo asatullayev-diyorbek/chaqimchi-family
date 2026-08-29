@@ -5,8 +5,12 @@ package updater
 // `relsign sign` (see agent/cmd/relsign) and is stored only as a secret,
 // never in this repo.
 //
-// SECURITY: this key was generated during development. Rotate it before any
-// real public release — run `relsign genkey` privately, replace the value
-// here, and keep the new private key in a secret manager. See
-// docs/ota-update.md.
-const UpdatePublicKeyHex = "26766ac507c13ba756a830547686460648eb23eec46dc90ff95cd503abf1c89c"
+// Rotated 2026-08-30 with `relsign rotate`, which writes the private half
+// straight to the gitignored secret file without printing it. The key it
+// replaced had been generated inside a session transcript and so had to be
+// treated as exposed.
+//
+// Rotating again strands every agent still pinned to this value: they can
+// only reach a newer key through a release signed with the one they already
+// trust. Do it deliberately, and see docs/ota-update.md first.
+const UpdatePublicKeyHex = "fcdbbef0f231ccf573935e535da8ab3b975d8f4f67019349b3d36caaf9cde528"
