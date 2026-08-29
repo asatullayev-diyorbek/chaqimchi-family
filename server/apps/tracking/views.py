@@ -130,24 +130,6 @@ RANGE_DAYS = {
 }
 
 
-def _app_minutes_for_date(device, target_date):
-    """Returns (minutes_per_app: dict[str, float], total: float) for one day."""
-    events = Event.objects.filter(
-        device=device, event_type="app_usage", occurred_at__date=target_date
-    )
-    minutes_per_app = defaultdict(float)
-    for event in events:
-        payload = event.payload or {}
-        started = parse_datetime(payload.get("started_at") or "")
-        ended = parse_datetime(payload.get("ended_at") or "")
-        app = payload.get("app_id") or payload.get("app") or "unknown"
-        if isinstance(payload.get("duration_seconds"), (int, float)) and payload["duration_seconds"] >= 0:
-            minutes_per_app[app] += payload["duration_seconds"] / 60
-        elif started and ended and ended > started:
-            minutes_per_app[app] += (ended - started).total_seconds() / 60
-    return minutes_per_app, sum(minutes_per_app.values())
-
-
 class SummaryView(APIView):
     """GET /api/tracking/summary/<device_id>/?date=YYYY-MM-DD&range=day|week|month
     — parent-authenticated.
