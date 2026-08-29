@@ -10,10 +10,11 @@ import TopbarActions from "@/components/layout/TopbarActions";
 import AppIcon from "@/components/AppIcon";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { appDisplay } from "@/lib/appDisplay";
+import { uzDateTime } from "@/lib/uzDate";
 
 function formatTime(value: string | null) {
   if (!value) return "Noma'lum";
-  return new Intl.DateTimeFormat("uz-UZ", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return uzDateTime(new Date(value));
 }
 
 function formatMinutes(minutes: number) {

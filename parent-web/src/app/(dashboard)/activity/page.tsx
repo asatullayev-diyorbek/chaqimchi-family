@@ -11,6 +11,7 @@ import DeviceSelector from "@/components/DeviceSelector";
 import ScreenTimeChart from "@/components/ScreenTimeChart";
 import { getRules, getDailyLimitMinutes, Rule } from "@/api/rules";
 import { appDisplay } from "@/lib/appDisplay";
+import { uzDayMonth, uzTime, uzWeekdayDayMonth } from "@/lib/uzDate";
 
 function todayISO(): string {
   const d = new Date();
@@ -26,7 +27,7 @@ function shiftISO(iso: string, days: number): string {
 function humanDay(iso: string): string {
   if (iso === todayISO()) return "Bugun";
   if (iso === shiftISO(todayISO(), -1)) return "Kecha";
-  return new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long" }).format(new Date(iso + "T00:00:00"));
+  return uzDayMonth(new Date(iso + "T00:00:00"));
 }
 
 const RANGE_LABELS: Record<SummaryRange, string> = {
@@ -46,7 +47,7 @@ const PAGE_SIZE = 10;
 
 function formatActivityTime(value: string | null): string {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  return uzTime(new Date(value));
 }
 
 function ActivityContent() {
@@ -219,7 +220,7 @@ function ActivityContent() {
                     isToday={historyDate === todayISO()}
                     dateISO={historyDate}
                     dateTitle={humanDay(historyDate)}
-                    dateSubtitle={new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long", weekday: "long" }).format(new Date(historyDate + "T00:00:00"))}
+                    dateSubtitle={uzWeekdayDayMonth(new Date(historyDate + "T00:00:00"))}
                   />
                 )}
               </div>
@@ -276,7 +277,7 @@ function ActivityContent() {
               const avg = days.length ? Math.round(days.reduce((s, d) => s + d.total_minutes, 0) / days.length) : 0;
               const limitPct = limit ? Math.round((dayMin / limit) * 100) : null;
               const remaining = limit != null ? limit - dayMin : null;
-              const dayLabel = activeDay === todayISO() ? "Bugungi" : activeDay === shiftISO(todayISO(), -1) ? "Kechagi" : new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long" }).format(new Date(activeDay + "T00:00:00"));
+              const dayLabel = activeDay === todayISO() ? "Bugungi" : activeDay === shiftISO(todayISO(), -1) ? "Kechagi" : uzDayMonth(new Date(activeDay + "T00:00:00"));
 
               const limitCard = (tone: string, icon: string, label: string, value: string, pct: number | null, barGradient: string) => (
                 <div className="stat-card stat-card-limit">

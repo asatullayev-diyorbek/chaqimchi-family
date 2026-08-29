@@ -13,6 +13,7 @@ import { useDropdown } from "@/hooks/useDropdown";
 import Modal from "@/components/Modal";
 import WheelPicker from "@/components/WheelPicker";
 import toast from "react-hot-toast";
+import { uzDateTime } from "@/lib/uzDate";
 
 const MONTH_NAMES = [
   "Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun",
@@ -153,7 +154,7 @@ export default function TopbarActions() {
                 </span>
                 <div>
                   <p>{alert.alert_type === "limit_reached" ? "Ekran vaqti limiti tugadi" : "Cheklangan ilova ochildi"}</p>
-                  <small suppressHydrationWarning>{new Date(alert.triggered_at).toLocaleString("uz-UZ")}</small>
+                  <small suppressHydrationWarning>{uzDateTime(new Date(alert.triggered_at))}</small>
                 </div>
               </Link>
             ))}

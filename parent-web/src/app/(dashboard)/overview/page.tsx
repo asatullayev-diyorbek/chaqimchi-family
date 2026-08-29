@@ -10,6 +10,7 @@ import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
 import CategoryDonut from "@/components/CategoryDonut";
 import { appDisplay, CATEGORY_META } from "@/lib/appDisplay";
+import { uzTime } from "@/lib/uzDate";
 
 const WEEKDAYS_UZ = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"];
 
@@ -200,7 +201,7 @@ function OverviewContent() {
                 <AppIcon appId={app.app} icon={app.icon} size={34} />
                 <span>{d.label}</span>
                 <em className="cat-tag" style={{color: d.color, background: d.bg}}>{d.categoryLabel}</em>
-                <small>{app.last_used_at ? new Date(app.last_used_at).toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }) : "Bugun"}</small>
+                <small>{app.last_used_at ? uzTime(new Date(app.last_used_at)) : "Bugun"}</small>
               </div>
             );
           })}

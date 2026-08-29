@@ -5,6 +5,7 @@ import { Alert, getAlerts, markAlertSeen } from "@/api/alerts";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useSelectedDevice } from "@/hooks/useSelectedDevice";
 import { toast } from "react-hot-toast";
+import { uzDateTime } from "@/lib/uzDate";
 
 const PAGE_SIZE = 10;
 
@@ -17,7 +18,7 @@ function describeAlert(alert: Alert) {
 }
 
 function formatTime(value: string) {
-  return new Intl.DateTimeFormat("uz-UZ", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+  return uzDateTime(new Date(value));
 }
 
 function AlertsContent() {
