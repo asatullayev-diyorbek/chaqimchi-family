@@ -82,7 +82,7 @@ class DeviceDetailTests(TestCase):
 
 
 class VerifyCodeDeviceReplacementTests(TestCase):
-    def test_new_pairing_retires_previous_device_for_same_child(self):
+    def test_new_pairing_keeps_the_child_s_existing_devices_linked(self):
         parent = ParentUser.objects.create_user(
             email="pairing@example.com", password="supersecret123"
         )
@@ -110,5 +110,53 @@ class VerifyCodeDeviceReplacementTests(TestCase):
         self.assertEqual(response.status_code, 200)
         previous.refresh_from_db()
         current.refresh_from_db()
-        self.assertEqual(previous.status, ChildDevice.STATUS_UNLINKED)
+        # A child can own a laptop and a phone at once. Pairing the second one
+        # used to retire the first, so the parent saw it vanish from the
+        # dashboard together with its history.
+        self.assertEqual(previous.status, ChildDevice.STATUS_LINKED)
         self.assertEqual(current.status, ChildDevice.STATUS_LINKED)
+        self.assertEqual(
+            ChildDevice.objects.filter(child=child, status=ChildDevice.STATUS_LINKED).count(), 2
+        )
+
+    def test_each_device_keeps_its_own_activity(self):
+        """Data stays device-scoped — a second device must not absorb the first's."""
+        parent = ParentUser.objects.create_user(
+            email="two-devices@example.com", password="supersecret123"
+        )
+        child = Child.objects.create(family=parent.family, name="Ali")
+        laptop = ChildDevice.objects.create(
+            family=parent.family, child=child, child_name=child.name,
+            status=ChildDevice.STATUS_LINKED,
+        )
+        phone = ChildDevice.objects.create(
+            family=parent.family, child=child, child_name=child.name,
+            status=ChildDevice.STATUS_LINKED, platform=ChildDevice.PLATFORM_ANDROID,
+        )
+
+        client = APIClient()
+        for device, app, minutes in ((laptop, "chrome.exe", 30), (phone, "telegram", 10)):
+            client.post(
+                reverse("ingest"),
+                {
+                    "device_id": str(device.id),
+                    "batch_id": f"batch-{device.id}",
+                    "events": [{
+                        "type": "app_usage", "app_id": app,
+                        "started_at": "2026-08-30T10:00:00Z",
+                        "ended_at": f"2026-08-30T10:{minutes:02d}:00Z",
+                        "duration_seconds": minutes * 60,
+                    }],
+                },
+                format="json",
+                HTTP_AUTHORIZATION=f"Device {device.id}:{device.device_secret}",
+            )
+
+        client.force_authenticate(user=parent)
+        laptop_summary = client.get(reverse("summary", kwargs={"device_id": laptop.id}), {"date": "2026-08-30"}).json()
+        phone_summary = client.get(reverse("summary", kwargs={"device_id": phone.id}), {"date": "2026-08-30"}).json()
+
+        self.assertEqual([a["app"] for a in laptop_summary["top_apps"]], ["chrome.exe"])
+        self.assertEqual([a["app"] for a in phone_summary["top_apps"]], ["telegram"])
+        self.assertEqual(laptop_summary["total_screen_minutes"], 30)
+        self.assertEqual(phone_summary["total_screen_minutes"], 10)

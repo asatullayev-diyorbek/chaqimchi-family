@@ -108,15 +108,10 @@ class VerifyCodeView(APIView):
         with transaction.atomic():
             child = get_object_or_404(Child, id=child_id, family=request.user.family) if child_id else Child.objects.create(family=request.user.family, name=device.child_name or "Farzand")
 
-            # A child has one active Guard in the MVP. Keep historical rows and
-            # their activity data, but retire older linked devices before the
-            # newly paired device becomes active.
-            ChildDevice.objects.filter(
-                family=request.user.family,
-                child=child,
-                status=ChildDevice.STATUS_LINKED,
-            ).exclude(id=device.id).update(status=ChildDevice.STATUS_UNLINKED)
-
+            # A child may have several devices linked at once (laptop, phone,
+            # tablet). Pairing a new one used to silently retire the others,
+            # which meant a parent adding a second computer watched the first
+            # one disappear from the dashboard along with its data.
             device.family = request.user.family
             device.child = child
             device.child_name = child.name

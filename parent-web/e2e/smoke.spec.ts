@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { mockApi, signIn } from "./fixtures";
+import { DEVICE, mockApi, PHONE, signIn } from "./fixtures";
 
 test.beforeEach(async ({ page }) => {
   await signIn(page);
@@ -110,5 +110,48 @@ test.describe("resilience", () => {
     await page.goto("/activity");
     // The page must still render its shell and tabs rather than dying.
     await expect(page.getByRole("button", { name: /Ekran vaqti/ })).toBeVisible();
+  });
+});
+
+test.describe("multiple devices per child", () => {
+  test("both devices are listed and neither replaces the other", async ({ page }) => {
+    await mockApi(page, { "/api/devices/": [DEVICE, PHONE] });
+    await page.goto("/devices");
+
+    const rows = page.locator(".device-table tbody tr");
+    await expect(rows).toHaveCount(2);
+    // Named by platform, not by the child — otherwise both rows read "Alijon".
+    await expect(rows.nth(0)).toContainText("Windows");
+    await expect(rows.nth(1)).toContainText("Android");
+  });
+
+  test("activity asks which device instead of inventing a total", async ({ page }) => {
+    // Summing two devices would double-count any hour the child spent on
+    // both, so "all devices" must not produce a screen-time number.
+    await mockApi(page, { "/api/devices/": [DEVICE, PHONE] });
+    await page.goto("/activity");
+
+    await expect(page.getByText(/Qaysi qurilmani ko'rmoqchisiz/)).toBeVisible();
+    await expect(page.getByText("2 soat 41 min")).toHaveCount(0);
+  });
+
+  test("choosing a device scopes the page and survives a reload", async ({ page }) => {
+    await mockApi(page, { "/api/devices/": [DEVICE, PHONE] });
+    await page.goto("/activity");
+
+    await page.getByRole("button", { name: "Android" }).click();
+    await expect(page).toHaveURL(/device=d2/);
+    await expect(page.getByText(/Qaysi qurilmani ko'rmoqchisiz/)).toHaveCount(0);
+
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Android" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  test("the selector is hidden when there is only one device", async ({ page }) => {
+    await mockApi(page);
+    await page.goto("/activity");
+    await expect(page.locator(".device-selector")).toHaveCount(0);
+    // ...and the single device is used directly, with no prompt.
+    await expect(page.getByText(/Qaysi qurilmani ko'rmoqchisiz/)).toHaveCount(0);
   });
 });

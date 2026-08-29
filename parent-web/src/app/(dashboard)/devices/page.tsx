@@ -15,6 +15,7 @@ import { Child, deleteChild, getChildren, updateChild } from "@/api/children";
 import Modal from "@/components/Modal";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useObjectUrl } from "@/hooks/useObjectUrl";
+import { deviceLabel } from "@/components/DeviceSelector";
 import { toast } from "react-hot-toast";
 
 function formatLastSync(iso: string | null): string {
@@ -93,6 +94,9 @@ export default function DevicesPage() {
   const onlineCount = Object.values(summaries).filter((s) => s?.device_status === "online").length;
   // Floor of 60 min so a single quiet device doesn't render a full-width bar.
   const usageScale = Math.max(60, ...Object.values(summaries).map((s) => s?.total_screen_minutes ?? 0));
+  const existingForSelectedChild = selectedChildId
+    ? (linkedDevices?.filter((d) => d.child_id === selectedChildId).length ?? 0)
+    : 0;
 
   async function load() {
     try {
@@ -291,6 +295,16 @@ export default function DevicesPage() {
               {linkStep === 1 && (
                 <div className="add-device-step active">
                   <p className="step-intro">Bu qurilma qaysi farzandingizga tegishli?</p>
+                  {selectedChildId && existingForSelectedChild > 0 && (
+                    // Linking a second device used to silently retire the
+                    // first. It no longer does, so say so plainly — a parent
+                    // adding a laptop shouldn't have to wonder about the phone.
+                    <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>
+                      <iconify-icon icon="solar:info-circle-linear" style={{ verticalAlign: "-2px", marginRight: 6 }}></iconify-icon>
+                      Bu farzandda {existingForSelectedChild} ta qurilma bor. Yangisi ularga
+                      qo&apos;shiladi — mavjudlari uzilmaydi.
+                    </p>
+                  )}
                   <div className="child-pick-list">
                     {children.map(child => (
                       <button
@@ -551,10 +565,13 @@ export default function DevicesPage() {
                           <DeviceIcon platform={device.platform} />
                         </span>
                         <div>
-                          <h4>{device.child_name || "Nomsiz qurilma"}</h4>
-                          <small>{device.platform === "windows" ? "Windows PC" : device.platform}</small>
+                          {/* Name the device, not the child — a child can own
+                              several, and labelling each with the child's name
+                              made them indistinguishable in this list. */}
+                          <h4>{deviceLabel(device)}</h4>
+                          <small>{child?.name ?? device.child_name ?? "Biriktirilmagan"}</small>
                           <span className={`device-badge ${device.platform === 'windows' ? 'blue' : 'green'}`}>
-                            {device.platform === 'windows' ? 'Asosiy qurilma' : 'Mobil'}
+                            {device.platform === 'windows' ? 'Kompyuter' : 'Mobil'}
                           </span>
                         </div>
                       </div>

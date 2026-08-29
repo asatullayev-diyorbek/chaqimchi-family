@@ -1,13 +1,13 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { ActivityHistoryItem, SummaryRange, TimelineSegment, getActivityHistory, getActivityTimeline, getSummary } from "@/api/tracking";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useSelectedDevice } from "@/hooks/useSelectedDevice";
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
 import DayTimeline from "@/components/DayTimeline";
+import DeviceSelector from "@/components/DeviceSelector";
 import ScreenTimeChart from "@/components/ScreenTimeChart";
 import { getRules, getDailyLimitMinutes, Rule } from "@/api/rules";
 import { appDisplay } from "@/lib/appDisplay";
@@ -50,10 +50,8 @@ function formatActivityTime(value: string | null): string {
 }
 
 function ActivityContent() {
-  const searchParams = useSearchParams();
-  const deviceId = searchParams.get("device");
 
-  const { device } = useSelectedDevice();
+  const { device, childDevices, allDevices } = useSelectedDevice();
   const [range, setRange] = useState<SummaryRange>("week");
   const [summaryRetry, setSummaryRetry] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
@@ -62,9 +60,9 @@ function ActivityContent() {
   const [historyOffset, setHistoryOffset] = useState(0);
   const [historyDate, setHistoryDate] = useState(todayISO);
 
-  // ?device wins, otherwise the shared hook's pick — this page also honours
-  // ?child, which the hook already handles.
-  const activeDeviceId = deviceId ?? device?.id ?? null;
+  // Null in "all devices" mode: with several devices linked there is no
+  // honest single number to show, so the tabs ask which one instead.
+  const activeDeviceId = device?.id ?? null;
   const onSummaryTab = tab === "screen" || tab === "apps";
   const onHistoryTab = tab === "history";
 
@@ -117,6 +115,8 @@ function ActivityContent() {
 
 
 
+      <DeviceSelector devices={childDevices} selectedId={activeDeviceId ?? ""} />
+
       {/* Tabs */}
       <div className="activity-tabs">
         <button className={`tab ${tab === "screen" ? "active" : ""}`} onClick={() => setTab("screen")}>
@@ -138,7 +138,17 @@ function ActivityContent() {
       </div>
 
       <section className="tab-content active" data-tab-panel="screen">
-        {!activeDeviceId ? (
+        {allDevices ? (
+          // Deliberately not an aggregate: two devices used in the same hour
+          // would double-count, so we ask rather than invent a total.
+          <div className="card device-pick-prompt">
+            <strong>Qaysi qurilmani ko&apos;rmoqchisiz?</strong>
+            <p>
+              Bu farzandda {childDevices.length} ta qurilma bor. Faoliyat ma&apos;lumoti har bir
+              qurilma uchun alohida yuritiladi — yuqoridan birini tanlang.
+            </p>
+          </div>
+        ) : !activeDeviceId ? (
           <div className="card" style={{ marginBottom: 24, background: "var(--brand-blue)", color: "#fff", border: "none" }}>
             <div style={{ padding: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
               <div>

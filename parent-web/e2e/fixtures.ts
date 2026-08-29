@@ -31,6 +31,14 @@ export const DEVICE = {
   agent_version: "0.4.0-rc.1",
 };
 
+/** A second device for the same child — the multi-device case. */
+export const PHONE = {
+  id: "d2", child_id: "c1", child_name: "Alijon", platform: "android",
+  status: "linked", created_at: "2026-08-05T00:00:00Z",
+  linked_at: "2026-08-05T00:00:00Z", last_sync: minutesAgo(12),
+  agent_version: "0.4.0-rc.1",
+};
+
 export const SUMMARY = {
   device_id: "d1", child_name: "Alijon", child_birth_date: "2013-02-02", child_photo_url: "",
   date: NOW.toISOString().slice(0, 10),
