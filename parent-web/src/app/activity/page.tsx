@@ -4,10 +4,28 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
 import { getAccessToken } from "@/api/client";
-import { ActivityHistoryItem, Device, DeviceSummary, SummaryRange, getActivityHistory, getDevices, getSummary } from "@/api/tracking";
+import { ActivityHistoryItem, Device, DeviceSummary, SummaryRange, TimelineSegment, getActivityHistory, getActivityTimeline, getDevices, getSummary } from "@/api/tracking";
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
+import DayTimeline from "@/components/DayTimeline";
 import { appDisplay } from "@/lib/appDisplay";
+
+function todayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function shiftISO(iso: string, days: number): string {
+  const d = new Date(iso + "T00:00:00");
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function humanDay(iso: string): string {
+  if (iso === todayISO()) return "Bugun";
+  if (iso === shiftISO(todayISO(), -1)) return "Kecha";
+  return new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long" }).format(new Date(iso + "T00:00:00"));
+}
 
 const RANGE_LABELS: Record<SummaryRange, string> = {
   day: "Bugun",
@@ -52,6 +70,9 @@ function ActivityContent() {
   const [historyNextOffset, setHistoryNextOffset] = useState<number | null>(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(false);
+  const [historyDate, setHistoryDate] = useState(todayISO);
+  const [timeline, setTimeline] = useState<TimelineSegment[]>([]);
+  const [timelineLoading, setTimelineLoading] = useState(false);
   useEffect(() => {
     if (!getAccessToken()) {
       router.replace("/login");
@@ -105,7 +126,7 @@ function ActivityContent() {
       setHistoryLoading(true);
       setHistoryError(false);
     }, 0);
-    getActivityHistory(activeDeviceId, { limit: 50, offset: historyOffset })
+    getActivityHistory(activeDeviceId, { date: historyDate, limit: 50, offset: historyOffset })
       .then((data) => {
         if (cancelled) return;
         setHistory(data.results);
@@ -120,7 +141,18 @@ function ActivityContent() {
         if (!cancelled) setHistoryLoading(false);
       });
     return () => { cancelled = true; clearTimeout(start); };
-  }, [activeDeviceId, historyOffset, tab]);
+  }, [activeDeviceId, historyOffset, historyDate, tab]);
+
+  useEffect(() => {
+    if (!activeDeviceId || tab !== "history") return;
+    let cancelled = false;
+    const start = setTimeout(() => { if (!cancelled) setTimelineLoading(true); }, 0);
+    getActivityTimeline(activeDeviceId, { date: historyDate })
+      .then((data) => { if (!cancelled) setTimeline(data.segments); })
+      .catch(() => { if (!cancelled) setTimeline([]); })
+      .finally(() => { clearTimeout(start); if (!cancelled) setTimelineLoading(false); });
+    return () => { cancelled = true; clearTimeout(start); };
+  }, [activeDeviceId, historyDate, tab]);
 
   const sortedApps = summary ? [...summary.top_apps].sort((a, b) => b.minutes - a.minutes) : [];
 
@@ -163,6 +195,23 @@ function ActivityContent() {
         ) : (
           <>
             {tab === "history" && (
+              <>
+              <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+                <div className="card-header" style={{ marginBottom: 14 }}>
+                  <h3>Kunlik vaqt jadvali</h3>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <button className="btn-view" style={{ padding: "4px 8px" }} onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, -1)); }}>‹</button>
+                    <span style={{ minWidth: 96, textAlign: "center", fontWeight: 600, fontSize: 13 }}>{humanDay(historyDate)}</span>
+                    <button className="btn-view" style={{ padding: "4px 8px" }} disabled={historyDate >= todayISO()} onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, 1)); }}>›</button>
+                  </div>
+                </div>
+                {timelineLoading ? (
+                  <p style={{ color: "var(--muted)" }}>Yuklanmoqda...</p>
+                ) : (
+                  <DayTimeline segments={timeline} />
+                )}
+              </div>
+
               <div className="card" style={{ padding: 20 }}>
                 <div className="card-header" style={{ marginBottom: 14 }}>
                   <h3>Faoliyat tarixi</h3>
@@ -191,6 +240,7 @@ function ActivityContent() {
                   </div>
                 )}
               </div>
+              </>
             )}
 
             {(tab === "screen" || tab === "apps") && summaryLoading && (

@@ -461,3 +461,56 @@ class AgentVersionAndLifecycleTests(TestCase):
         self.client.force_authenticate(user=self.parent)
         url = reverse("summary", kwargs={"device_id": self.device.id})
         self.assertEqual(self.client.get(url).json()["agent_version"], "0.5.0")
+
+
+class TimelineTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(email="tl@example.com", password="supersecret123")
+        self.device = ChildDevice.objects.create(status=ChildDevice.STATUS_LINKED, family=self.parent.family)
+        self.ingest_url = reverse("ingest")
+        self.url = reverse("timeline", kwargs={"device_id": self.device.id})
+
+    def _ingest_usage(self, items, batch_id="tl-1"):
+        events = [
+            {"type": "app_usage", "app_id": a, "app_name": a, "started_at": s, "ended_at": e}
+            for a, s, e in items
+        ]
+        return self.client.post(
+            self.ingest_url,
+            {"device_id": str(self.device.id), "batch_id": batch_id, "events": events},
+            format="json", **auth_header(self.device),
+        )
+
+    def test_timeline_returns_minute_segments(self):
+        self._ingest_usage([
+            ("chrome.exe", "2026-08-30T09:00:00+05:00", "2026-08-30T09:30:00+05:00"),
+            ("code.exe", "2026-08-30T14:00:00+05:00", "2026-08-30T15:00:00+05:00"),
+        ])
+        self.client.force_authenticate(user=self.parent)
+        resp = self.client.get(self.url, {"date": "2026-08-30"})
+        self.assertEqual(resp.status_code, 200)
+        segs = resp.json()["segments"]
+        self.assertEqual(len(segs), 2)
+        self.assertEqual((segs[0]["start_minute"], segs[0]["end_minute"]), (540, 570))
+        self.assertEqual(segs[1]["app_id"], "code.exe")
+        self.assertEqual((segs[1]["start_minute"], segs[1]["end_minute"]), (840, 900))
+
+    def test_timeline_merges_adjacent_same_app(self):
+        self._ingest_usage([
+            ("chrome.exe", "2026-08-30T10:00:00+05:00", "2026-08-30T10:05:00+05:00"),
+            ("chrome.exe", "2026-08-30T10:05:30+05:00", "2026-08-30T10:12:00+05:00"),
+        ])
+        self.client.force_authenticate(user=self.parent)
+        resp = self.client.get(self.url, {"date": "2026-08-30"})
+        segs = resp.json()["segments"]
+        self.assertEqual(len(segs), 1)
+        self.assertEqual((segs[0]["start_minute"], segs[0]["end_minute"]), (600, 612))
+
+    def test_timeline_rejects_other_family(self):
+        other = ParentUser.objects.create_user(email="tl-other@example.com", password="supersecret123")
+        self.client.force_authenticate(user=other)
+        self.assertEqual(self.client.get(self.url).status_code, 403)
+
+    def test_timeline_requires_auth(self):
+        self.assertEqual(self.client.get(self.url).status_code, 401)

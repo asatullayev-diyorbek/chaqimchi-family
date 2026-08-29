@@ -397,3 +397,86 @@ class ActivityHistoryView(APIView):
                 "next_offset": offset + limit if offset + limit < total else None,
             }
         )
+
+
+# Adjacent same-app segments closer than this are merged, so a 10s poll
+# interval doesn't fragment one Chrome session into dozens of slivers.
+TIMELINE_MERGE_GAP = timedelta(seconds=120)
+TIMELINE_MAX_SEGMENTS = 800
+
+
+class TimelineView(APIView):
+    """GET /api/tracking/timeline/<device_id>/?date=YYYY-MM-DD
+
+    One day's app_usage laid out on a 0..1440 minute axis (account
+    timezone), coalesced, for the parent dashboard's time-of-day chart.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, device_id):
+        if not isinstance(request.user, ParentUser):
+            return Response({"detail": "Parent autentifikatsiyasi talab qilinadi"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        device = get_object_or_404(ChildDevice, id=device_id)
+        if device.family_id != request.user.family_id:
+            return Response({"detail": "Bu qurilma sizning oilangizga tegishli emas"}, status=status.HTTP_403_FORBIDDEN)
+
+        tz = timezone.get_current_timezone()
+        date_param = request.query_params.get("date")
+        if date_param:
+            target_date = parse_date(date_param)
+            if target_date is None:
+                return Response({"detail": "Noto'g'ri sana formati (YYYY-MM-DD kerak)"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            target_date = timezone.localtime(timezone.now(), tz).date()
+
+        day_start, day_end = _day_bounds(target_date, target_date)
+        events = Event.objects.filter(
+            device=device, event_type="app_usage",
+            occurred_at__gte=day_start, occurred_at__lte=day_end,
+        ).only("payload", "occurred_at")
+
+        raw = []
+        for event in events:
+            payload = event.payload or {}
+            app_id = payload.get("app_id") or payload.get("app") or "unknown"
+            start = parse_datetime(payload.get("started_at") or "")
+            end = parse_datetime(payload.get("ended_at") or "")
+            if not (start and end and end > start):
+                dur = payload.get("duration_seconds")
+                end = event.occurred_at
+                start = end - timedelta(seconds=dur) if isinstance(dur, (int, float)) and dur > 0 else end
+            start = max(start, day_start)
+            end = min(end, day_end)
+            if end <= start:
+                continue
+            raw.append((start, end, app_id, payload.get("app_name") or payload.get("app") or app_id))
+
+        raw.sort(key=lambda s: s[0])
+        merged = []
+        for start, end, app_id, app_name in raw:
+            if merged and merged[-1][2] == app_id and start - merged[-1][1] <= TIMELINE_MERGE_GAP:
+                merged[-1][1] = max(merged[-1][1], end)
+            else:
+                merged.append([start, end, app_id, app_name])
+        merged = merged[:TIMELINE_MAX_SEGMENTS]
+
+        icons = _icons_for_device(device, {m[2] for m in merged})
+        midnight = day_start
+
+        def minute_of(dt):
+            return round((timezone.localtime(dt, tz) - timezone.localtime(midnight, tz)).total_seconds() / 60)
+
+        segments = [
+            {
+                "app_id": app_id,
+                "app_name": app_name,
+                "icon": icons.get(app_id),
+                "start_minute": max(0, minute_of(start)),
+                "end_minute": min(1440, minute_of(end)),
+                "duration_seconds": int((end - start).total_seconds()),
+            }
+            for start, end, app_id, app_name in merged
+        ]
+        return Response({"date": target_date, "segments": [s for s in segments if s["end_minute"] > s["start_minute"]]})

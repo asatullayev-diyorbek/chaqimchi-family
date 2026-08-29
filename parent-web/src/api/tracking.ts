@@ -55,6 +55,28 @@ export type ActivityHistoryItem = {
   created_at: string;
 };
 
+export type TimelineSegment = {
+  app_id: string;
+  app_name: string;
+  icon: string | null;
+  start_minute: number;
+  end_minute: number;
+  duration_seconds: number;
+};
+
+export type TimelineResponse = {
+  date: string;
+  segments: TimelineSegment[];
+};
+
+export async function getActivityTimeline(
+  deviceId: string,
+  options: { date?: string } = {},
+): Promise<TimelineResponse> {
+  const q = options.date ? `?date=${options.date}` : "";
+  return apiFetch(`/api/tracking/timeline/${deviceId}/${q}`);
+}
+
 export type ActivityHistoryResponse = {
   results: ActivityHistoryItem[];
   count: number;
