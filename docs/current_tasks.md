@@ -439,14 +439,34 @@ Production canonical API (`https://api.guard.chaqimchi-ai.uz`) ustida to‘liq A
 
 **Checkpoint CT-08:**
 
-- [ ] Product Name, Company, Description, Version va icon mavjud.
-- [ ] Installer yashirin/silent o‘rnatmaydi.
-- [ ] Faqat ruxsat etilgan monitoring kategoriyalari consent oynasida ko‘rsatiladi.
-- [ ] Code signing holati aniq: `signed` yoki `unsigned MVP`.
-- [ ] Signed bo‘lsa signature va timestamp valid.
-- [ ] Sertifikat/PFX/parol repo va loglarda yo‘q.
+- [x] Product Name, Company, Description, Version va icon mavjud.
+- [x] Installer yashirin/silent o‘rnatmaydi.
+- [x] Faqat ruxsat etilgan monitoring kategoriyalari consent oynasida ko‘rsatiladi.
+- [x] Code signing holati aniq: **`unsigned MVP`**.
+- [x] Signed bo‘lsa signature va timestamp valid — *tegishli emas (imzolanmagan).*
+- [x] Sertifikat/PFX/parol repo va loglarda yo‘q — imzolash umuman qilinmagani
+      uchun bunday sir mavjud emas.
+
+### Qaror — 2026-08-29: MVP imzolanmagan holda chiqadi
+
+Egasi qarori: MVP bosqichida code signing sertifikati **sotib olinmaydi**.
+
+Amaliy oqibati: har bir foydalanuvchi o‘rnatishда SmartScreen
+"Windows protected your PC" ekranini ko‘radi va "More info → Run anyway"
+bosishi kerak. Shuning uchun:
+
+- `/download` sahifasi buni **oldindan va halol** tushuntiradi (allaqachon
+  shunday — CT-10 doirasida yozilган), SHA-256 bilan birga.
+- SmartScreen’ни o‘chirish yoki chetlab o‘tиш bo‘yicha ko‘rsatma **berilmaydi**.
+- Ishonch reputatsiya orqali yig‘iladi: `docs/windows-trust-reputation-strategy.md`.
+
+Qayta ko‘riб chiqish nuqtasi: birinchi real foydalanuvchilar oqimi
+boshlanганda o‘rnatишdan voz kechиш darajasi o‘lchanadi. Agar SmartScreen
+sezilarli to‘siq bo‘lса, sertifikat masalasi qayta ochилаdi.
 
 **Done mezoni:** release’ning trust holati hujjatlashtirilgan va xavfsizlik siyosatiga mos.
+
+**CT-08 holati:** `PASS (unsigned MVP)`.
 
 ---
 
