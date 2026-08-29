@@ -59,8 +59,8 @@ function ActivityContent() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState(false);
   const [summaryRetry, setSummaryRetry] = useState(0);
-  const [today, setToday] = useState<DeviceSummary | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [tab, setTab] = useState<"screen" | "apps" | "history" | "sites">("screen");
   const [history, setHistory] = useState<ActivityHistoryItem[]>([]);
   const [historyCount, setHistoryCount] = useState(0);
@@ -116,11 +116,10 @@ function ActivityContent() {
     return () => { cancelled = true; clearTimeout(start); };
   }, [activeDeviceId, range, onSummaryTab, summaryRetry]);
 
-  // Today's total + apps + the daily limit — independent of the chart range.
+  // The device's daily limit, for the screen-time cards' progress bars.
   useEffect(() => {
     if (!activeDeviceId || tab !== "screen") return;
     let cancelled = false;
-    getSummary(activeDeviceId).then((d) => { if (!cancelled) setToday(d); }).catch(() => {});
     getRules(activeDeviceId).then((r) => { if (!cancelled) setRules(r); }).catch(() => {});
     return () => { cancelled = true; };
   }, [activeDeviceId, tab, summaryRetry]);
@@ -270,21 +269,14 @@ function ActivityContent() {
             )}
             {tab === "screen" && !summaryLoading && !summaryError && summary && (() => {
               const days = summary.breakdown;
-              const todayMin = today?.total_screen_minutes ?? days[days.length - 1]?.total_minutes ?? 0;
+              const activeDay = selectedDay && days.some((d) => d.date === selectedDay) ? selectedDay : days[days.length - 1]?.date ?? "";
+              const dayMin = days.find((d) => d.date === activeDay)?.total_minutes ?? 0;
               const limit = getDailyLimitMinutes(rules);
               const avg = days.length ? Math.round(days.reduce((s, d) => s + d.total_minutes, 0) / days.length) : 0;
-              const limitPct = limit ? Math.round((todayMin / limit) * 100) : null;
-              const remaining = limit != null ? limit - todayMin : null;
+              const limitPct = limit ? Math.round((dayMin / limit) * 100) : null;
+              const remaining = limit != null ? limit - dayMin : null;
+              const dayLabel = activeDay === todayISO() ? "Bugungi" : activeDay === shiftISO(todayISO(), -1) ? "Kechagi" : new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long" }).format(new Date(activeDay + "T00:00:00"));
 
-              const apps = [...(today?.top_apps ?? [])].sort((a, b) => b.minutes - a.minutes);
-              const appTotal = apps.reduce((s, a) => s + a.minutes, 0);
-              const topApps = apps.slice(0, 4);
-              const restMin = apps.slice(4).reduce((s, a) => s + a.minutes, 0);
-              const rows: { key: string; appId: string | null; icon: string | null; name: string; minutes: number }[] = [
-                ...topApps.map((a) => ({ key: a.app, appId: a.app, icon: a.icon, name: appDisplay(a.app).label, minutes: a.minutes })),
-                ...(restMin > 0 ? [{ key: "__other", appId: null, icon: null, name: "Boshqa", minutes: restMin }] : []),
-              ];
-              const maxRow = Math.max(...rows.map((r) => r.minutes), 1);
               const dropdown = (
                 <div className="dropdown-wrap" style={{ position: "relative" }}>
                   <button onClick={(e) => { const t = e.currentTarget.nextElementSibling as HTMLElement; t.style.display = t.style.display === "block" ? "none" : "block"; }}>
@@ -321,17 +313,17 @@ function ActivityContent() {
               );
 
               return (
-                <>
+                <div className="screen-layout">
                   <div className="card chart-card">
                     <div className="card-header">
                       <h3>{range === "month" ? "30 kunlik" : "7 kunlik"} ekran vaqti</h3>
                       {dropdown}
                     </div>
-                    <ScreenTimeChart data={days} />
+                    <ScreenTimeChart data={days} selected={activeDay} onSelect={setSelectedDay} />
                   </div>
 
-                  <div className="stats-grid" style={{ marginTop: 16 }}>
-                    {limitCard("green", "solar:clock-circle-linear", "Bugungi ekran vaqti", formatMinutes(todayMin), limitPct, "linear-gradient(90deg,#4ade80,#16a34a)")}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {limitCard("green", "solar:clock-circle-linear", `${dayLabel} ekran vaqti`, formatMinutes(dayMin), limitPct, "linear-gradient(90deg,#4ade80,#16a34a)")}
                     {limitCard("purple", "solar:shield-check-linear", "Kunlik limit", limit ? formatMinutes(limit) : "Belgilanmagan", limitPct, "linear-gradient(90deg,#a78bfa,#7c3aed)")}
                     <div className="stat-card stat-card-limit">
                       <div className="icon orange"><iconify-icon icon="solar:graph-up-linear"></iconify-icon></div>
@@ -342,39 +334,7 @@ function ActivityContent() {
                       </div>
                     </div>
                   </div>
-
-                  <div className="card" style={{ padding: 20, marginTop: 16 }}>
-                    <div className="card-header" style={{ marginBottom: 14 }}>
-                      <h3>Bugungi ilovalar bo&apos;yicha foydalanish</h3>
-                    </div>
-                    {rows.length === 0 ? (
-                      <p style={{ color: "var(--muted)", fontSize: 13, margin: "8px 0" }}>Bugun hali ma&apos;lumot yo&apos;q.</p>
-                    ) : (
-                      <>
-                        {rows.map((r) => (
-                          <div key={r.key} style={{ display: "grid", gridTemplateColumns: "148px 1fr 84px 42px", alignItems: "center", gap: 12, padding: "9px 0" }}>
-                            <span style={{ display: "flex", alignItems: "center", gap: 9, minWidth: 0 }}>
-                              {r.appId ? (
-                                <AppIcon appId={r.appId} icon={r.icon} size={24} />
-                              ) : (
-                                <span style={{ width: 24, height: 24, display: "grid", placeItems: "center", borderRadius: 7, background: "var(--border)", color: "var(--muted)", flex: "0 0 auto" }}>
-                                  <iconify-icon icon="solar:menu-dots-linear" style={{ fontSize: 14 }}></iconify-icon>
-                                </span>
-                              )}
-                              <span style={{ fontWeight: 700, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</span>
-                            </span>
-                            <span style={{ position: "relative", height: 8, borderRadius: 5, background: "rgba(37,99,235,.1)" }}>
-                              <span style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${Math.max((r.minutes / maxRow) * 100, 3)}%`, borderRadius: 5, background: r.appId ? "#2563eb" : "#94a3b8" }} />
-                            </span>
-                            <em style={{ fontStyle: "normal", textAlign: "right", fontSize: 12, color: "var(--muted)" }}>{formatMinutes(r.minutes)}</em>
-                            <strong style={{ textAlign: "right", fontWeight: 800, fontSize: 13 }}>{appTotal ? Math.round((r.minutes / appTotal) * 100) : 0}%</strong>
-                          </div>
-                        ))}
-                        <p style={{ textAlign: "center", color: "var(--muted)", fontSize: 13, marginTop: 12 }}>Jami: {formatMinutes(appTotal)}</p>
-                      </>
-                    )}
-                  </div>
-                </>
+                </div>
               );
             })()}
 
