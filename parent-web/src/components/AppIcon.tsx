@@ -16,6 +16,8 @@ export default function AppIcon({ appId, appName, icon, size = 34 }: Props) {
 
   // A <div>, not a <span>: several list layouts have a `.parent span { flex:1 }`
   // rule that would otherwise stretch the icon into a full-width pill.
+
+  // 1. Real icon the agent extracted from the exe.
   if (icon) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -29,6 +31,19 @@ export default function AppIcon({ appId, appName, icon, size = 34 }: Props) {
     );
   }
 
+  // 2. Bundled brand mark for a well-known app.
+  if (d.brandIcon) {
+    return (
+      <div
+        aria-hidden
+        style={{ display: "grid", placeItems: "center", width: size, height: size, minWidth: size, borderRadius: radius, background: "#fff", border: "1px solid rgba(37,99,235,.08)", flex: "0 0 auto" }}
+      >
+        <iconify-icon icon={d.brandIcon} style={{ fontSize: Math.round(size * 0.62) }}></iconify-icon>
+      </div>
+    );
+  }
+
+  // 3. Category glyph.
   return (
     <div
       aria-hidden

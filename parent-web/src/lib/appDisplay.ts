@@ -93,6 +93,42 @@ const REGISTRY: Record<string, Entry> = {
   "textinputhost.exe": { name: "Klaviatura", category: "tizim" },
 };
 
+// Bundled brand marks for the apps a family most often sees, so a real icon
+// shows even before (or without) the agent extracting one from the exe.
+// These are Iconify `logos:` names — same set the rest of the dashboard
+// already uses; no binary assets. Keyed by lowercased exe name.
+export const BRAND_ICON: Record<string, string> = {
+  "chrome.exe": "logos:chrome",
+  "msedge.exe": "logos:microsoft-edge",
+  "firefox.exe": "logos:firefox",
+  "brave.exe": "logos:brave",
+  "opera.exe": "logos:opera",
+  "opera_gx.exe": "logos:opera",
+  "telegram.exe": "logos:telegram",
+  "discord.exe": "logos:discord-icon",
+  "whatsapp.exe": "logos:whatsapp-icon",
+  "slack.exe": "logos:slack-icon",
+  "skype.exe": "logos:skype",
+  "zoom.exe": "logos:zoom-icon",
+  "spotify.exe": "logos:spotify-icon",
+  "vlc.exe": "logos:vlc",
+  "steam.exe": "logos:steam",
+  "steamwebhelper.exe": "logos:steam",
+  "epicgameslauncher.exe": "logos:epic-games",
+  "code.exe": "logos:visual-studio-code",
+  "devenv.exe": "logos:visual-studio",
+  "pycharm64.exe": "logos:pycharm",
+  "idea64.exe": "logos:intellij-idea",
+  "sublime_text.exe": "logos:sublimetext-icon",
+  "winword.exe": "logos:microsoft-word",
+  "excel.exe": "logos:microsoft-excel",
+  "powerpnt.exe": "logos:microsoft-powerpoint",
+  "outlook.exe": "logos:microsoft-outlook",
+  "onenote.exe": "logos:microsoft-onenote",
+  "acrobat.exe": "logos:adobe-acrobat",
+  "acrord32.exe": "logos:adobe-acrobat",
+};
+
 export const CATEGORY_META: Record<AppCategory, { label: string; icon: string; color: string; bg: string }> = {
   brauzer: { label: "Brauzer", icon: "solar:global-linear", color: "#2563eb", bg: "#e6edfc" },
   oyin: { label: "O'yinlar", icon: "solar:gamepad-linear", color: "#d97706", bg: "#fef3c7" },
@@ -122,6 +158,8 @@ export type AppDisplay = {
   category: AppCategory;
   categoryLabel: string;
   categoryIcon: string;
+  /** Iconify `logos:` brand mark for this app, if we bundle one. */
+  brandIcon: string | null;
   color: string;
   bg: string;
 };
@@ -141,6 +179,7 @@ export function appDisplay(appId: string | null | undefined, agentName?: string 
     category,
     categoryLabel: meta.label,
     categoryIcon: meta.icon,
+    brandIcon: BRAND_ICON[exe.toLowerCase()] ?? null,
     color: meta.color,
     bg: meta.bg,
   };
