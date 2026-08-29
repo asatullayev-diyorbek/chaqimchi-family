@@ -8,6 +8,7 @@ import { Device, getDevices } from "@/api/tracking";
 import { Child, createChild, getChildren } from "@/api/children";
 import { mediaUrl } from "@/api/client";
 import { applyTheme, readTheme } from "@/lib/theme";
+import { useObjectUrl } from "@/hooks/useObjectUrl";
 import Modal from "@/components/Modal";
 import WheelPicker from "@/components/WheelPicker";
 import toast from "react-hot-toast";
@@ -37,6 +38,7 @@ export default function TopbarActions() {
   const [birthMonth, setBirthMonth] = useState("");
   const [birthYear, setBirthYear] = useState("");
   const [photo, setPhoto] = useState<File>();
+  const photoUrl = useObjectUrl(photo);
   const [photoError, setPhotoError] = useState("");
   const [gender, setGender] = useState<"boy" | "girl">("boy");
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -251,8 +253,8 @@ export default function TopbarActions() {
                       }}
                       title="Rasm yuklash"
                     >
-                      {photo ? (
-                        <img src={URL.createObjectURL(photo)} alt="Profil" loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      {photo && photoUrl ? (
+                        <img src={photoUrl} alt="Tanlangan rasm" loading="lazy" decoding="async" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       ) : (
                         <iconify-icon icon="solar:camera-add-bold" style={{ fontSize: 36, color: "var(--muted)" }}></iconify-icon>
                       )}

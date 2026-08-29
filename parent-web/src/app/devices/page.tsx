@@ -15,6 +15,7 @@ import {
 import { Child, deleteChild, getChildren, updateChild } from "@/api/children";
 import Modal from "@/components/Modal";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useObjectUrl } from "@/hooks/useObjectUrl";
 import { toast } from "react-hot-toast";
 
 function formatLastSync(iso: string | null): string {
@@ -55,6 +56,7 @@ export default function DevicesPage() {
   const [profileName, setProfileName] = useState("");
   const [profileBirth, setProfileBirth] = useState("");
   const [profilePhoto, setProfilePhoto] = useState<File>();
+  const profilePhotoUrl = useObjectUrl(profilePhoto);
   const [removeProfilePhoto, setRemoveProfilePhoto] = useState(false);
   const [profileGender, setProfileGender] = useState<"boy" | "girl">("boy");
   const [confirmRemove, setConfirmRemove] = useState<Child | null>(null);
@@ -409,10 +411,10 @@ export default function DevicesPage() {
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 24, marginTop: 10 }}>
                 <div style={{ width: 86, height: 86, position: 'relative' }}>
                           <img loading="lazy" decoding="async" src={
-                    profilePhoto ? URL.createObjectURL(profilePhoto) :
-                    removeProfilePhoto ? `/assets/child-${profileGender}.png` :
+                    profilePhotoUrl ??
+                    (removeProfilePhoto ? `/assets/child-${profileGender}.png` :
                     ((!profileChild.photo_url || profileChild.photo_url.includes("child-boy") || profileChild.photo_url.includes("child-girl"))
-                      ? `/assets/child-${profileGender}.png` : mediaUrl(profileChild.photo_url))
+                      ? `/assets/child-${profileGender}.png` : mediaUrl(profileChild.photo_url)))
                   } alt="" style={{width: 86, height: 86, borderRadius: '43px', objectFit: 'cover', border: '2px solid var(--accent)'}}/>
 
                   <label htmlFor="edit-avatar-upload" style={{ position: 'absolute', right: -4, bottom: 0, width: 32, height: 32, background: 'var(--cat-blue)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '3px solid var(--surface)', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', transition: '0.2s' }} title="Rasmni o'zgartirish">
