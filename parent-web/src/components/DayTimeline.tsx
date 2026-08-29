@@ -3,35 +3,16 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { TimelineSegment } from "@/api/tracking";
 import AppIcon from "@/components/AppIcon";
-import { appDisplay, AppCategory } from "@/lib/appDisplay";
+import { appDisplay } from "@/lib/appDisplay";
+import { Block, Bucket, BUCKET_META, bucketOf, foldBlocks } from "@/lib/timeline";
 
 const ROW_H = 40;
 const TRACK_H = 20;
 const LABEL_W = 184;
 const AXIS_HOURS = [0, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
-// A same-app run split by less than this is drawn as one block. Bigger than
-// the backend's session gap on purpose — the chart wants a readable
-// overview, not every session.
-const DISPLAY_GAP_MIN = 15;
-const MAX_BLOCKS_PER_LANE = 6;
 
-type Bucket = "app" | "work" | "system" | "blocked";
 
-const BUCKET_META: Record<Bucket, { color: string; label: string }> = {
-  app: { color: "var(--bucket-app)", label: "Ilova / Brauzer" },
-  work: { color: "var(--bucket-work)", label: "Ishchi dastur" },
-  system: { color: "var(--bucket-system)", label: "Tizim faoliyati" },
-  blocked: { color: "var(--bucket-blocked)", label: "Bloklangan" },
-};
 
-function bucketOf(appId: string, category: AppCategory): Bucket {
-  if (appId.toLowerCase() === "lockapp.exe") return "blocked";
-  if (category === "tizim") return "system";
-  if (category === "dasturlash" || category === "talim") return "work";
-  return "app";
-}
-
-type Block = { start: number; end: number; sessions: number };
 type Lane = {
   app_id: string;
   app_name: string;
@@ -43,32 +24,6 @@ type Lane = {
   blocks: Block[];
 };
 
-// Fold a lane's backend segments into at most MAX_BLOCKS_PER_LANE display
-// blocks: merge neighbours within DISPLAY_GAP_MIN, then keep widening the
-// gap until few enough remain.
-function foldBlocks(parts: TimelineSegment[]): Block[] {
-  const sorted = [...parts].sort((a, b) => a.start_minute - b.start_minute);
-  let blocks: Block[] = sorted.map((p) => ({ start: p.start_minute, end: p.end_minute, sessions: p.session_count || 1 }));
-
-  let gap = DISPLAY_GAP_MIN;
-  while (blocks.length > 1) {
-    const merged: Block[] = [];
-    for (const b of blocks) {
-      const prev = merged[merged.length - 1];
-      if (prev && b.start - prev.end <= gap) {
-        prev.end = Math.max(prev.end, b.end);
-        prev.sessions += b.sessions;
-      } else {
-        merged.push({ ...b });
-      }
-    }
-    blocks = merged;
-    if (blocks.length <= MAX_BLOCKS_PER_LANE) break;
-    gap *= 2;
-    if (gap > 1440) break;
-  }
-  return blocks;
-}
 
 export default function DayTimeline({
   segments,

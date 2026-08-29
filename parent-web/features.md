@@ -342,7 +342,7 @@ javobда esa `max-age=3600` — ziddiyat.
   olmaydi, strelka tugmalari ishlamaydi.
 - [ ] **P3-6.** `Header.tsx:19-70` — sahifа sarlavhalари 7 ta `if` bilan qattiq
   yozilган. Route → sarlavha xaritasига (yoki route metadata'ga) chiqarish.
-- [ ] **P3-7.** Test tooling umuman yo'q (vitest / RTL / Playwright). Kamida
+- [x] **P3-7.** Test tooling umuman yo'q (vitest / RTL / Playwright). Kamida
   `appDisplay()`, `foldBlocks()`, `apiFetch` cache/refresh mantiqи uchun unit test.
 - [ ] **P3-8.** Web-saytlar tabi bo'sh (`browser_domain` agentда yo'q) — halol
   yozилган, lekin tab'ni yashirish yoki "tez orada" ko'rinишига o'tkazish afzal.
