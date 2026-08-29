@@ -19,6 +19,8 @@ function RulesContent() {
   const [limit, setLimit] = useState("");
   const [app, setApp] = useState("");
   const [loading, setLoading] = useState(true);
+  const [savingLimit, setSavingLimit] = useState(false);
+  const [addingApp, setAddingApp] = useState(false);
 
   const loadRules = useCallback(async (selectedDeviceId: string) => {
     setLoading(true);
@@ -42,32 +44,78 @@ function RulesContent() {
   }, [loadRules, requestedDeviceId, requestedChildId, router]);
 
   async function saveLimit() {
-    if (!deviceId) return;
-    const minutes = Number(limit);
+    if (!deviceId || savingLimit) return;
+    const raw = limit.trim();
+    const minutes = Number(raw);
+    if (raw && (!Number.isInteger(minutes) || minutes < 0)) {
+      toast.error("Limit butun, manfiy bo'lmagan son bo'lishi kerak.");
+      return;
+    }
+    if (minutes > 24 * 60) {
+      toast.error("Kunlik limit 1440 daqiqadan oshmasligi kerak.");
+      return;
+    }
+
+    const previous = rules;
     const oldLimit = rules.find((rule) => rule.rule_type === "daily_limit_minutes");
+    setSavingLimit(true);
     try {
-      if (oldLimit) await deleteRule(oldLimit.id);
-      if (Number.isFinite(minutes) && minutes > 0) {
+      if (raw && minutes > 0) {
+        // Create first, delete second. The old order removed the rule before
+        // knowing the replacement would be accepted, so a failed create left
+        // the device with no limit at all.
         const created = await createRule(deviceId, "daily_limit_minutes", { minutes });
+        if (oldLimit) await deleteRule(oldLimit.id).catch(() => undefined);
         setRules((current) => [...current.filter((rule) => rule.rule_type !== "daily_limit_minutes"), created]);
-      } else setRules((current) => current.filter((rule) => rule.rule_type !== "daily_limit_minutes"));
-      
-    } catch (cause) { toast.error(cause instanceof Error ? cause.message : "Limit saqlanmadi"); }
+        toast.success(`Kunlik limit ${minutes} daqiqa qilib saqlandi.`);
+      } else if (oldLimit) {
+        await deleteRule(oldLimit.id);
+        setRules((current) => current.filter((rule) => rule.rule_type !== "daily_limit_minutes"));
+        toast.success("Kunlik limit o'chirildi.");
+      } else {
+        toast("Limit allaqachon belgilanmagan.");
+      }
+    } catch (cause) {
+      setRules(previous);
+      setLimit(String(getDailyLimitMinutes(previous) ?? ""));
+      toast.error(cause instanceof Error ? cause.message : "Limit saqlanmadi");
+    } finally {
+      setSavingLimit(false);
+    }
   }
 
   async function addBlockedApp() {
-    if (!deviceId || !app.trim()) return;
-    try { 
-      const created = await createRule(deviceId, "blocked_app", { app: app.trim() }); 
-      setRules((current) => [...current, created]); 
-      setApp(""); 
+    const name = app.trim();
+    if (!deviceId || !name || addingApp) return;
+    const already = rules.some(
+      (rule) => rule.rule_type === "blocked_app" && "app" in rule.value &&
+        String(rule.value.app).toLowerCase() === name.toLowerCase(),
+    );
+    if (already) {
+      toast.error(`${name} allaqachon cheklangan.`);
+      return;
     }
-    catch (cause) { toast.error(cause instanceof Error ? cause.message : "Ilova qo'shilmadi"); }
+    setAddingApp(true);
+    try {
+      const created = await createRule(deviceId, "blocked_app", { app: name });
+      setRules((current) => [...current, created]);
+      setApp("");
+      toast.success(`${name} cheklandi.`);
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Ilova qo'shilmadi");
+    } finally {
+      setAddingApp(false);
+    }
   }
 
   async function removeRule(rule: Rule) {
-    try { await deleteRule(rule.id); setRules((current) => current.filter((item) => item.id !== rule.id)); }
-    catch (cause) { toast.error(cause instanceof Error ? cause.message : "Qoida o'chirilmadi"); }
+    try {
+      await deleteRule(rule.id);
+      setRules((current) => current.filter((item) => item.id !== rule.id));
+      toast.success("Cheklov olib tashlandi.");
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Qoida o'chirilmadi");
+    }
   }
 
   const blockedApps = rules.filter((rule) => rule.rule_type === "blocked_app");
@@ -116,7 +164,9 @@ function RulesContent() {
                     placeholder="Masalan: 180"
                     style={{padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 14, width: 140}}
                   />
-                  <button onClick={saveLimit} className="btn btn-outline" style={{padding: '10px 16px', borderRadius: 10}}>Saqlash</button>
+                  <button onClick={saveLimit} disabled={savingLimit} className="btn btn-outline" style={{padding: '10px 16px', borderRadius: 10}}>
+                    {savingLimit ? "Saqlanmoqda..." : "Saqlash"}
+                  </button>
                 </div>
               </div>
             </div>
@@ -138,9 +188,12 @@ function RulesContent() {
                     value={app}
                     onChange={(event) => setApp(event.target.value)}
                     placeholder="masalan: steam.exe"
+                    onKeyDown={(event) => { if (event.key === "Enter") void addBlockedApp(); }}
                     style={{padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 14, width: 220}}
                   />
-                  <button onClick={addBlockedApp} className="btn btn-primary" style={{padding: '10px 16px', borderRadius: 10}}>Qo'shish</button>
+                  <button onClick={addBlockedApp} disabled={addingApp || !app.trim()} className="btn btn-primary" style={{padding: '10px 16px', borderRadius: 10}}>
+                    {addingApp ? "Qo'shilmoqda..." : "Qo'shish"}
+                  </button>
                 </div>
               </div>
 
