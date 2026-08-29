@@ -2,6 +2,7 @@
 
 **Sana:** 2026-08-30
 **Ko'lam:** `parent-web/` (Next.js 16 / React 19, 13 route, ~12 900 qator)
+**Juftlik hujjat:** `fix-plan.md` — qanday tuzatiladi (bajarish rejasi).
 **Uslub:** frontend developer + QA tester + UI/UX ko'rigi. Har bir band tekshirilgan
 (fayl:qator ko'rsatilgan), taxmin emas.
 
