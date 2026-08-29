@@ -10,6 +10,7 @@ import { getDailyLimitMinutes, getRules, Rule } from "@/api/rules";
 import { Alert, getAlerts } from "@/api/alerts";
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
+import CategoryDonut from "@/components/CategoryDonut";
 import { appDisplay, CATEGORY_META } from "@/lib/appDisplay";
 
 const WEEKDAYS_UZ = ["Ya", "Du", "Se", "Ch", "Pa", "Ju", "Sh"];
@@ -186,44 +187,7 @@ function OverviewContent() {
             <Link href={`/activity?device=${summary?.device_id ?? ""}`}>Barchasi →</Link>
           </div>
           
-          <div className="activity-layout">
-            <div className="chart">
-              <svg viewBox="0 0 120 120" width="130" height="130">
-                <g transform="rotate(-90 60 60)" fill="none" strokeWidth="16">
-                  {categories.map((item, index) => {
-                     const circumference = 326.73;
-                     const length = circumference * item.percent / 100;
-                     const priorLength = categories.slice(0, index).reduce((sum, prior) => sum + circumference * prior.percent / 100, 0);
-                     return (
-                       <circle 
-                         key={item.label}
-                         cx="60" cy="60" r="52" 
-                         stroke={item.color}
-                         strokeDasharray={`${Math.max(length - 2, 0)} ${circumference - length + 2}`} 
-                         strokeDashoffset={-priorLength}
-                       />
-                     );
-                  })}
-                  {!categories.length && <circle cx="60" cy="60" r="52" stroke="#e8eef5" strokeWidth="16" />}
-                </g>
-              </svg>
-              <div className="chart-total">
-                <strong>{formatMinutes(totalToday)}</strong>
-                <span>Jami</span>
-              </div>
-            </div>
-
-            <ul>
-              {categories.map((item) => (
-                <li key={item.label}>
-                  <span><i className="dot" style={{background: item.color}}></i>{item.label}</span>
-                  <em>{formatMinutes(item.minutes)}</em>
-                  <strong>{item.percent}%</strong>
-                </li>
-              ))}
-              {!categories.length && <li><span>Bugun faoliyat ma'lumoti yo'q.</span></li>}
-            </ul>
-          </div>
+          <CategoryDonut slices={categories} totalMinutes={totalToday} />
         </div>
 
         {/* Recent */}
