@@ -38,7 +38,8 @@ export default function DayTimeline({
   dateISO: string;
   dateTitle: string;
   dateSubtitle: string;
-  nav: ReactNode;
+  /** Optional: the day stepper now lives in the page's context bar. */
+  nav?: ReactNode;
 }) {
   const [activeOnly, setActiveOnly] = useState(false);
   // Interactive scrub cursor: minute-of-day under the mouse, or null.

@@ -5268,3 +5268,39 @@ body{
     color:var(--muted);
     font-size:13px;
 }
+
+/* ---- Activity context bar ---------------------------------------------
+   Tabs on the left, "which device / which period" on the right. One row,
+   one place: previously each tab shipped its own time control in its own
+   shape, so switching tabs moved the control and changed its meaning. */
+.activity-context{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+}
+
+.activity-context-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-left:auto;
+}
+
+/* Single-day stepper, occupying the same slot as .range-switch so the
+   control stays put when the tab changes. */
+.day-nav{
+    display:flex;
+    align-items:center;
+    gap:4px;
+}
+
+.day-nav .btn-view{ padding:4px 9px; }
+
+.day-nav-label{
+    min-width:88px;
+    text-align:center;
+    font-weight:700;
+    font-size:13px;
+}

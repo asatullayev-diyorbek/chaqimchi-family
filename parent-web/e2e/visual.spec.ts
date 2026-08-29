@@ -69,12 +69,11 @@ for (const theme of ["light", "dark"] as const) {
       });
     }
 
-    // The page-level activity shot only ever sees the default "Ekran vaqti"
-    // tab. The list rows on the other three tabs are where the shared
-    // .data-row classes were extracted from, so without these the extraction
-    // would be unverified — a class collision there is invisible above.
+    // The page-level activity shot covers the default tab, which now also
+    // carries the apps list. These two reach the tabs it cannot: their list
+    // rows are where the shared .data-row classes came from, and a class
+    // collision there is invisible from the page-level shot.
     for (const { label, name } of [
-      { label: "Ilovalar", name: "activity-apps" },
       { label: "Faoliyat tarixi", name: "activity-history" },
       { label: "Web-saytlar", name: "activity-sites" },
     ]) {

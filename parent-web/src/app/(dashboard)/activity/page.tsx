@@ -7,7 +7,7 @@ import { useSelectedDevice } from "@/hooks/useSelectedDevice";
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
 import DayTimeline from "@/components/DayTimeline";
-import DeviceSelector, { deviceLabel } from "@/components/DeviceSelector";
+import DeviceSelector from "@/components/DeviceSelector";
 import ScreenTimeChart from "@/components/ScreenTimeChart";
 import { getRules, getDailyLimitMinutes, Rule } from "@/api/rules";
 import { appDisplay } from "@/lib/appDisplay";
@@ -57,14 +57,14 @@ function ActivityContent() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [appsPage, setAppsPage] = useState(0);
   const [sitesPage, setSitesPage] = useState(0);
-  const [tab, setTab] = useState<"screen" | "apps" | "history" | "sites">("screen");
+  const [tab, setTab] = useState<"screen" | "history" | "sites">("screen");
   const [historyOffset, setHistoryOffset] = useState(0);
   const [historyDate, setHistoryDate] = useState(todayISO);
 
   // Null in "all devices" mode: with several devices linked there is no
   // honest single number to show, so the tabs ask which one instead.
   const activeDeviceId = device?.id ?? null;
-  const onSummaryTab = tab === "screen" || tab === "apps";
+  const onSummaryTab = tab === "screen";
   const onHistoryTab = tab === "history";
 
   const summaryQuery = useApiQuery(
@@ -126,33 +126,67 @@ function ActivityContent() {
 
   return (
     <>
-      {/* Header */}
+      {/* One context row for the whole section. Each tab used to carry its
+          own time control in its own shape — a dropdown inside the chart
+          card, a day stepper inside the timeline, a chip row inside the
+          sites card — so the same question was asked three different ways,
+          and the apps list answered none of them: its minutes were a 7-day
+          total that read like today's. Device and period now live here, in
+          one place, and every panel below inherits them. */}
+      <div className="activity-context">
+        <div className="activity-tabs">
+          <button className={`tab ${tab === "screen" ? "active" : ""}`} onClick={() => setTab("screen")}>
+            <iconify-icon icon="solar:clock-circle-linear"></iconify-icon>
+            <span>Ekran vaqti</span>
+          </button>
+          <button className={`tab ${tab === "history" ? "active" : ""}`} onClick={() => { setHistoryOffset(0); setTab("history"); }}>
+            <iconify-icon icon="solar:list-linear"></iconify-icon>
+            <span>Faoliyat tarixi</span>
+          </button>
+          <button className={`tab ${tab === "sites" ? "active" : ""}`} onClick={() => setTab("sites")}>
+            <iconify-icon icon="solar:global-linear"></iconify-icon>
+            <span>Web-saytlar</span>
+          </button>
+        </div>
 
-
-
-      <DeviceSelector devices={childDevices} selectedId={activeDeviceId ?? ""} />
-
-      {/* Tabs */}
-      <div className="activity-tabs">
-        <button className={`tab ${tab === "screen" ? "active" : ""}`} onClick={() => setTab("screen")}>
-          <iconify-icon icon="solar:clock-circle-linear"></iconify-icon>
-          <span>Ekran vaqti</span>
-        </button>
-        <button className={`tab ${tab === "apps" ? "active" : ""}`} onClick={() => setTab("apps")}>
-          <iconify-icon icon="solar:widget-2-linear"></iconify-icon>
-          <span>Ilovalar</span>
-        </button>
-        <button className={`tab ${tab === "history" ? "active" : ""}`} onClick={() => { setHistoryOffset(0); setTab("history"); }}>
-          <iconify-icon icon="solar:list-linear"></iconify-icon>
-          <span>Faoliyat tarixi</span>
-        </button>
-        <button className={`tab ${tab === "sites" ? "active" : ""}`} onClick={() => setTab("sites")}>
-          <iconify-icon icon="solar:global-linear"></iconify-icon>
-          <span>Web-saytlar</span>
-        </button>
+        <div className="activity-context-right">
+          <DeviceSelector devices={childDevices} selectedId={activeDeviceId ?? ""} />
+          {/* The history tab is a single day, the others are a range. Same
+              slot, so the control never moves — only what it asks changes. */}
+          {tab === "history" ? (
+            <div className="day-nav" role="group" aria-label="Kun tanlash">
+              <button
+                className="btn-view"
+                onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, -1)); }}
+                aria-label="Oldingi kun"
+              >‹</button>
+              <span className="day-nav-label">{humanDay(historyDate)}</span>
+              <button
+                className="btn-view"
+                disabled={historyDate >= todayISO()}
+                onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, 1)); }}
+                aria-label="Keyingi kun"
+              >›</button>
+            </div>
+          ) : (
+            <div className="range-switch" role="group" aria-label="Davr tanlash">
+              {(["week", "month"] as SummaryRange[]).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className={`range-chip ${range === r ? "active" : ""}`}
+                  aria-pressed={range === r}
+                  onClick={() => setRange(r)}
+                >
+                  {RANGE_LABELS[r]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <section className="tab-content active" data-tab-panel="screen">
+      <section className="tab-content active" data-tab-panel={tab}>
         {allDevices ? (
           // Deliberately not an aggregate: two devices used in the same hour
           // would double-count, so we ask rather than invent a total.
@@ -186,13 +220,6 @@ function ActivityContent() {
                     dateISO={historyDate}
                     dateTitle={humanDay(historyDate)}
                     dateSubtitle={new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long", weekday: "long" }).format(new Date(historyDate + "T00:00:00"))}
-                    nav={
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <button className="btn-view" style={{ padding: "4px 9px" }} onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, -1)); }} aria-label="Oldingi kun">‹</button>
-                        <span style={{ minWidth: 88, textAlign: "center", fontWeight: 700, fontSize: 13 }}>{humanDay(historyDate)}</span>
-                        <button className="btn-view" style={{ padding: "4px 9px" }} disabled={historyDate >= todayISO()} onClick={() => { setHistoryOffset(0); setHistoryDate((d) => shiftISO(d, 1)); }} aria-label="Keyingi kun">›</button>
-                      </div>
-                    }
                   />
                 )}
               </div>
@@ -228,14 +255,14 @@ function ActivityContent() {
               </>
             )}
 
-            {(tab === "screen" || tab === "apps") && summaryLoading && (
+            {tab === "screen" && summaryLoading && (
               <div className="card loading-state" aria-live="polite">
                 <div className="skeleton skeleton-title"></div>
                 <div className="skeleton skeleton-block"></div>
                 <p>Ma’lumotlar yuklanmoqda...</p>
               </div>
             )}
-            {(tab === "screen" || tab === "apps") && !summaryLoading && summaryError && (
+            {tab === "screen" && !summaryLoading && summaryError && (
               <div className="card loading-state" role="alert">
                 <p>Ma’lumotlarni yuklab bo‘lmadi.</p>
                 <button className="btn-view" onClick={() => setSummaryRetry((value) => value + 1)}>Qayta urinib ko‘ring</button>
@@ -250,22 +277,6 @@ function ActivityContent() {
               const limitPct = limit ? Math.round((dayMin / limit) * 100) : null;
               const remaining = limit != null ? limit - dayMin : null;
               const dayLabel = activeDay === todayISO() ? "Bugungi" : activeDay === shiftISO(todayISO(), -1) ? "Kechagi" : new Intl.DateTimeFormat("uz-UZ", { day: "numeric", month: "long" }).format(new Date(activeDay + "T00:00:00"));
-
-              const dropdown = (
-                <div className="dropdown-wrap" style={{ position: "relative" }}>
-                  <button onClick={(e) => { const t = e.currentTarget.nextElementSibling as HTMLElement; t.style.display = t.style.display === "block" ? "none" : "block"; }}>
-                    {RANGE_LABELS[range]}
-                    <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
-                  </button>
-                  <div className="profile-dropdown" style={{ display: "none", position: "absolute", right: 0, top: "100%", minWidth: 100, zIndex: 10, background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 12, padding: 8 }}>
-                    {(["week", "month"] as SummaryRange[]).map((r) => (
-                      <button key={r} onClick={(e) => { setRange(r); (e.currentTarget.parentElement as HTMLElement).style.display = "none"; }} style={{ width: "100%", textAlign: "left", padding: "6px 8px", border: 0, background: "transparent", cursor: "pointer", borderRadius: 8 }}>
-                        {RANGE_LABELS[r]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              );
 
               const limitCard = (tone: string, icon: string, label: string, value: string, pct: number | null, barGradient: string) => (
                 <div className="stat-card stat-card-limit">
@@ -291,7 +302,6 @@ function ActivityContent() {
                   <div className="card chart-card">
                     <div className="card-header">
                       <h3>{range === "month" ? "30 kunlik" : "7 kunlik"} ekran vaqti</h3>
-                      {dropdown}
                     </div>
                     <ScreenTimeChart data={days} selected={activeDay} onSelect={setSelectedDay} />
                   </div>
@@ -312,11 +322,11 @@ function ActivityContent() {
               );
             })()}
 
-            {tab === "apps" && !summaryLoading && !summaryError && summary && (
-              <div className="card">
+            {tab === "screen" && !summaryLoading && !summaryError && summary && (
+              <div className="card" style={{ marginTop: 16 }}>
                 <div className="card-header">
                   <h3>Ilovalar bo'yicha foydalanish</h3>
-                  <span className="muted-sm">{sortedApps.length} ta</span>
+                  <span className="muted-sm">{RANGE_LABELS[range]} · {sortedApps.length} ta</span>
                 </div>
                 <div className="stack">
                   {sortedApps.slice(appsPageC * PAGE_SIZE, appsPageC * PAGE_SIZE + PAGE_SIZE).map((app) => {
@@ -356,23 +366,8 @@ function ActivityContent() {
             {tab === "sites" && (
               <div className="card">
                 <div className="card-header">
-                  <h3>
-                    Web-saytlar
-                    {device ? ` — ${deviceLabel(device)}` : ""}
-                  </h3>
-                  <div className="range-switch" role="group" aria-label="Davr tanlash">
-                    {(["week", "month"] as SummaryRange[]).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        className={`range-chip ${range === r ? "active" : ""}`}
-                        aria-pressed={range === r}
-                        onClick={() => setRange(r)}
-                      >
-                        {RANGE_LABELS[r]}
-                      </button>
-                    ))}
-                  </div>
+                  <h3>Web-saytlar</h3>
+                  <span className="muted-sm">{RANGE_LABELS[range]} · {sites.length} ta</span>
                 </div>
 
                 {sitesLoading && <p className="muted">Saytlar yuklanmoqda...</p>}

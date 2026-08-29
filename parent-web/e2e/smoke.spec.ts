@@ -190,3 +190,41 @@ test.describe("web sites tab", () => {
     await expect(page.getByText(/sayt tashrifi qayd etilmagan/)).toBeVisible();
   });
 });
+
+test.describe("activity layout", () => {
+  test("one period control serves the whole section", async ({ page }) => {
+    await page.goto("/activity");
+
+    // The bug this locks down: the period used to be a dropdown inside the
+    // chart card, a day stepper inside the timeline and a chip row inside
+    // the sites card — three shapes for one idea. There is now exactly one.
+    await expect(page.locator(".range-switch")).toHaveCount(1);
+    await expect(page.locator(".day-nav")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Web-saytlar" }).click();
+    await expect(page.locator(".range-switch")).toHaveCount(1);
+
+    // The history tab is a single day, so the same slot becomes a stepper.
+    await page.getByRole("button", { name: "Faoliyat tarixi" }).click();
+    await expect(page.locator(".range-switch")).toHaveCount(0);
+    await expect(page.locator(".day-nav")).toHaveCount(1);
+  });
+
+  test("the apps list sits under the chart and states its period", async ({ page }) => {
+    await page.goto("/activity");
+
+    // No longer a tab of its own.
+    await expect(page.getByRole("button", { name: "Ilovalar" })).toHaveCount(0);
+
+    const apps = page.locator(".card", { hasText: "Ilovalar bo'yicha foydalanish" });
+    await expect(apps).toBeVisible();
+    // Minutes here are a 7-day total; unlabelled they read as today's.
+    await expect(apps).toContainText("7 kun");
+    await expect(apps).toContainText("Google Chrome");
+
+    await page.getByRole("button", { name: "30 kun" }).click();
+    await expect(apps).toContainText("30 kun");
+    await expect(page.getByRole("heading", { name: /30 kunlik ekran vaqti/ })).toBeVisible();
+  });
+});
+
