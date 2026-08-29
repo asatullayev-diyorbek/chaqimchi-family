@@ -84,6 +84,11 @@ function ActivityContent() {
           : "Ma'lumotlar yangilanmadi, birozdan keyin qayta urinib ko'ring"
         );
       } finally {
+        // Cancel the pending skeleton flip: a cached/fast response resolves on
+        // the microtask queue before this 0ms macrotask fires, and without
+        // this the timer would set loading back to true with nothing left to
+        // clear it — the "stuck on yuklanmoqda" bug when switching tabs.
+        clearTimeout(start);
         if (!cancelled) setSummaryLoading(false);
       }
     })();
@@ -109,6 +114,7 @@ function ActivityContent() {
         if (!cancelled) setHistoryError(true);
       })
       .finally(() => {
+        clearTimeout(start);
         if (!cancelled) setHistoryLoading(false);
       });
     return () => { cancelled = true; clearTimeout(start); };
