@@ -239,3 +239,28 @@ button {
   border-radius: 999px;
   padding: 2px 8px;
 }
+
+/* Keyboard focus. :where() keeps specificity at zero so any component rule
+   still wins on colour — this only guarantees the ring exists, which it
+   previously didn't anywhere in the app. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Mouse users keep the old borderless look; only keyboard focus draws. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus:not(:focus-visible) {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
