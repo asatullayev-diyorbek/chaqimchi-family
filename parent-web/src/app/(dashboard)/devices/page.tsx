@@ -43,7 +43,7 @@ function OsIcon({ platform }: { platform: string }) {
 function BatteryCell({ level }: { level: number | null }) {
   if (level === null) {
     return (
-      <span className="battery" style={{ color: "var(--muted)" }}>
+      <span className="battery muted">
         <iconify-icon icon="solar:battery-charge-minimalistic-linear"></iconify-icon>
         —
       </span>

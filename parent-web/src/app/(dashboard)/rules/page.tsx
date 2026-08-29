@@ -122,14 +122,14 @@ function RulesContent() {
 
       <section className="tab-content active">
         {loading ? (
-           <p style={{ marginTop: 16, color: "var(--muted)" }}>Yuklanmoqda...</p>
+           <p className="muted" style={{ marginTop: 16 }}>Yuklanmoqda...</p>
         ) : !deviceId ? (
-           <p style={{ marginTop: 16, color: "var(--muted)" }}>Hali bog'langan qurilma yo'q.</p>
+           <p className="muted" style={{ marginTop: 16 }}>Hali bog'langan qurilma yo'q.</p>
         ) : (
           <div className="card">
             <div className="settings-section">
               <h3>Kunlik ekran vaqti</h3>
-              <p style={{color: 'var(--muted)', fontSize: 13, marginBottom: 16}}>Daqiqalarda yozing. Bo'sh yoki 0 qiymat limitni o'chiradi.</p>
+              <p className="muted-sm" style={{ marginBottom: 16 }}>Daqiqalarda yozing. Bo'sh yoki 0 qiymat limitni o'chiradi.</p>
               
               <div className="setting-item" style={{display: 'flex', gap: 10, alignItems: 'center'}}>
                 <div className="setting-left" style={{flex: 1}}>
@@ -156,7 +156,7 @@ function RulesContent() {
 
             <div className="settings-section">
               <h3>Cheklangan ilovalar</h3>
-              <p style={{color: 'var(--muted)', fontSize: 13, marginBottom: 16}}>Bola ilovasi buni “hozircha mavjud emas” holati sifatida ko'rsatadi.</p>
+              <p className="muted-sm" style={{ marginBottom: 16 }}>Bola ilovasi buni “hozircha mavjud emas” holati sifatida ko'rsatadi.</p>
               
               <div className="setting-item" style={{display: 'flex', gap: 10, alignItems: 'center', borderBottom: 'none'}}>
                 <div className="setting-left" style={{flex: 1}}>
@@ -211,7 +211,7 @@ function RulesContent() {
 
 export default function RulesPage() {
   return (
-    <Suspense fallback={<><p style={{ color: "var(--muted)" }}>Yuklanmoqda...</p></>}>
+    <Suspense fallback={<><p className="muted">Yuklanmoqda...</p></>}>
       <RulesContent />
     </Suspense>
   );

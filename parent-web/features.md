@@ -279,11 +279,34 @@ aniqlash qiyin. Yangi o'zgarish har safar regressiya xavfини tug'diradi.
 `pages/*.css`) yoki CSS Modules / Tailwind'ga bosqichma-bosqich ko'chish.
 Kamida: takroriy selektorlarni birlashtirish.
 
-### [ ] P2-6. Inline style'lar juda ko'p
+### [~] P2-6. Inline style'lar juda ko'p
 
 `activity/page.tsx` — 42 ta, `devices/page.tsx` — 42 ta, `rules/page.tsx` — 30 ta
 `style={{...}}` blokи. Har render'да yangi obyekt (React uchun har safar yangi
 prop), dark rejim bilan mos emas (P0-2), qayta ishlatilmaydi.
+
+**Qisman bajarildi (2026-08-29).** Umumiy: 290 → 266. Asosiy yutuq
+`activity/page.tsx` da: **54 → 23**. Qo'shilган umumiy klasslar (`style.css`):
+`.data-row`, `.data-row-body/-title/-sub/-value/-time`, `.pager`, `.stack`,
+`.muted`, `.muted-sm`, `.error-text`.
+
+**Nega qolganи ko'chirilmadi — bu ataylab:**
+
+1. **Ma'lumotdan hisoblanadigan style inline qolishi kerak.** `DayTimeline`
+   (42 ta) va chart komponentlarida kenglik/pozitsiya har render'да
+   ma'lumotdan chiqadi — bu `style` prop'ining to'g'ri ishlatilishi.
+2. **`devices` va `rules` da takror deyarli yo'q** — bloklar bir martalik,
+   har biri boshqacha. Klass yasash faqat shovqin qo'shardi (42→42, 30→28).
+3. **Spetsifiklik tuzog'i.** Yangi klasslar (0,1,0) eski `.setting-left p` /
+   `.activity-item span` (0,1,1) qoidalaridan **zaif**, inline esa har doim
+   yutardi. Ikki joyda aynan shu yuz berdi va vizual baseline tutdi
+   (`rules` sahifasida shrift 13 → 11.5 bo'lib ketgan edi). O'sha ikkala
+   joy ataylab inline qoldirilди, kod ichида izoh bilan.
+
+**Tekshiruv:** refactor pikselма-piksel bir xil ekani isbotlandi — baseline
+avval **eski** koddan olinди (`git stash`), keyin yangi kodga qarshi
+ishlatildi. Yo'l-yo'lakay 6 ta yangi baseline qo'shildi (activity'ning
+apps/history/sites tab'lari — ilgari umuman qamrab olinmaган edi).
 
 ### [x] P2-7. Qurilma jadvalидаgi "ekran vaqti" bar'i yanglish
 

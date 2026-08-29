@@ -56,6 +56,16 @@ export const SUMMARY = {
   })),
 };
 
+/** Populated history, so a baseline can actually see the row markup. */
+export const HISTORY = {
+  count: 3, limit: 10, offset: 0, next_offset: null,
+  results: [
+    { id: "h1", event_type: "app_usage", app_name: "Google Chrome", app_id: "chrome.exe", icon: null, started_at: minutesAgo(30), ended_at: minutesAgo(10), duration_seconds: 1200, created_at: minutesAgo(10) },
+    { id: "h2", event_type: "app_usage", app_name: "Visual Studio Code", app_id: "code.exe", icon: null, started_at: minutesAgo(120), ended_at: minutesAgo(60), duration_seconds: 3600, created_at: minutesAgo(60) },
+    { id: "h3", event_type: "app_usage", app_name: "Explorer", app_id: "explorer.exe", icon: null, started_at: minutesAgo(200), ended_at: minutesAgo(195), duration_seconds: 300, created_at: minutesAgo(195) },
+  ],
+};
+
 /**
  * Browsing differs per device on purpose: the suite proves the Web-saytlar
  * tab shows the selected device's sites rather than a pooled list.

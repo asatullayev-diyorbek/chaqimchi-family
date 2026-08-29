@@ -258,12 +258,12 @@ function DeviceDetailContent() {
                   <li key={app.app} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid var(--border)" }}>
                     <AppIcon appId={app.app} icon={app.icon} size={28} />
                     <span style={{ flex: 1, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{appDisplay(app.app).label}</span>
-                    <span style={{ color: "var(--muted)" }}>{formatMinutes(app.minutes)}</span>
+                    <span className="muted">{formatMinutes(app.minutes)}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p style={{ color: "var(--muted)", fontSize: 13 }}>Bugun hali faoliyat qayd etilmagan.</p>
+              <p className="muted-sm">Bugun hali faoliyat qayd etilmagan.</p>
             )}
             <Link href={`/activity?device=${device.id}`} style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 14, color: "var(--brand-blue)", fontWeight: 600, textDecoration: "none" }}>
               <iconify-icon icon="solar:chart-square-linear"></iconify-icon>

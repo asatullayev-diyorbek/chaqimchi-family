@@ -176,7 +176,7 @@ function ActivityContent() {
           <>
             {tab === "history" && (
               <>
-              <div className="card" style={{ padding: 20, marginBottom: 16 }}>
+              <div className="card" style={{ marginBottom: 16 }}>
                 {timelineLoading ? (
                   <p style={{ color: "var(--muted)", padding: "20px 0" }}>Yuklanmoqda...</p>
                 ) : (
@@ -197,30 +197,30 @@ function ActivityContent() {
                 )}
               </div>
 
-              <div className="card" style={{ padding: 20 }}>
-                <div className="card-header" style={{ marginBottom: 14 }}>
+              <div className="card">
+                <div className="card-header">
                   <h3>Faoliyat tarixi</h3>
-                  <span style={{ color: "var(--muted)", fontSize: 13 }}>{historyCount} ta event</span>
+                  <span className="muted-sm">{historyCount} ta event</span>
                 </div>
-                {historyLoading && <p style={{ color: "var(--muted)" }}>Faoliyat yuklanmoqda...</p>}
-                {historyError && <p style={{ color: "var(--danger, #dc2626)" }}>Faoliyatni yuklab bo‘lmadi. Qayta urinib ko‘ring.</p>}
-                {!historyLoading && !historyError && history.length === 0 && <p style={{ color: "var(--muted)" }}>Hali faoliyat mavjud emas.</p>}
+                {historyLoading && <p className="muted">Faoliyat yuklanmoqda...</p>}
+                {historyError && <p className="error-text">Faoliyatni yuklab bo‘lmadi. Qayta urinib ko‘ring.</p>}
+                {!historyLoading && !historyError && history.length === 0 && <p className="muted">Hali faoliyat mavjud emas.</p>}
                 {!historyLoading && !historyError && history.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div className="stack">
                     {history.map((item) => (
-                      <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(37,99,235,.08)" }}>
-                        <time style={{ width: 44, color: "var(--muted)", fontSize: 13 }}>{formatActivityTime(item.started_at || item.created_at)}</time>
+                      <div key={item.id} className="data-row">
+                        <time className="data-row-time">{formatActivityTime(item.started_at || item.created_at)}</time>
                         <AppIcon appId={item.app_id} appName={item.app_name} icon={item.icon} size={30} />
                         <span style={{ flex: 1, fontWeight: 700, color: "var(--foreground)" }}>{appDisplay(item.app_id, item.app_name).label}</span>
-                        <span style={{ color: "var(--muted)", fontSize: 13 }}>{item.duration_seconds == null ? "—" : formatMinutes(Math.round(item.duration_seconds / 60))}</span>
+                        <span className="muted-sm">{item.duration_seconds == null ? "—" : formatMinutes(Math.round(item.duration_seconds / 60))}</span>
                       </div>
                     ))}
                   </div>
                 )}
                 {!historyLoading && !historyError && historyCount > PAGE_SIZE && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+                  <div className="pager">
                     <button className="btn-view" disabled={historyOffset === 0} onClick={() => setHistoryOffset(Math.max(0, historyOffset - PAGE_SIZE))}>← Oldingi</button>
-                    <span style={{ color: "var(--muted)", fontSize: 13 }}>{Math.floor(historyOffset / PAGE_SIZE) + 1} / {Math.ceil(historyCount / PAGE_SIZE)}</span>
+                    <span className="muted-sm">{Math.floor(historyOffset / PAGE_SIZE) + 1} / {Math.ceil(historyCount / PAGE_SIZE)}</span>
                     <button className="btn-view" disabled={historyNextOffset === null} onClick={() => historyNextOffset !== null && setHistoryOffset(historyNextOffset)}>Keyingi →</button>
                   </div>
                 )}
@@ -313,31 +313,40 @@ function ActivityContent() {
             })()}
 
             {tab === "apps" && !summaryLoading && !summaryError && summary && (
-              <div className="card" style={{padding: 20}}>
-                <div className="card-header" style={{marginBottom: 14}}>
+              <div className="card">
+                <div className="card-header">
                   <h3>Ilovalar bo'yicha foydalanish</h3>
-                  <span style={{ color: "var(--muted)", fontSize: 13 }}>{sortedApps.length} ta</span>
+                  <span className="muted-sm">{sortedApps.length} ta</span>
                 </div>
-                <div style={{display: 'flex', flexDirection: 'column'}}>
+                <div className="stack">
                   {sortedApps.slice(appsPageC * PAGE_SIZE, appsPageC * PAGE_SIZE + PAGE_SIZE).map((app) => {
                     const d = appDisplay(app.app);
                     return (
-                    <div className="activity-item" key={app.app} style={{display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', borderBottom: '1px solid rgba(37,99,235,.08)'}}>
+                    // Left inline on purpose. This row carries the legacy
+                    // .activity-item rules, whose `img` and `span` selectors
+                    // (0,1,1) outrank the .data-row-* classes (0,1,0) and
+                    // would silently shrink the app name to 13px. The shared
+                    // classes are only safe where .activity-item is absent.
+                    <div
+                      className="activity-item"
+                      key={app.app}
+                      style={{ padding: "12px 0", borderBottom: "1px solid rgba(37,99,235,.08)" }}
+                    >
                        <AppIcon appId={app.app} icon={app.icon} size={34} />
-                       <span style={{flex: 1, minWidth: 0}}>
-                         <span style={{display: 'block', fontWeight: 700, fontSize: 14, color: 'var(--foreground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{d.label}</span>
-                         <span style={{fontSize: 12, color: d.color}}>{d.categoryLabel}</span>
+                       <span style={{ flex: 1, minWidth: 0 }}>
+                         <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.label}</span>
+                         <span style={{ fontSize: 12, color: d.color }}>{d.categoryLabel}</span>
                        </span>
-                       <em style={{color: 'var(--muted)', fontStyle: 'normal', fontSize: 13, fontWeight: 600}}>{formatMinutes(app.minutes)}</em>
+                       <em style={{ color: "var(--muted)", fontStyle: "normal", fontSize: 13, fontWeight: 600 }}>{formatMinutes(app.minutes)}</em>
                     </div>
                     );
                   })}
-                  {sortedApps.length === 0 && <p style={{color: 'var(--muted)', fontSize: 13, margin: '10px 0'}}>Bu davrda ma'lumot yo'q</p>}
+                  {sortedApps.length === 0 && <p className="muted-sm" style={{ margin: "10px 0" }}>Bu davrda ma'lumot yo'q</p>}
                 </div>
                 {sortedApps.length > PAGE_SIZE && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+                  <div className="pager">
                     <button className="btn-view" disabled={appsPageC === 0} onClick={() => setAppsPage(appsPageC - 1)}>← Oldingi</button>
-                    <span style={{ color: "var(--muted)", fontSize: 13 }}>{appsPageC + 1} / {Math.ceil(sortedApps.length / PAGE_SIZE)}</span>
+                    <span className="muted-sm">{appsPageC + 1} / {Math.ceil(sortedApps.length / PAGE_SIZE)}</span>
                     <button className="btn-view" disabled={(appsPageC + 1) * PAGE_SIZE >= sortedApps.length} onClick={() => setAppsPage(appsPageC + 1)}>Keyingi →</button>
                   </div>
                 )}
@@ -345,8 +354,8 @@ function ActivityContent() {
             )}
 
             {tab === "sites" && (
-              <div className="card" style={{ padding: 20 }}>
-                <div className="card-header" style={{ marginBottom: 14 }}>
+              <div className="card">
+                <div className="card-header">
                   <h3>
                     Web-saytlar
                     {device ? ` — ${deviceLabel(device)}` : ""}
@@ -366,34 +375,34 @@ function ActivityContent() {
                   </div>
                 </div>
 
-                {sitesLoading && <p style={{ color: "var(--muted)" }}>Saytlar yuklanmoqda...</p>}
+                {sitesLoading && <p className="muted">Saytlar yuklanmoqda...</p>}
                 {sitesError && (
-                  <p style={{ color: "var(--danger, #dc2626)" }}>
+                  <p className="error-text">
                     Saytlarni yuklab bo&apos;lmadi. Qayta urinib ko&apos;ring.
                   </p>
                 )}
                 {!sitesLoading && !sitesError && sites.length === 0 && (
-                  <p style={{ color: "var(--muted)" }}>
+                  <p className="muted">
                     Bu davrda sayt tashrifi qayd etilmagan.
                   </p>
                 )}
                 {!sitesLoading && !sitesError && sites.length > 0 && (
-                  <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div className="stack">
                     {sites.slice(sitesPageC * PAGE_SIZE, sitesPageC * PAGE_SIZE + PAGE_SIZE).map((site) => (
                       <div
                         key={site.domain}
-                        style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(37,99,235,.08)" }}
+                        className="data-row"
                       >
                         <span className="site-badge" aria-hidden="true">
                           <iconify-icon icon="solar:global-linear"></iconify-icon>
                         </span>
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ display: "block", fontWeight: 700, fontSize: 14, color: "var(--foreground)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <span className="data-row-body">
+                          <span className="data-row-title">
                             {site.domain}
                           </span>
-                          <span style={{ fontSize: 12, color: "var(--muted)" }}>{site.visits} marta</span>
+                          <span className="data-row-sub muted">{site.visits} marta</span>
                         </span>
-                        <em style={{ color: "var(--muted)", fontStyle: "normal", fontSize: 13, fontWeight: 600 }}>
+                        <em className="data-row-value">
                           {formatMinutes(site.minutes)}
                         </em>
                       </div>
@@ -401,9 +410,9 @@ function ActivityContent() {
                   </div>
                 )}
                 {!sitesLoading && !sitesError && sites.length > PAGE_SIZE && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+                  <div className="pager">
                     <button className="btn-view" disabled={sitesPageC === 0} onClick={() => setSitesPage(sitesPageC - 1)}>← Oldingi</button>
-                    <span style={{ color: "var(--muted)", fontSize: 13 }}>{sitesPageC + 1} / {Math.ceil(sites.length / PAGE_SIZE)}</span>
+                    <span className="muted-sm">{sitesPageC + 1} / {Math.ceil(sites.length / PAGE_SIZE)}</span>
                     <button className="btn-view" disabled={(sitesPageC + 1) * PAGE_SIZE >= sites.length} onClick={() => setSitesPage(sitesPageC + 1)}>Keyingi →</button>
                   </div>
                 )}

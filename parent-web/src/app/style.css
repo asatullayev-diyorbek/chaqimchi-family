@@ -5201,3 +5201,70 @@ body{
     color:var(--brand-blue);
     font-size:19px;
 }
+
+/* ---- Shared list primitives -------------------------------------------
+   Extracted from style objects that activity/devices/rules/alerts each
+   repeated inline. Every value here is byte-for-byte what those pages
+   already rendered, so this is a refactor with no visual effect — the
+   Playwright baselines are the proof.
+
+   Genuinely data-driven values (bar widths, chart offsets) stay inline:
+   that is what the style prop is for. */
+
+.stack{ display:flex; flex-direction:column; }
+
+/* Specificity trap: these are single classes (0,1,0), so a descendant rule
+   like `.setting-left p` or `.activity-item span` (0,1,1) beats them on
+   font-size, where the inline style they replace always won. `.muted` is
+   safe anywhere — every competing rule sets the same var(--muted) — but
+   `.muted-sm` silently loses its 13px inside such a container. Check the
+   element's ancestors before swapping one in, and let the visual baselines
+   confirm it: that is exactly how the .setting-left case was caught. */
+.muted{ color:var(--muted); }
+.muted-sm{ color:var(--muted); font-size:13px; }
+.error-text{ color:var(--danger,#dc2626); }
+
+/* Prev / page-count / next row under a paginated list. */
+.pager{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:16px;
+}
+
+/* One row of a simple label + value list. */
+.data-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 0;
+    border-bottom:1px solid rgba(37,99,235,.08);
+}
+
+.data-row-body{ flex:1; min-width:0; }
+
+.data-row-title{
+    display:block;
+    font-weight:700;
+    font-size:14px;
+    color:var(--foreground);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.data-row-sub{ font-size:12px; }
+
+.data-row-value{
+    color:var(--muted);
+    font-style:normal;
+    font-size:13px;
+    font-weight:600;
+}
+
+/* Leading timestamp column, fixed so the names below it line up. */
+.data-row-time{
+    width:44px;
+    color:var(--muted);
+    font-size:13px;
+}

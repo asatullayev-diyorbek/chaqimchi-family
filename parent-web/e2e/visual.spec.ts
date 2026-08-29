@@ -1,5 +1,5 @@
 import { expect, Page, test } from "@playwright/test";
-import { mockApi, NOW, signIn } from "./fixtures";
+import { HISTORY, mockApi, NOW, signIn } from "./fixtures";
 
 /**
  * Visual baselines for the CSS work.
@@ -64,6 +64,28 @@ for (const theme of ["light", "dark"] as const) {
           // pastel, 62%-opacity glass design that is loose enough to miss a
           // whole card changing colour — measured: white -> pink passed. 0.05
           // still absorbs antialiasing but sees a real repaint.
+          threshold: 0.05,
+        });
+      });
+    }
+
+    // The page-level activity shot only ever sees the default "Ekran vaqti"
+    // tab. The list rows on the other three tabs are where the shared
+    // .data-row classes were extracted from, so without these the extraction
+    // would be unverified — a class collision there is invisible above.
+    for (const { label, name } of [
+      { label: "Ilovalar", name: "activity-apps" },
+      { label: "Faoliyat tarixi", name: "activity-history" },
+      { label: "Web-saytlar", name: "activity-sites" },
+    ]) {
+      test(`${name} renders as expected`, async ({ page }) => {
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await mockApi(page, { "/api/tracking/history/": HISTORY });
+        await page.goto("/activity");
+        await page.getByRole("button", { name: label }).click();
+        await stabilise(page);
+        await expect(page.locator(".tab-content")).toHaveScreenshot(`${name}-${theme}.png`, {
+          maxDiffPixels: 100,
           threshold: 0.05,
         });
       });
