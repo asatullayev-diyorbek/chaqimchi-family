@@ -44,7 +44,7 @@ export default function CategoryDonut({ slices, totalMinutes }: { slices: DonutS
       >
         <svg viewBox="0 0 120 120" width="150" height="150">
           <g transform="rotate(-90 60 60)" fill="none">
-            <circle cx="60" cy="60" r="52" stroke="rgba(37,99,235,.06)" strokeWidth="16" />
+            <circle cx="60" cy="60" r="52" stroke="var(--chart-track)" strokeWidth="16" />
             {arcs.map((a) => {
               const on = hover === a.i;
               return (
@@ -81,21 +81,21 @@ export default function CategoryDonut({ slices, totalMinutes }: { slices: DonutS
               transform: "translateY(-100%)",
               zIndex: 6,
               pointerEvents: "none",
-              background: "var(--foreground, #1f2b3a)",
-              color: "#fff",
+              background: "var(--tooltip-bg)",
+              color: "var(--tooltip-fg)",
               padding: "9px 12px",
               borderRadius: 10,
               fontSize: 12.5,
               lineHeight: 1.55,
               whiteSpace: "nowrap",
-              boxShadow: "0 10px 28px rgba(0,0,0,.22)",
+              boxShadow: "0 10px 28px rgba(0,0,0,.32)",
             }}
           >
             <span style={{ display: "flex", alignItems: "center", gap: 7, fontWeight: 700 }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: slices[hover].color }} />
               {slices[hover].label}
             </span>
-            <span style={{ display: "block", fontWeight: 700, color: "#93b4ff" }}>
+            <span style={{ display: "block", fontWeight: 700, color: "var(--tooltip-accent)" }}>
               {fmtDur(slices[hover].minutes)} ({slices[hover].percent}%)
             </span>
           </div>

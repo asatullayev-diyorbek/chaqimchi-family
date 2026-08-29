@@ -18,10 +18,10 @@ const MAX_BLOCKS_PER_LANE = 6;
 type Bucket = "app" | "work" | "system" | "blocked";
 
 const BUCKET_META: Record<Bucket, { color: string; label: string }> = {
-  app: { color: "#2563eb", label: "Ilova / Brauzer" },
-  work: { color: "#8b5cf6", label: "Ishchi dastur" },
-  system: { color: "#f97316", label: "Tizim faoliyati" },
-  blocked: { color: "#94a3b8", label: "Bloklangan" },
+  app: { color: "var(--bucket-app)", label: "Ilova / Brauzer" },
+  work: { color: "var(--bucket-work)", label: "Ishchi dastur" },
+  system: { color: "var(--bucket-system)", label: "Tizim faoliyati" },
+  blocked: { color: "var(--bucket-blocked)", label: "Bloklangan" },
 };
 
 function bucketOf(appId: string, category: AppCategory): Bucket {
@@ -169,7 +169,7 @@ export default function DayTimeline({
       {/* header: date + mini stats + nav */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ width: 40, height: 40, display: "grid", placeItems: "center", borderRadius: 12, background: "var(--cat-blue-bg, #e6edfc)", color: "var(--brand-blue, #2563eb)", flex: "0 0 auto" }}>
+          <span style={{ width: 40, height: 40, display: "grid", placeItems: "center", borderRadius: 12, background: "var(--cat-blue-bg)", color: "var(--brand-blue)", flex: "0 0 auto" }}>
             <iconify-icon icon="solar:calendar-linear" style={{ fontSize: 20 }}></iconify-icon>
           </span>
           <div>
@@ -191,7 +191,7 @@ export default function DayTimeline({
 
       {segments.length === 0 ? (
         <div style={{ padding: "40px 16px", textAlign: "center" }}>
-          <div style={{ width: 46, height: 46, margin: "0 auto 12px", display: "grid", placeItems: "center", borderRadius: 14, background: "var(--cat-blue-bg, #e6edfc)", color: "var(--brand-blue, #2563eb)" }}>
+          <div style={{ width: 46, height: 46, margin: "0 auto 12px", display: "grid", placeItems: "center", borderRadius: 14, background: "var(--cat-blue-bg)", color: "var(--brand-blue)" }}>
             <iconify-icon icon="solar:calendar-linear" style={{ fontSize: 22 }}></iconify-icon>
           </div>
           <strong style={{ display: "block", fontSize: 15 }}>Bu kuni faoliyat qayd etilmagan</strong>
@@ -201,7 +201,7 @@ export default function DayTimeline({
         <>
           {/* toggle + legend */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 12 }}>
-            <div style={{ display: "inline-flex", padding: 3, borderRadius: 10, background: "rgba(37,99,235,.06)" }}>
+            <div style={{ display: "inline-flex", padding: 3, borderRadius: 10, background: "var(--chart-track)" }}>
               {([["all", "Barcha vaqt"], ["active", "Faqat faol vaqt"]] as const).map(([k, label]) => {
                 const on = (k === "active") === activeOnly;
                 return (
@@ -211,9 +211,9 @@ export default function DayTimeline({
                     style={{
                       border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 700,
                       padding: "6px 12px", borderRadius: 8,
-                      background: on ? "var(--surface, #fff)" : "transparent",
-                      color: on ? "var(--brand-blue, #2563eb)" : "var(--muted)",
-                      boxShadow: on ? "0 1px 3px rgba(37,99,235,.15)" : "none",
+                      background: on ? "var(--surface)" : "transparent",
+                      color: on ? "var(--brand-blue)" : "var(--muted)",
+                      boxShadow: on ? "0 1px 3px rgba(37,99,235,.18)" : "none",
                     }}
                   >
                     {label}
@@ -258,7 +258,7 @@ export default function DayTimeline({
               {/* hour axis */}
               <div style={{ position: "relative", height: 22 }}>
                 {AXIS_HOURS.map((h) => (
-                  <span key={h} style={{ position: "absolute", left: pct(h * 60), top: 4, fontSize: 10, color: "#9aa6b6", transform: h === 0 ? "none" : h === 24 ? "translateX(-100%)" : "translateX(-50%)" }}>
+                  <span key={h} style={{ position: "absolute", left: pct(h * 60), top: 4, fontSize: 10, color: "var(--chart-axis)", transform: h === 0 ? "none" : h === 24 ? "translateX(-100%)" : "translateX(-50%)" }}>
                     {String(h).padStart(2, "0")}:00
                   </span>
                 ))}
@@ -267,21 +267,21 @@ export default function DayTimeline({
               {/* guide lines + now marker span the lanes area */}
               <div style={{ position: "absolute", left: 0, right: 0, top: 22, height: lanes.length * ROW_H, pointerEvents: "none" }}>
                 {AXIS_HOURS.map((h) => (
-                  <div key={h} style={{ position: "absolute", left: pct(h * 60), top: 0, bottom: 0, width: 1, background: "rgba(37,99,235,.07)" }} />
+                  <div key={h} style={{ position: "absolute", left: pct(h * 60), top: 0, bottom: 0, width: 1, background: "var(--chart-grid)" }} />
                 ))}
                 {nowMin !== null && (
-                  <div style={{ position: "absolute", left: pct(nowMin), top: -6, bottom: -6, width: 2, borderRadius: 2, background: "var(--brand-blue, #2563eb)" }} />
+                  <div style={{ position: "absolute", left: pct(nowMin), top: -6, bottom: -6, width: 2, borderRadius: 2, background: "var(--brand-blue)" }} />
                 )}
               </div>
 
               {/* interactive scrub cursor — independent of the HOZIR line */}
               {cursor !== null && (
-                <div style={{ position: "absolute", left: pct(cursor), top: 12, height: 10 + lanes.length * ROW_H, width: 1.5, background: "var(--brand-blue, #2563eb)", pointerEvents: "none", zIndex: 5 }}>
+                <div style={{ position: "absolute", left: pct(cursor), top: 12, height: 10 + lanes.length * ROW_H, width: 1.5, background: "var(--brand-blue)", pointerEvents: "none", zIndex: 5 }}>
                   <span
                     style={{
                       position: "absolute", top: -20, left: 0, transform: `translateX(${edgeShift})`,
-                      fontSize: 12.5, fontWeight: 800, letterSpacing: 0.3, color: "#fff",
-                      background: "var(--brand-blue, #2563eb)", padding: "2px 7px", borderRadius: 6, whiteSpace: "nowrap",
+                      fontSize: 12.5, fontWeight: 800, letterSpacing: 0.3, color: "var(--tooltip-fg)",
+                      background: "var(--brand-blue)", padding: "2px 7px", borderRadius: 6, whiteSpace: "nowrap",
                     }}
                   >
                     {fmtHm(cursor)}
@@ -294,7 +294,7 @@ export default function DayTimeline({
                 const dimmed = cursor !== null && !activeLaneIdx.has(laneIdx);
                 return (
                   <div key={lane.app_id} style={{ position: "relative", height: ROW_H }}>
-                    <div style={{ position: "absolute", left: 0, right: 0, top: (ROW_H - TRACK_H) / 2, height: TRACK_H, borderRadius: 7, background: "rgba(37,99,235,.04)" }} />
+                    <div style={{ position: "absolute", left: 0, right: 0, top: (ROW_H - TRACK_H) / 2, height: TRACK_H, borderRadius: 7, background: "var(--chart-track)" }} />
                     {lane.blocks.map((b, blockIdx) => {
                       const w = ((b.end - b.start) / 1440) * 100;
                       const tiny = b.end - b.start < 6;
@@ -321,7 +321,7 @@ export default function DayTimeline({
                           }}
                         >
                           {wide && !tiny && (
-                            <span style={{ fontSize: 10.5, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", padding: "0 6px" }}>
+                            <span style={{ fontSize: 10.5, fontWeight: 700, color: "var(--tooltip-fg)", whiteSpace: "nowrap", padding: "0 6px" }}>
                               {fmtHm(b.start)} – {fmtHm(b.end)}
                             </span>
                           )}
@@ -342,8 +342,8 @@ export default function DayTimeline({
                     transform: `translateX(${edgeShift})`,
                     zIndex: 7,
                     pointerEvents: "none",
-                    background: "var(--foreground, #1f2b3a)",
-                    color: "#fff",
+                    background: "var(--tooltip-bg)",
+                    color: "var(--tooltip-fg)",
                     padding: "9px 12px",
                     borderRadius: 10,
                     fontSize: 12,

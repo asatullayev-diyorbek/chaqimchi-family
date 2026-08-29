@@ -41,8 +41,8 @@ export default function ScreenTimeChart({
           const y = padT + plotH * (1 - f);
           return (
             <g key={f}>
-              <line x1={padL} y1={y} x2={W - 4} y2={y} stroke="rgba(37,99,235,.12)" strokeWidth="1" strokeDasharray={f === 0 ? "0" : "3 4"} />
-              <text x={padL - 8} y={y + 3.5} fontSize="10" fill="#9aa6b6" textAnchor="end">
+              <line x1={padL} y1={y} x2={W - 4} y2={y} stroke="var(--chart-grid)" strokeWidth="1" strokeDasharray={f === 0 ? "0" : "3 4"} />
+              <text x={padL - 8} y={y + 3.5} fontSize="10" fill="var(--chart-axis)" textAnchor="end">
                 {f === 0 ? "0" : `${Math.round(maxHours * f)}s`}
               </text>
             </g>
@@ -59,10 +59,10 @@ export default function ScreenTimeChart({
             <g key={d.date} onClick={() => onSelect?.(d.date)} style={{ cursor: onSelect ? "pointer" : "default" }}>
               <rect x={padL + band * i} y={padT} width={band} height={plotH + padB} fill="transparent" />
               {h > 0 && (
-                <rect x={x} y={y} width={barW} height={h} rx={Math.min(barW / 2, 8)} fill={isSel ? "#2563eb" : "#a9c9fb"} style={{ transition: "fill .12s" }} />
+                <rect x={x} y={y} width={barW} height={h} rx={Math.min(barW / 2, 8)} fill={isSel ? "var(--chart-bar-active)" : "var(--chart-bar)"} style={{ transition: "fill .12s" }} />
               )}
               {showValue && (
-                <text x={x + barW / 2} y={y - 7} fontSize="10.5" fontWeight="700" fill={isSel ? "#1f2b3a" : "#7a8698"} textAnchor="middle">
+                <text x={x + barW / 2} y={y - 7} fontSize="10.5" fontWeight="700" fill={isSel ? "var(--foreground)" : "var(--muted)"} textAnchor="middle">
                   {fmtDur(d.total_minutes)}
                 </text>
               )}
@@ -71,7 +71,7 @@ export default function ScreenTimeChart({
                 y={H - padB + 18}
                 fontSize="11"
                 fontWeight={isSel ? 800 : 600}
-                fill={isSel ? "#2563eb" : "#7a8698"}
+                fill={isSel ? "var(--chart-bar-active)" : "var(--muted)"}
                 textAnchor="middle"
               >
                 {n <= 10 ? WEEKDAYS_UZ[new Date(d.date + "T00:00:00").getDay()] : i % 3 === 0 ? shortDate(d.date) : ""}

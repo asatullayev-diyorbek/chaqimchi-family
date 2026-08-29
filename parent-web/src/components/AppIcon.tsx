@@ -26,7 +26,7 @@ export default function AppIcon({ appId, appName, icon, size = 34 }: Props) {
         alt=""
         width={size}
         height={size}
-        style={{ width: size, height: size, minWidth: size, borderRadius: radius, objectFit: "contain", background: "#fff", flex: "0 0 auto" }}
+        style={{ width: size, height: size, minWidth: size, borderRadius: radius, objectFit: "contain", background: "var(--surface)", flex: "0 0 auto" }}
       />
     );
   }
@@ -36,7 +36,7 @@ export default function AppIcon({ appId, appName, icon, size = 34 }: Props) {
     return (
       <div
         aria-hidden
-        style={{ display: "grid", placeItems: "center", width: size, height: size, minWidth: size, borderRadius: radius, background: "#fff", border: "1px solid rgba(37,99,235,.08)", flex: "0 0 auto" }}
+        style={{ display: "grid", placeItems: "center", width: size, height: size, minWidth: size, borderRadius: radius, background: "var(--surface)", border: "1px solid var(--border)", flex: "0 0 auto" }}
       >
         <iconify-icon icon={d.brandIcon} style={{ fontSize: Math.round(size * 0.62) }}></iconify-icon>
       </div>
