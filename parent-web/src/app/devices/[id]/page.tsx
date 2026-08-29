@@ -189,8 +189,8 @@ function DeviceDetailContent() {
 
           {battery !== null && (
             <div className="stat-card">
-              <div className="icon orange">
-                <iconify-icon icon="solar:battery-half-linear"></iconify-icon>
+              <div className={`icon ${battery <= 20 ? "red" : "orange"}`}>
+                <iconify-icon icon={battery > 66 ? "solar:battery-full-linear" : battery > 33 ? "solar:battery-half-linear" : "solar:battery-low-linear"}></iconify-icon>
               </div>
               <div>
                 <span>Batareya</span>

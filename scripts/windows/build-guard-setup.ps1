@@ -145,5 +145,33 @@ if (-not (Test-Path $finalInstaller -PathType Leaf)) {
 }
 Assert-GuiExecutable $finalInstaller
 
-Write-Host "Tayyor: $(Join-Path $repoRoot 'releases\windows\ChaqimchiAI Guard Setup.exe')"
+# Publish the exact artifact the /download page serves, plus the metadata that
+# page renders. Both are generated here so the version, size and hash on the
+# site can never drift from the file a parent actually downloads — they used
+# to be typed by hand and the size had already gone stale.
+$publicName = "ChaqimchiAI-Guard-Setup.exe"
+$downloadsDir = Join-Path $repoRoot "parent-web\public\downloads"
+New-Item -ItemType Directory -Force -Path $downloadsDir | Out-Null
+Copy-Item -Force $finalInstaller (Join-Path $downloadsDir $publicName)
+
+$hash = (Get-FileHash -Algorithm SHA256 $finalInstaller).Hash.ToUpperInvariant()
+$bytes = (Get-Item $finalInstaller).Length
+$release = [ordered]@{
+  version   = $Version
+  file      = $publicName
+  bytes     = $bytes
+  sha256    = $hash
+  date      = (Get-Date -Format "yyyy-MM-dd")
+  publisher = "ChaqimchiAI (imzolanmagan — MVP/Beta)"
+}
+$releaseJson = Join-Path $repoRoot "parent-web\src\app\download\release.json"
+$release | ConvertTo-Json | Set-Content -Encoding UTF8 $releaseJson
+
+# Sidecar next to the artifact, in the format sign-release.ps1 expects.
+"$hash  $publicName" | Set-Content -Encoding ASCII "$finalInstaller.sha256"
+
+Write-Host "Tayyor: $finalInstaller"
+Write-Host "  SHA-256: $hash"
+Write-Host "  Hajmi:   $([math]::Round($bytes / 1MB, 1)) MB"
+Write-Host "  Nashr metadatasi yozildi: $releaseJson"
 Write-Host "Publish qilishdan oldin: VirusTotal, clean Windows 10/11 install va uninstall testlarini bajaring."

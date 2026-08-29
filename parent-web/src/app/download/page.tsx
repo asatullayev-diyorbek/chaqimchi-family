@@ -5,17 +5,13 @@ export const metadata: Metadata = {
   description: "ChaqimchiAI Guard Windows dasturini yuklab olish.",
 };
 
-// Kept in sync with releases/windows/ChaqimchiAI Guard Setup.exe on every
-// Windows RC build (scripts/windows/build-guard-setup.ps1). Only the single
-// GUI installer is published — never the internal agent/bootstrap binaries.
-const RELEASE = {
-  version: "0.4.0-rc.1",
-  file: "ChaqimchiAI-Guard-Setup.exe",
-  sizeMB: "21.4",
-  sha256: "9D5743764B8A8B027FCFD293712F3145277057F08487911ADB477B45E6E8BD35",
-  date: "2026-08-28",
-  publisher: "ChaqimchiAI (imzolanmagan — MVP/Beta)",
-};
+// Written by scripts/windows/build-guard-setup.ps1 from the artifact it just
+// produced, so the version, size and hash shown here cannot drift from the
+// file being served. Never edit by hand — the size already went stale once.
+// Only the single GUI installer is published, never the internal binaries.
+import RELEASE from "./release.json";
+
+const sizeMB = (RELEASE.bytes / (1024 * 1024)).toFixed(1);
 
 export default function DownloadPage() {
   return (
@@ -54,7 +50,7 @@ export default function DownloadPage() {
             <dt style={{ fontWeight: 600 }}>Nashr sanasi</dt>
             <dd style={{ margin: 0 }}>{RELEASE.date}</dd>
             <dt style={{ fontWeight: 600 }}>Hajmi</dt>
-            <dd style={{ margin: 0 }}>{RELEASE.sizeMB} MB</dd>
+            <dd style={{ margin: 0 }}>{sizeMB} MB</dd>
             <dt style={{ fontWeight: 600 }}>Noshir</dt>
             <dd style={{ margin: 0 }}>{RELEASE.publisher}</dd>
             <dt style={{ fontWeight: 600 }}>SHA-256</dt>

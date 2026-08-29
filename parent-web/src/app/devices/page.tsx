@@ -39,6 +39,26 @@ function OsIcon({ platform }: { platform: string }) {
   return <iconify-icon icon="logos:android-icon"></iconify-icon>;
 }
 
+/** Icon and colour follow the charge level; a flat "low" icon at 92% read as a warning. */
+function BatteryCell({ level }: { level: number | null }) {
+  if (level === null) {
+    return (
+      <span className="battery" style={{ color: "var(--muted)" }}>
+        <iconify-icon icon="solar:battery-charge-minimalistic-linear"></iconify-icon>
+        —
+      </span>
+    );
+  }
+  const icon =
+    level > 66 ? "solar:battery-full-linear" : level > 33 ? "solar:battery-half-linear" : "solar:battery-low-linear";
+  return (
+    <span className="battery" style={{ color: level <= 20 ? "var(--danger)" : undefined }}>
+      <iconify-icon icon={icon}></iconify-icon>
+      {level}%
+    </span>
+  );
+}
+
 export default function DevicesPage() {
   const router = useRouter();
   const [childFilterId, setChildFilterId] = useState<string | null>(null);
@@ -66,6 +86,8 @@ export default function DevicesPage() {
   const visibleDevices = childFilterId ? linkedDevices?.filter((device) => device.child_id === childFilterId) : linkedDevices;
   const totalScreenMinutes = Object.values(summaries).reduce((sum, s) => sum + (s?.total_screen_minutes ?? 0), 0);
   const onlineCount = Object.values(summaries).filter((s) => s?.device_status === "online").length;
+  // Floor of 60 min so a single quiet device doesn't render a full-width bar.
+  const usageScale = Math.max(60, ...Object.values(summaries).map((s) => s?.total_screen_minutes ?? 0));
 
   async function load() {
     try {
@@ -349,8 +371,8 @@ export default function DevicesPage() {
                         <span>Aktiv</span>
                       </div>
                       <span className="detected-battery">
-                        <iconify-icon icon="solar:battery-low-linear"></iconify-icon>
-                        Ma'lumot yo'q
+                        <iconify-icon icon="solar:refresh-linear"></iconify-icon>
+                        Birinchi sinxronizatsiya kutilmoqda
                       </span>
                     </div>
                   </div>
@@ -473,21 +495,12 @@ export default function DevicesPage() {
             <h3>Qurilmalar ro'yxati</h3>
             <p>Farzandingiz foydalanayotgan barcha qurilmalar.</p>
           </div>
-          <div className="table-actions">
-            <button className="btn-filter">
-              <iconify-icon icon="solar:calendar-linear"></iconify-icon>
-              Bugun
-              <iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon>
+          {childFilterId && (
+            <button className="btn-view" onClick={() => setChildFilterId(null)}>
+              <iconify-icon icon="solar:close-circle-linear"></iconify-icon>
+              Filtrni tozalash
             </button>
-            <div className="view-toggle">
-              <button className="active" title="Ro'yxat ko'rinishi">
-                <iconify-icon icon="solar:list-linear"></iconify-icon>
-              </button>
-              <button title="Katakcha ko'rinishi">
-                <iconify-icon icon="solar:widget-4-linear"></iconify-icon>
-              </button>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="table-wrap">
@@ -518,7 +531,10 @@ export default function DevicesPage() {
                 const summary = summaries[device.id];
                 const isOnline = summary?.device_status === "online";
                 const minutesUsed = summary?.total_screen_minutes ?? 0;
-                const usagePercent = Math.min((minutesUsed / (24 * 60)) * 100, 100);
+                // Against the busiest device today, not against 24h — a whole
+                // day of screen time is not the yardstick a parent compares
+                // to, and it made every bar look nearly empty.
+                const usagePercent = Math.min((minutesUsed / usageScale) * 100, 100);
                 const usageHours = Math.floor(minutesUsed / 60);
                 const usageMinutes = minutesUsed % 60;
                 const battery = summary?.battery_percent ?? null;
@@ -566,12 +582,7 @@ export default function DevicesPage() {
                         <div className="usage-bar"><div style={{width: `${usagePercent}%`}}></div></div>
                       </div>
                     </td>
-                    <td>
-                      <span className="battery">
-                        <iconify-icon icon="solar:battery-low-linear"></iconify-icon>
-                        {battery !== null ? `${battery}%` : "—"}
-                      </span>
-                    </td>
+                    <td><BatteryCell level={battery} /></td>
                     <td>
                       <Link href={`/devices/${device.id}`} className="btn-view" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
                          <iconify-icon icon="solar:eye-linear" style={{ fontSize: 16 }}></iconify-icon>

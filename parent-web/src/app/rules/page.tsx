@@ -6,7 +6,6 @@ import AppShell from "@/components/layout/AppShell";
 import { createRule, deleteRule, getDailyLimitMinutes, getRules, Rule } from "@/api/rules";
 import { getAccessToken } from "@/api/client";
 import { getDevices } from "@/api/tracking";
-import Link from "next/link";
 import { toast } from "react-hot-toast";
 
 function RulesContent() {
@@ -124,18 +123,6 @@ function RulesContent() {
     <AppShell>
       {/* Header */}
 
-
-      {/* Tabs */}
-      <div className="activity-tabs">
-        <button className="tab active">
-          <iconify-icon icon="solar:shield-keyhole-linear"></iconify-icon>
-          <span>Oilaviy qoidalar</span>
-        </button>
-        <Link href="#" className="tab" style={{textDecoration: 'none', color: 'var(--muted)'}}>
-          <iconify-icon icon="solar:user-circle-linear"></iconify-icon>
-          <span>Profil (Tez orada)</span>
-        </Link>
-      </div>
 
       <section className="tab-content active">
         {loading ? (
