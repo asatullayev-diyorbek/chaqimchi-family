@@ -14,6 +14,8 @@ export default function AppIcon({ appId, appName, icon, size = 34 }: Props) {
   const d = appDisplay(appId, appName);
   const radius = Math.round(size * 0.29);
 
+  // A <div>, not a <span>: several list layouts have a `.parent span { flex:1 }`
+  // rule that would otherwise stretch the icon into a full-width pill.
   if (icon) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -22,26 +24,27 @@ export default function AppIcon({ appId, appName, icon, size = 34 }: Props) {
         alt=""
         width={size}
         height={size}
-        style={{ width: size, height: size, borderRadius: radius, objectFit: "contain", background: "#fff", flexShrink: 0 }}
+        style={{ width: size, height: size, minWidth: size, borderRadius: radius, objectFit: "contain", background: "#fff", flex: "0 0 auto" }}
       />
     );
   }
 
   return (
-    <span
+    <div
       aria-hidden
       style={{
         display: "grid",
         placeItems: "center",
         width: size,
         height: size,
+        minWidth: size,
         borderRadius: radius,
         background: d.bg,
         color: d.color,
-        flexShrink: 0,
+        flex: "0 0 auto",
       }}
     >
       <iconify-icon icon={d.categoryIcon} style={{ fontSize: Math.round(size * 0.52) }}></iconify-icon>
-    </span>
+    </div>
   );
 }
