@@ -26,11 +26,15 @@ boshqaruvida bir nechta real bug bor, va CSS 7 900 qatorlik yagona faylда.
 
 **Tavsiya:** P0 → P1 ni bir sprintда yopish. P2 keyingi sprint. P3 fon ishi.
 
+**Bajarilish holati (2026-08-30):** 1-bosqich yakunlandi — P0-1…P0-4, P1-2 va
+P3-1 (viewport metadata) yopildi, productionга deploy qilindi. Batafsil:
+`fix-plan.md` §1. Keyingisi — 2-bosqich (P1-1, P1-3, P1-5, P1-8, P1-9, P3-2).
+
 ---
 
 ## 1. P0 — Blockerlar
 
-### [ ] P0-1. Telegram login GET-cache tufayli 60 soniya osilib qoladi
+### [x] P0-1. Telegram login GET-cache tufayli 60 soniya osilib qoladi
 
 **Fayl:** `src/api/client.ts:73` + `src/api/auth.ts:57` + `src/app/login/page.tsx:71`
 
@@ -50,7 +54,7 @@ qo'llash (polling `skipAuth: true`).
 
 ---
 
-### [ ] P0-2. Dark rejim dizayn tokenlarini almashtirmaydi
+### [x] P0-2. Dark rejim dizayn tokenlarini almashtirmaydi
 
 **Fayl:** `src/app/globals.css:1-52` (tokenlar), `src/app/style.css:3998+` (dark blok)
 
@@ -81,7 +85,7 @@ matn qolmasligi. Kontrast ≥ 4.5:1.
 
 ---
 
-### [ ] P0-3. Dark rejim saqlanmaydi
+### [x] P0-3. Dark rejim saqlanmaydi
 
 **Fayl:** `src/components/layout/TopbarActions.tsx:44-61, 79-82`
 
@@ -95,7 +99,7 @@ boshlang'ich qiymat sifatida o'qish.
 
 ---
 
-### [ ] P0-4. Modal'lar klaviatura va skrinrider uchun yopiq
+### [x] P0-4. Modal'lar klaviatura va skrinrider uchun yopiq
 
 **Fayl:** `TopbarActions.tsx:212`, `devices/page.tsx:214, 395`
 
@@ -127,7 +131,7 @@ brauzer xotirasида blob'lar to'playdi.
 **Yechim:** `useEffect` + `useState` bilan bitta URL yaratib, cleanup'да
 `URL.revokeObjectURL`.
 
-### [ ] P1-2. `confirm()` — brauzer dialogи
+### [x] P1-2. `confirm()` — brauzer dialogи
 
 **Fayl:** `devices/page.tsx:123`, `devices/[id]/page.tsx:104`
 
@@ -314,7 +318,7 @@ javobда esa `max-age=3600` — ziddiyat.
 
 ## 4. P3 — Past / sayqal
 
-- [ ] **P3-1.** `layout.tsx`да `viewport` va `themeColor` metadata yo'q; PWA manifest yo'q.
+- [x] **P3-1.** `layout.tsx`да `viewport` va `themeColor` metadata yo'q; PWA manifest yo'q.
 - [ ] **P3-2.** `focus-visible` uslublari deyarli yo'q (butun CSS'да 6 ta hit) —
   klaviatura bilan yurgan foydalanuvchi qayerдалиgини ko'rmaydi.
 - [ ] **P3-3.** `prefers-reduced-motion` hisobga olinmaган.
