@@ -344,8 +344,12 @@ javobда esa `max-age=3600` — ziddiyat.
   yozilган. Route → sarlavha xaritasига (yoki route metadata'ga) chiqarish.
 - [x] **P3-7.** Test tooling umuman yo'q (vitest / RTL / Playwright). Kamida
   `appDisplay()`, `foldBlocks()`, `apiFetch` cache/refresh mantiqи uchun unit test.
-- [ ] **P3-8.** Web-saytlar tabi bo'sh (`browser_domain` agentда yo'q) — halol
+- [x] **P3-8.** Web-saytlar tabi bo'sh (`browser_domain` agentда yo'q) — halol
   yozилган, lekin tab'ni yashirish yoki "tez orada" ko'rinишига o'tkazish afzal.
+  **Yopildi (2026-08-29):** placeholder o'rniga real `GET /api/tracking/sites/`
+  qo'shildi — tab qurilma bo'yicha filtrlanadi, 10 tadan sahifalanadi va
+  ma'lumot yo'qligini "funksiya yo'q" emas, "tashrif qayd etilmagan" deb
+  ko'rsatadi. Agent `browser_domain` yubora boshlaganda o'zgаришsiz ishlaydi.
 
 ---
 
