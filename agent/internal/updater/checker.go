@@ -1,11 +1,13 @@
 // Package updater implements the agent's self-update check-and-apply loop.
 //
-// SECURITY NOTE, read before reusing any of this: nothing here verifies a
-// signature on the downloaded binary. That is deliberate, not an oversight
-// or a "temporary shortcut we forgot about" — the architecture doc calls
-// this out explicitly as an internal, unsigned dev-cycle mechanism, not the
-// hardened OTA path. Signature verification and safe rollback are Bosqich
-// 6 work. Do not point this at a real production release channel as-is.
+// Integrity: every downloaded binary is verified against a pinned Ed25519
+// public key (pubkey.go) and a sha256 from the server manifest BEFORE it is
+// swapped into place (verify.go, apply_windows.go). A binary that fails
+// either check is discarded. Downgrades are refused. A staged update that
+// doesn't confirm healthy is rolled back to the previous binary on the next
+// start (state_windows.go). Updates are silent — there is no per-update
+// consent prompt — because the agent is a guardian the child must not be
+// able to block; the parent sees the running version on the dashboard.
 package updater
 
 import (
@@ -78,6 +80,14 @@ func leadingDigits(s string) string {
 type LatestVersion struct {
 	Version   string `json:"version"`
 	BinaryURL string `json:"binary_url"`
+	// SHA256 is the lowercase hex digest of the exact binary bytes.
+	SHA256 string `json:"sha256"`
+	// Signature is the base64 Ed25519 signature over the exact binary bytes,
+	// made with the private key matching UpdatePublicKeyHex.
+	Signature string `json:"signature"`
+	// Mandatory is advisory today (updates apply either way); kept so the
+	// dashboard can flag a security update.
+	Mandatory bool `json:"mandatory"`
 }
 
 type Checker struct {

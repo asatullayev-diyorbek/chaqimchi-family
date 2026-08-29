@@ -36,3 +36,6 @@ parent-web/.next/
 .DS_Store
 agent/agent/
 .vercel
+
+# OTA update signing private key — never commit
+agent/.secrets/

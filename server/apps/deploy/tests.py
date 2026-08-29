@@ -17,7 +17,7 @@ class LatestVersionTests(TestCase):
         self.device = ChildDevice.objects.create(status=ChildDevice.STATUS_LINKED)
         self.url = reverse("deploy-latest")
 
-    def test_returns_latest_active_version(self):
+    def test_returns_latest_active_version_with_manifest(self):
         AgentVersion.objects.create(
             version="0.3.0",
             binary_url="https://example.com/agent-0.3.0.exe",
@@ -26,12 +26,24 @@ class LatestVersionTests(TestCase):
         latest = AgentVersion.objects.create(
             version="0.4.0",
             binary_url="https://example.com/agent-0.4.0.exe",
+            sha256="a" * 64,
+            signature="c2ln",
+            mandatory=True,
             is_active=True,
         )
 
         response = self.client.get(self.url, **device_auth_header(self.device))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"version": "0.4.0", "binary_url": latest.binary_url})
+        self.assertEqual(
+            response.json(),
+            {
+                "version": "0.4.0",
+                "binary_url": latest.binary_url,
+                "sha256": "a" * 64,
+                "signature": "c2ln",
+                "mandatory": True,
+            },
+        )
 
     def test_ignores_inactive_versions(self):
         AgentVersion.objects.create(

@@ -25,6 +25,7 @@ export type DeviceSummary = {
   top_apps: TopApp[];
   device_status: "online" | "offline";
   last_sync: string | null;
+  agent_version: string | null;
   battery_percent: number | null;
   battery_updated_at: string | null;
   breakdown: DayBreakdown[];
@@ -39,6 +40,7 @@ export type Device = {
   created_at: string;
   linked_at: string | null;
   last_sync: string | null;
+  agent_version: string | null;
 };
 
 export type ActivityHistoryItem = {

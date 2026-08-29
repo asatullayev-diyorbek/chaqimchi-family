@@ -120,7 +120,11 @@ class IngestView(APIView):
         # Any successful contact — even a duplicate resend — means the
         # device was reachable just now, so it drives device_status/last_sync
         # on the summary endpoint regardless of whether new rows are written.
-        ChildDevice.objects.filter(id=device.id).update(last_sync=timezone.now())
+        sync_fields = {"last_sync": timezone.now()}
+        reported_version = (data.get("agent") or {}).get("version") or ""
+        if reported_version and reported_version != device.agent_version:
+            sync_fields["agent_version"] = reported_version[:20]
+        ChildDevice.objects.filter(id=device.id).update(**sync_fields)
 
         # Idempotency: a batch we've already stored is a no-op success —
         # the agent retries whenever it didn't see our ack, not just on error.
@@ -310,6 +314,7 @@ class SummaryView(APIView):
                 "top_apps": top_apps,
                 "device_status": device_status,
                 "last_sync": device.last_sync,
+                "agent_version": device.agent_version or None,
                 "battery_percent": battery_percent,
                 "battery_updated_at": battery_at,
                 "breakdown": breakdown,

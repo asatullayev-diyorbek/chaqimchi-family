@@ -25,6 +25,13 @@ type Uploader struct {
 	HTTPClient   *http.Client
 	BatchSize    int
 	SessionID    string
+	// AgentVersion is reported in each batch's agent metadata so the parent
+	// dashboard can show what's actually running (and OTA can confirm a
+	// successful update). Defaults to "0.0.0-dev".
+	AgentVersion string
+	// OnSuccess, if set, is called after each fully-acked upload — the OTA
+	// flow uses it to confirm a freshly-swapped binary is healthy.
+	OnSuccess func()
 }
 
 func NewUploader(baseURL, deviceID, deviceSecret string, store *buffer.Store) *Uploader {
@@ -37,6 +44,7 @@ func NewUploader(baseURL, deviceID, deviceSecret string, store *buffer.Store) *U
 		HTTPClient:   &http.Client{Timeout: 30 * time.Second},
 		BatchSize:    defaultBatchSize,
 		SessionID:    uuid.NewString(),
+		AgentVersion: "0.0.0-dev",
 	}
 }
 
@@ -50,6 +58,8 @@ func (u *Uploader) Run(ctx context.Context, interval time.Duration) {
 	for {
 		if err := u.SyncOnce(ctx); err != nil {
 			log.Printf("sync: %v", err)
+		} else if u.OnSuccess != nil {
+			u.OnSuccess()
 		}
 		select {
 		case <-ctx.Done():
@@ -57,6 +67,13 @@ func (u *Uploader) Run(ctx context.Context, interval time.Duration) {
 		case <-ticker.C:
 		}
 	}
+}
+
+func (u *Uploader) agentVersion() string {
+	if u.AgentVersion == "" {
+		return "0.0.0-dev"
+	}
+	return u.AgentVersion
 }
 
 // SyncOnce runs a single health-check + upload cycle. Returns nil if there
@@ -129,7 +146,7 @@ func (u *Uploader) SyncOnce(ctx context.Context) error {
 		"device_id":      u.DeviceID,
 		"batch_id":       batchID,
 		"sent_at":        time.Now().UTC().Format(time.RFC3339),
-		"agent":          map[string]any{"version": "1.0.0", "platform": "windows", "session_id": u.SessionID},
+		"agent":          map[string]any{"version": u.agentVersion(), "platform": "windows", "session_id": u.SessionID},
 		"events":         rawEvents,
 	})
 	if err != nil {

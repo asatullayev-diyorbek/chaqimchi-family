@@ -50,6 +50,7 @@ class SummarySerializer(serializers.Serializer):
     top_apps = TopAppSerializer(many=True)
     device_status = serializers.CharField()
     last_sync = serializers.DateTimeField(allow_null=True)
+    agent_version = serializers.CharField(allow_null=True, required=False)
     battery_percent = serializers.IntegerField(allow_null=True)
     battery_updated_at = serializers.DateTimeField(allow_null=True)
     breakdown = DayBreakdownSerializer(many=True)

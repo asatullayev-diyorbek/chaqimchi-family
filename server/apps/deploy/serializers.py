@@ -6,4 +6,4 @@ from .models import AgentVersion
 class AgentVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AgentVersion
-        fields = ["version", "binary_url"]
+        fields = ["version", "binary_url", "sha256", "signature", "mandatory"]

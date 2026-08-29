@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -25,6 +26,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/endpoint"
@@ -34,6 +37,7 @@ import (
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/session"
 	syncpkg "github.com/chaqimchi/chaqimchi-family/agent/internal/sync"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/tracker"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/updater"
 )
 
 // version is set at build time via -ldflags "-X main.version=0.4.0". Left
@@ -49,8 +53,14 @@ func main() {
 	allowInsecureHTTP := flag.Bool("allow-insecure-http", false, "development only: allow a non-HTTPS backend URL")
 	foregroundReporter := flag.Bool("foreground-reporter", false, "internal: run only the session-side foreground probe (launched by the service)")
 	parentPID := flag.Int("parent-pid", 0, "internal: exit when this process id is gone (used with -foreground-reporter)")
+	selfTest := flag.Bool("selftest", false, "internal: print version and exit 0 (OTA pre-swap smoke test)")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
 
+	if *selfTest || *showVersion {
+		fmt.Println(version)
+		return
+	}
 	if *foregroundReporter {
 		runForegroundReporter(*parentPID)
 		return
@@ -108,6 +118,24 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	}
 	defer store.Close()
 
+	// Buffer one agent lifecycle event (update applied / rolled back) so the
+	// parent dashboard can show it; flows out with the next sync.
+	reportAgentEvent := func(eventType, detail string) {
+		payload, _ := json.Marshal(map[string]any{"type": eventType, "detail": detail, "version": version})
+		store.Append(buffer.Event{ID: uuid.NewString(), Type: eventType, Payload: payload, CreatedAt: time.Now()})
+	}
+
+	// OTA state machine: confirm a freshly-swapped binary or roll back a bad
+	// one. ErrRolledBack means we've restored the previous exe and must exit
+	// so the service manager starts it.
+	if err := updater.ResolvePending(dataDir, version, reportAgentEvent); err != nil {
+		if errors.Is(err, updater.ErrRolledBack) {
+			log.Printf("update rolled back to previous binary; exiting for restart")
+			return nil
+		}
+		log.Printf("resolving pending update: %v", err)
+	}
+
 	rulesCache, err := rules.OpenCache(filepath.Join(dataDir, "rules.db"))
 	if err != nil {
 		return fmt.Errorf("opening rules cache: %w", err)
@@ -132,14 +160,29 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	go fetcher.Run(ctx, 5*time.Minute)
 
 	uploader := syncpkg.NewUploader(baseURL, deviceID, deviceSecret, store)
+	uploader.AgentVersion = version
+	uploader.OnSuccess = func() { updater.ConfirmHealthy(dataDir, version, reportAgentEvent) }
 	go uploader.Run(ctx, 60*time.Second)
 
 	go tracker.RunDeviceInfo(ctx, store, 60*time.Second)
 
-	// Remote update code deliberately remains disabled. A public release may
-	// enable it only after Authenticode signature + hash verification, explicit
-	// user consent and rollback are implemented (Windows Security & Trust).
-	log.Printf("agent %s started; automatic updates are disabled pending signed-update support", version)
+	// OTA updates: every binary is Ed25519-verified against a pinned key and
+	// smoke-tested before the swap; a bad one is rolled back on next start
+	// (internal/updater). Updates are silent by design — a guardian the
+	// child cannot block — and the parent sees the version on the dashboard.
+	updChecker := updater.NewChecker(baseURL, deviceID, deviceSecret, version)
+	go updChecker.Run(ctx, 6*time.Hour,
+		func(lv *updater.LatestVersion) {
+			log.Printf("update available: %s -> %s", version, lv.Version)
+			if err := updater.Apply(ctx, lv, version, dataDir); err != nil {
+				log.Printf("applying update %s: %v", lv.Version, err)
+				return
+			}
+			log.Printf("update %s staged and swapped; stopping for service restart", lv.Version)
+			service.RestartSelf()
+		},
+		func(err error) { log.Printf("update check: %v", err) },
+	)
 
 	// Daily total is kept as a simple in-memory counter, incremented by
 	// one poll interval whenever a foreground app was observed, reset at

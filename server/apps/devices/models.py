@@ -46,6 +46,9 @@ class ChildDevice(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     linked_at = models.DateTimeField(null=True, blank=True)
     last_sync = models.DateTimeField(null=True, blank=True)
+    # Reported by the agent in each ingest batch's metadata; shown on the
+    # dashboard so a parent can see what version is actually running.
+    agent_version = models.CharField(max_length=20, blank=True)
 
 
 class EnrollmentCode(models.Model):

@@ -416,3 +416,48 @@ class AppIconIngestTests(TestCase):
         self.client.force_authenticate(user=self.parent)
         response = self.client.get(self.summary_url, {"date": "2026-07-28"})
         self.assertIsNone(response.json()["top_apps"][0]["icon"])
+
+
+class AgentVersionAndLifecycleTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(email="ver@example.com", password="supersecret123")
+        self.device = ChildDevice.objects.create(status=ChildDevice.STATUS_LINKED, family=self.parent.family)
+        self.ingest_url = reverse("ingest")
+
+    def _ingest(self, events, agent=None, batch_id="v-b1"):
+        body = {"device_id": str(self.device.id), "batch_id": batch_id, "events": events}
+        if agent is not None:
+            body["agent"] = agent
+        return self.client.post(self.ingest_url, body, format="json", **auth_header(self.device))
+
+    def test_ingest_records_reported_agent_version(self):
+        self._ingest(
+            [{"type": "device_state", "occurred_at": "2026-08-30T10:00:00Z"}],
+            agent={"version": "0.5.0", "platform": "windows"},
+        )
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.agent_version, "0.5.0")
+
+    def test_agent_lifecycle_events_are_stored(self):
+        response = self._ingest(
+            [
+                {"type": "agent_updated", "detail": "0.4.0 -> 0.5.0", "occurred_at": "2026-08-30T10:00:00Z"},
+                {"type": "agent_update_failed", "detail": "0.4.0 -> 0.6.0: crash", "occurred_at": "2026-08-30T10:05:00Z"},
+            ]
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["events_saved"], 2)
+        self.assertEqual(
+            set(Event.objects.values_list("event_type", flat=True)),
+            {"agent_updated", "agent_update_failed"},
+        )
+
+    def test_summary_exposes_agent_version(self):
+        self._ingest(
+            [{"type": "device_state", "occurred_at": "2026-08-30T10:00:00Z"}],
+            agent={"version": "0.5.0", "platform": "windows"},
+        )
+        self.client.force_authenticate(user=self.parent)
+        url = reverse("summary", kwargs={"device_id": self.device.id})
+        self.assertEqual(self.client.get(url).json()["agent_version"], "0.5.0")

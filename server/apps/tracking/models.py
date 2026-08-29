@@ -2,7 +2,15 @@ import uuid
 
 from django.db import models
 
-EVENT_TYPES = ["app_usage", "browser_domain", "screen_time_summary", "device_state"]
+EVENT_TYPES = [
+    "app_usage",
+    "browser_domain",
+    "screen_time_summary",
+    "device_state",
+    # Agent OTA lifecycle: emitted once when an update lands or is rolled back.
+    "agent_updated",
+    "agent_update_failed",
+]
 
 # app_icon events carry a small PNG the agent extracted from the app's exe.
 # They aren't time-series data, so ingest folds them into DeviceAppIcon

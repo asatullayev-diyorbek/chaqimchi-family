@@ -238,6 +238,10 @@ function DeviceDetailContent() {
                 <span>Kuzatiladi</span>
                 <strong>Ilova nomlari, ekran vaqti, qurilma holati</strong>
               </div>
+              <div className="info-item">
+                <span>Guard versiyasi</span>
+                <strong>{summary?.agent_version || "Noma'lum"}</strong>
+              </div>
             </div>
           </div>
 
