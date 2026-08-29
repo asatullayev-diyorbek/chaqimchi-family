@@ -29,8 +29,9 @@ boshqaruvida bir nechta real bug bor, va CSS 7 900 qatorlik yagona faylда.
 **Bajarilish holati (2026-08-30):** 1- va 2-bosqich yakunlandi.
 Yopilgan: **P0-1…P0-4**, **P1-1, P1-2, P1-3, P1-5, P1-8, P1-9**, **P3-1, P3-2, P3-3**.
 Hammasi productionга deploy qilindi. Batafsil: `fix-plan.md` §1–2.
-Keyingisi — 3-bosqich (P1-6 signup, P1-7 alerts dizayni, P2-3 o'lik boshqaruvlar,
-P2-7/P2-8, P2-9).
+3-bosqich ham yakunlandi: **P1-6, P1-7, P2-3, P2-7, P2-8, P2-9**.
+Keyingisi — 4-bosqich (texnik qarz): P2-1 query qatlami (P1-4 ni ham yopadi),
+P2-2 AuthGuard, P2-4 o'lik kod, P2-5 CSS bo'lish, P2-6 inline style, P3-7 testlar.
 
 ---
 
@@ -180,7 +181,7 @@ yo'q) — foydalanuvchi saqlanganини bilmaydi.
 **Yechim:** backendда PUT/upsert endpoint, yoki xato bo'lganда eski qiymatni
 tiklash + muvaffaqiyat toast'i.
 
-### [ ] P1-6. Signup sahifasi loyiha dizaynidan tashqarида
+### [x] P1-6. Signup sahifasi loyiha dizaynidan tashqarида
 
 **Fayl:** `signup/page.tsx:33-47`
 
@@ -194,7 +195,7 @@ olib tashlangan) — ro'yxatdan o'tish UI orqali umuman erishib bo'lmaydi.
 **Yechim:** signup'ni `auth-shell` ichига ko'chirish; login'га "Hisobingiz yo'qmi?"
 havolasini qaytarish (yoki signup'ni ataylab yopiq deb hujjatlashtirish).
 
-### [ ] P1-7. Alerts sahifasi dizayn tizimidan tashqарида
+### [x] P1-7. Alerts sahifasi dizayn tizimidan tashqарида
 
 **Fayl:** `alerts/page.tsx:81-110`
 
@@ -238,7 +239,7 @@ Har sahifа o'zi `getAccessToken()` tekshiradi. Token yo'q bo'lsa sahifа bir la
 **ko'rinадi**, keyin redirect bo'ladi (flash). Markazlashган `<AuthGuard>`
 `AppShell` ichида bo'lishi kerak.
 
-### [ ] P2-3. O'lik UI boshqaruvlari
+### [x] P2-3. O'lik UI boshqaruvlari
 
 | Element | Fayl | Holat |
 |---|---|---|
@@ -252,7 +253,7 @@ Har sahifа o'zi `getAccessToken()` tekshiradi. Token yo'q bo'lsa sahifа bir la
 **Yechim:** ishlamaydiganini olib tashlash yoki aniq "tez orada" belgisi qo'yish.
 Hozir bir qismi ishlaydiganга o'xshaydi — bu foydalanuvchini aldaydi.
 
-### [ ] P2-4. O'lik kod — 4 ta ishlatilmaydigan fayl
+### [x] P2-4. O'lik kod — 4 ta ishlatilmaydigan fayl
 
 `components/BarChart.tsx` (107), `components/DonutChart.tsx` (82),
 `components/formStyles.ts`, `hooks/useMounted.ts` — hech qayerда import qilinmaydi.
@@ -274,7 +275,7 @@ Kamida: takroriy selektorlarni birlashtirish.
 `style={{...}}` blokи. Har render'да yangi obyekt (React uchun har safar yangi
 prop), dark rejim bilan mos emas (P0-2), qayta ishlatilmaydi.
 
-### [ ] P2-7. Qurilma jadvalидаgi "ekran vaqti" bar'i yanglish
+### [x] P2-7. Qurilma jadvalидаgi "ekran vaqti" bar'i yanglish
 
 **Fayl:** `devices/page.tsx:511`
 
@@ -282,14 +283,14 @@ prop), dark rejim bilan mos emas (P0-2), qayta ishlatilmaydi.
 faoliyat 17% ko'rsatadi, ya'ni bar deyarli doim bo'sh. Kunlik **limitga** nisbatan
 bo'lishi kerak (limit yo'q bo'lsa — eng katta qiymatga).
 
-### [ ] P2-8. Batareya ikonкаси qiymatга bog'liq emas
+### [x] P2-8. Batareya ikonкаси qiymatга bog'liq emas
 
 **Fayl:** `devices/page.tsx:561`, `devices/[id]/page.tsx:189`
 
 92% ham, 8% ham `solar:battery-low-linear`. Darajaga qarab ikonка va rang
 o'zgarishi kerak (past bo'lsa qizil).
 
-### [ ] P2-9. `/download` sahifасидаgi hajm eskirган
+### [x] P2-9. `/download` sahifасидаgi hajm eskirган
 
 **Fayl:** `download/page.tsx:14`
 
@@ -308,7 +309,7 @@ farqlanishi mumkin.
 
 **Yechim:** `DevicesContext` / `ChildrenContext` (yoki P2-1 dagi query qatlami).
 
-### [ ] P2-11. Media proxy butun faylni xotiraга yuklaydi
+### [x] P2-11. Media proxy butun faylni xotiraга yuklaydi
 
 **Fayl:** `media/[...path]/route.ts:10`
 
@@ -324,7 +325,7 @@ javobда esa `max-age=3600` — ziddiyat.
 - [x] **P3-2.** `focus-visible` uslublari deyarli yo'q (butun CSS'да 6 ta hit) —
   klaviatura bilan yurgan foydalanuvchi qayerдалиgини ko'rmaydi.
 - [x] **P3-3.** `prefers-reduced-motion` hisobga olinmaган.
-- [ ] **P3-4.** Imlo: `"Kamyida 8 ta belgi"` → `"Kamida"` (`signup/page.tsx:80`);
+- [x] **P3-4.** Imlo: `"Kamyida 8 ta belgi"` → `"Kamida"` (`signup/page.tsx:80`);
   `"yuzichadan"` → `"yuqoridagi menyudan"` (`devices/page.tsx:256`).
 - [ ] **P3-5.** `WheelPicker` ARIA ierarxiyasi noto'g'ri — `role="listbox"` va
   `role="option"` orasida `.wheel-picker-scroll` div turibdi; listbox fokus
