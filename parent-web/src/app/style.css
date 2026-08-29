@@ -4248,27 +4248,10 @@ svg.graph{
     padding:6px;
 
     border-radius:16px;
-    background:var(--glass-bg-strong, rgba(255,255,255,.85));
+    background:rgba(255,255,255,.5);
     border:1px solid rgba(255,255,255,.8);
 
     width:fit-content;
-}
-
-/* Full-width band that keeps the .activity-tabs pill pinned just below the
-   sticky top navbar while the tab content scrolls under it. */
-.tabs-bar{
-    position:sticky;
-    top:82px;
-    z-index:25;
-    padding:8px 0;
-    margin-top:-8px;
-    background:rgba(238,241,251,.72);
-    backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);
-}
-
-@media (max-width:900px){
-    .tabs-bar{ top:148px; }
 }
 
 .tab{

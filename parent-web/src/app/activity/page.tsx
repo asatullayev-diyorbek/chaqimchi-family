@@ -42,6 +42,8 @@ function formatMinutes(minutes: number): string {
   return `${hours} soat ${mins} min`;
 }
 
+const PAGE_SIZE = 10;
+
 function formatActivityTime(value: string | null): string {
   if (!value) return "—";
   return new Intl.DateTimeFormat("uz-UZ", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
@@ -61,6 +63,7 @@ function ActivityContent() {
   const [summaryRetry, setSummaryRetry] = useState(0);
   const [rules, setRules] = useState<Rule[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [appsPage, setAppsPage] = useState(0);
   const [tab, setTab] = useState<"screen" | "apps" | "history" | "sites">("screen");
   const [history, setHistory] = useState<ActivityHistoryItem[]>([]);
   const [historyCount, setHistoryCount] = useState(0);
@@ -132,7 +135,7 @@ function ActivityContent() {
       setHistoryLoading(true);
       setHistoryError(false);
     }, 0);
-    getActivityHistory(activeDeviceId, { date: historyDate, limit: 50, offset: historyOffset })
+    getActivityHistory(activeDeviceId, { date: historyDate, limit: PAGE_SIZE, offset: historyOffset })
       .then((data) => {
         if (cancelled) return;
         setHistory(data.results);
@@ -161,6 +164,7 @@ function ActivityContent() {
   }, [activeDeviceId, historyDate, tab]);
 
   const sortedApps = summary ? [...summary.top_apps].sort((a, b) => b.minutes - a.minutes) : [];
+  const appsPageC = Math.min(appsPage, Math.max(0, Math.ceil(sortedApps.length / PAGE_SIZE) - 1));
 
   return (
     <AppShell>
@@ -169,7 +173,6 @@ function ActivityContent() {
 
 
       {/* Tabs */}
-      <div className="tabs-bar">
       <div className="activity-tabs">
         <button className={`tab ${tab === "screen" ? "active" : ""}`} onClick={() => setTab("screen")}>
           <iconify-icon icon="solar:clock-circle-linear"></iconify-icon>
@@ -187,7 +190,6 @@ function ActivityContent() {
           <iconify-icon icon="solar:global-linear"></iconify-icon>
           <span>Web-saytlar</span>
         </button>
-      </div>
       </div>
 
       <section className="tab-content active" data-tab-panel="screen">
@@ -245,11 +247,11 @@ function ActivityContent() {
                     ))}
                   </div>
                 )}
-                {!historyLoading && !historyError && historyCount > 50 && (
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
-                    <button className="btn-view" disabled={historyOffset === 0} onClick={() => setHistoryOffset(Math.max(0, historyOffset - 50))}>Oldingi</button>
-                    <span style={{ color: "var(--muted)", fontSize: 13 }}>{Math.floor(historyOffset / 50) + 1} / {Math.ceil(historyCount / 50)}</span>
-                    <button className="btn-view" disabled={historyNextOffset === null} onClick={() => historyNextOffset !== null && setHistoryOffset(historyNextOffset)}>Keyingi</button>
+                {!historyLoading && !historyError && historyCount > PAGE_SIZE && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+                    <button className="btn-view" disabled={historyOffset === 0} onClick={() => setHistoryOffset(Math.max(0, historyOffset - PAGE_SIZE))}>← Oldingi</button>
+                    <span style={{ color: "var(--muted)", fontSize: 13 }}>{Math.floor(historyOffset / PAGE_SIZE) + 1} / {Math.ceil(historyCount / PAGE_SIZE)}</span>
+                    <button className="btn-view" disabled={historyNextOffset === null} onClick={() => historyNextOffset !== null && setHistoryOffset(historyNextOffset)}>Keyingi →</button>
                   </div>
                 )}
               </div>
@@ -344,9 +346,10 @@ function ActivityContent() {
               <div className="card" style={{padding: 20}}>
                 <div className="card-header" style={{marginBottom: 14}}>
                   <h3>Ilovalar bo'yicha foydalanish</h3>
+                  <span style={{ color: "var(--muted)", fontSize: 13 }}>{sortedApps.length} ta</span>
                 </div>
                 <div style={{display: 'flex', flexDirection: 'column'}}>
-                  {sortedApps.map((app) => {
+                  {sortedApps.slice(appsPageC * PAGE_SIZE, appsPageC * PAGE_SIZE + PAGE_SIZE).map((app) => {
                     const d = appDisplay(app.app);
                     return (
                     <div className="activity-item" key={app.app} style={{display: 'flex', alignItems: 'center', gap: 10, padding: '12px 0', borderBottom: '1px solid rgba(37,99,235,.08)'}}>
@@ -361,6 +364,13 @@ function ActivityContent() {
                   })}
                   {sortedApps.length === 0 && <p style={{color: 'var(--muted)', fontSize: 13, margin: '10px 0'}}>Bu davrda ma'lumot yo'q</p>}
                 </div>
+                {sortedApps.length > PAGE_SIZE && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 16 }}>
+                    <button className="btn-view" disabled={appsPageC === 0} onClick={() => setAppsPage(appsPageC - 1)}>← Oldingi</button>
+                    <span style={{ color: "var(--muted)", fontSize: 13 }}>{appsPageC + 1} / {Math.ceil(sortedApps.length / PAGE_SIZE)}</span>
+                    <button className="btn-view" disabled={(appsPageC + 1) * PAGE_SIZE >= sortedApps.length} onClick={() => setAppsPage(appsPageC + 1)}>Keyingi →</button>
+                  </div>
+                )}
               </div>
             )}
 
