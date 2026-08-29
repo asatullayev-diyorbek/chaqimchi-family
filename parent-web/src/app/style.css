@@ -125,7 +125,7 @@ body{
 
     border-radius:18px;
 
-    color:#4c5d78;
+    color:var(--body-text);
 
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
@@ -296,7 +296,7 @@ body{
 }
 
 .profile-info span{
-    color:#8a96aa;
+    color:var(--muted);
     font-size:13px;
 }
 
@@ -3055,7 +3055,7 @@ transition:all .35s ease;
 
     border-radius:8px;
 
-    color:#4c5d78;
+    color:var(--body-text);
     font-size:11px;
     font-weight:600;
     text-decoration:none;
@@ -3132,7 +3132,7 @@ transition:all .35s ease;
 .welcome h1{
     font-size:24px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .welcome p{
@@ -3141,7 +3141,7 @@ transition:all .35s ease;
     align-items:center;
     gap:8px;
     font-size:14px;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 .safe-badge{
@@ -3185,7 +3185,7 @@ transition:all .35s ease;
 
     box-shadow:0 6px 18px rgba(37,99,235,.08);
 
-    color:#4c5d78;
+    color:var(--body-text);
     font-size:20px;
     cursor:pointer;
 
@@ -3260,17 +3260,17 @@ transition:all .35s ease;
 .child-profile h4{
     font-size:13.5px;
     font-weight:700;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .child-profile span{
     font-size:11.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .child-profile iconify-icon{
     font-size:16px;
-    color:#9aa6b6;
+    color:var(--muted);
     margin-left:2px;
 }
 
@@ -3349,21 +3349,21 @@ transition:all .35s ease;
     display:block;
     font-size:12.5px;
     font-weight:600;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 .stat-card h2{
     margin-top:4px;
     font-size:19px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .stat-card small{
     display:block;
     margin-top:4px;
     font-size:11.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .stat-card .switch{
@@ -3401,7 +3401,7 @@ transition:all .35s ease;
 .card-header h3{
     font-size:15.5px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .card-header a{
@@ -3421,7 +3421,7 @@ transition:all .35s ease;
     border:1px solid rgba(0,0,0,.06);
     border-radius:11px;
 
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:12.5px;
@@ -3432,7 +3432,7 @@ transition:all .35s ease;
 
 .card-header button iconify-icon{
     font-size:13px;
-    color:#9aa6b6;
+    color:var(--muted);
 }
 
 [data-theme="dark"] .card-header button{
@@ -3484,13 +3484,13 @@ transition:all .35s ease;
 .chart-total strong{
     font-size:14px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
     line-height:1.2;
 }
 
 .chart-total span{
     font-size:11px;
-    color:#93a0b0;
+    color:var(--muted);
 }
 
 .activity-layout ul{
@@ -3508,7 +3508,7 @@ transition:all .35s ease;
 
     font-size:13px;
     font-weight:600;
-    color:#4c5d78;
+    color:var(--body-text);
 }
 
 .activity-layout li span{
@@ -3521,14 +3521,14 @@ transition:all .35s ease;
     width:92px;
     font-style:normal;
     font-size:12px;
-    color:#8a96aa;
+    color:var(--muted);
     text-align:right;
 }
 
 .activity-layout li strong{
     width:38px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
     text-align:right;
 }
 
@@ -3562,13 +3562,13 @@ transition:all .35s ease;
     flex:1;
     font-size:13px;
     font-weight:700;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .activity-item small{
     font-size:11.5px;
     font-weight:600;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .activity-item .cat-tag{
@@ -3635,7 +3635,7 @@ transition:all .35s ease;
 .rule-info small{
     font-size:11.5px;
     font-weight:500;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .rule input[type="checkbox"]{
@@ -3793,7 +3793,7 @@ transition:all .35s ease;
     justify-content:center;
 
     border-radius:9px;
-    background:#fff;
+    background:var(--surface);
     border:1px solid rgba(37,99,235,.08);
 
     font-size:16px;
@@ -3884,7 +3884,7 @@ svg.graph{
     padding:8px 10px 10px;
     font-size:12.5px;
     font-weight:700;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 .notif-item{
@@ -3933,7 +3933,7 @@ svg.graph{
     display:block;
     margin-top:2px;
     font-size:11px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .child-dropdown{
@@ -3958,6 +3958,20 @@ svg.graph{
     background:rgba(37,99,235,.08);
 }
 
+/* These two are <button> now (they perform actions, they aren't links), but
+   the rules were written for <a> — without a reset the UA border, grey
+   background and centred text come back. */
+.child-dropdown-item,
+.profile-dropdown-item{
+    width:100%;
+    border:none;
+    background:transparent;
+    font:inherit;
+    text-align:left;
+    cursor:pointer;
+}
+
+
 .child-dropdown-item + .child-dropdown-item{
     margin-top:2px;
 }
@@ -3975,12 +3989,12 @@ svg.graph{
 .child-dropdown-item h4{
     font-size:13px;
     font-weight:700;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .child-dropdown-item span{
     font-size:11px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .child-dropdown-item .check{
@@ -4213,13 +4227,13 @@ svg.graph{
 .header-title h1{
     font-size:24px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .header-title p{
     margin-top:6px;
     font-size:14px;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 .date-btn{
@@ -4252,7 +4266,7 @@ svg.graph{
 
 .date-btn iconify-icon:last-child{
     font-size:14px;
-    color:#9aa6b6;
+    color:var(--muted);
 }
 
 .activity-tabs{
@@ -4366,7 +4380,7 @@ thead th{
     font-weight:700;
     letter-spacing:.03em;
     text-transform:uppercase;
-    color:#8a96aa;
+    color:var(--muted);
 
     border-bottom:1px solid rgba(37,99,235,.1);
 }
@@ -4387,7 +4401,7 @@ tbody tr:last-child td{
 
 tbody td:first-child{
     font-weight:700;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 /* ========================================= */
@@ -4474,7 +4488,7 @@ tbody td:first-child{
 
     font-size:11.5px;
     font-weight:600;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .heatmap-legend i{
@@ -4521,7 +4535,7 @@ tbody td:first-child{
 
     font-size:11px;
     font-weight:600;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 [data-theme="dark"] .heatmap-legend,
@@ -4551,7 +4565,7 @@ tbody td:first-child{
 
     border:1px solid rgba(0,0,0,.06);
     border-radius:11px;
-    background:#fff;
+    background:var(--surface);
 }
 
 .view-toggle button{
@@ -4567,7 +4581,7 @@ tbody td:first-child{
     background:transparent;
 
     font-size:16px;
-    color:#9aa6b6;
+    color:var(--muted);
     cursor:pointer;
 
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
@@ -4655,7 +4669,7 @@ tbody td:first-child{
 
 .trend.up{ color:#16a34a; }
 .trend.down{ color:#dc2626; }
-.trend.neutral{ color:#9aa6b6; }
+.trend.neutral{ color:var(--muted); }
 
 .row-menu{
     display:flex;
@@ -4670,7 +4684,7 @@ tbody td:first-child{
     background:transparent;
 
     font-size:16px;
-    color:#9aa6b6;
+    color:var(--muted);
     cursor:pointer;
 
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
@@ -4718,7 +4732,7 @@ tbody td:first-child{
     font-size:24px;
 }
 
-/* .apps-summary-item span{display:block;color:#8a96aa} (specificity
+/* .apps-summary-item span{display:block;color:var(--muted)} (specificity
    0,1,1) otherwise wins over a bare .apps-summary-icon{} (0,1,0) since
    the icon wrapper is itself a <span> — beat it with the extra class,
    same fix as the .app-icon collision earlier. display:block was the
@@ -4732,21 +4746,21 @@ tbody td:first-child{
 .apps-summary-item small{
     display:block;
     font-size:11.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .apps-summary-item h4{
     margin-top:2px;
     font-size:14.5px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .apps-summary-item span{
     display:block;
     margin-top:1px;
     font-size:11.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .apps-summary-cta{
@@ -4804,7 +4818,7 @@ tbody td:first-child{
 .card-header > div:first-child p{
     margin-top:4px;
     font-size:12.5px;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 .table-actions{
@@ -4823,7 +4837,7 @@ tbody td:first-child{
     border:1px solid rgba(0,0,0,.06);
     border-radius:11px;
 
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:12.5px;
@@ -4834,12 +4848,12 @@ tbody td:first-child{
 
 .btn-filter iconify-icon:first-child{
     font-size:14px;
-    color:#9aa6b6;
+    color:var(--muted);
 }
 
 .btn-filter iconify-icon:last-child{
     font-size:13px;
-    color:#9aa6b6;
+    color:var(--muted);
 }
 
 .device-table{
@@ -4932,14 +4946,14 @@ tbody td:first-child{
 .device h4{
     font-size:13.5px;
     font-weight:700;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .device small{
     display:block;
     margin-top:1px;
     font-size:11.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 /* Named .device-badge, not .badge — .badge was already taken by the
@@ -4985,7 +4999,7 @@ tbody td:first-child{
 
 .os small{
     font-size:11px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .owner{
@@ -5010,7 +5024,7 @@ tbody td:first-child{
 
     font-size:11px;
     font-weight:600;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .owner-status .status{
@@ -5113,11 +5127,11 @@ tbody td:first-child{
     border-top:1px solid rgba(37,99,235,.08);
 
     font-size:12.5px;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 .table-footer strong{
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .pagination{
@@ -5136,7 +5150,7 @@ tbody td:first-child{
 
     border:1px solid rgba(0,0,0,.06);
     border-radius:9px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:12.5px;
@@ -5162,7 +5176,7 @@ tbody td:first-child{
 
     border:1px solid rgba(0,0,0,.06);
     border-radius:8px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:12.5px;
@@ -5252,7 +5266,7 @@ tbody td:first-child{
     flex-direction:column;
 
     border-radius:24px;
-    background:#fff;
+    background:var(--surface);
     box-shadow:0 30px 70px rgba(15,23,42,.35);
 
     transform:translateY(16px) scale(.98);
@@ -5297,7 +5311,7 @@ tbody td:first-child{
 }
 
 .close-btn:hover{
-    background:#fff;
+    background:var(--surface);
     color:#dc2626;
 }
 
@@ -5317,13 +5331,13 @@ tbody td:first-child{
 .device-info h2{
     font-size:19px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .device-info p{
     margin-top:2px;
     font-size:12.5px;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 .device-info .device-badge{
@@ -5347,7 +5361,7 @@ tbody td:first-child{
     padding:12px;
 
     border-radius:14px;
-    background:#f7f9fd;
+    background:var(--surface-muted);
 
     font-size:20px;
     color:#2563eb;
@@ -5356,21 +5370,21 @@ tbody td:first-child{
 .status-card span{
     display:block;
     font-size:11px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .status-card h4{
     margin-top:1px;
     font-size:14px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .status-card small{
     display:block;
     margin-top:1px;
     font-size:10.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .modal-tabs{
@@ -5393,7 +5407,7 @@ tbody td:first-child{
     font-family:inherit;
     font-size:13px;
     font-weight:700;
-    color:#8a96aa;
+    color:var(--muted);
     cursor:pointer;
 
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
@@ -5422,7 +5436,7 @@ tbody td:first-child{
     padding:30px 0;
     text-align:center;
     font-size:13px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .modal-section + .modal-section{
@@ -5433,7 +5447,7 @@ tbody td:first-child{
     margin-bottom:12px;
     font-size:14.5px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .modal-section .section-header{
@@ -5456,7 +5470,7 @@ tbody td:first-child{
 .info-item span{
     display:block;
     font-size:11.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .info-item strong{
@@ -5476,7 +5490,7 @@ tbody td:first-child{
 
     border:1px solid rgba(0,0,0,.06);
     border-radius:10px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:12px;
@@ -5497,7 +5511,7 @@ tbody td:first-child{
     padding:14px;
 
     border-radius:14px;
-    background:#f7f9fd;
+    background:var(--surface-muted);
 }
 
 .sync-icon{
@@ -5519,7 +5533,7 @@ tbody td:first-child{
 .sync-card h4{
     font-size:13.5px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .sync-card p{
@@ -5532,7 +5546,7 @@ tbody td:first-child{
     display:block;
     margin-top:3px;
     font-size:11px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .mini-stats-grid{
@@ -5545,7 +5559,7 @@ tbody td:first-child{
     padding:14px;
 
     border-radius:14px;
-    background:#f7f9fd;
+    background:var(--surface-muted);
 
     font-size:19px;
     color:#2563eb;
@@ -5555,14 +5569,14 @@ tbody td:first-child{
     display:block;
     margin-top:8px;
     font-size:11px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .mini-stat h4{
     margin-top:2px;
     font-size:13.5px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .modal-footer{
@@ -5675,7 +5689,7 @@ tbody td:first-child{
 
     border:1px solid rgba(0,0,0,.06);
     border-radius:12px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:13px;
@@ -5688,7 +5702,7 @@ tbody td:first-child{
 }
 
 .edit-toggle-btn:hover{
-    background:#fff;
+    background:var(--surface);
 }
 
 .device-modal.editing .edit-toggle-btn,
@@ -5719,12 +5733,12 @@ tbody td:first-child{
 
     border:1px solid rgba(37,99,235,.3);
     border-radius:8px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:17px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .edit-input-model{
@@ -5736,7 +5750,7 @@ tbody td:first-child{
 
     border:1px solid rgba(37,99,235,.3);
     border-radius:8px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:12.5px;
@@ -5748,7 +5762,7 @@ tbody td:first-child{
 
     border:1px solid rgba(37,99,235,.3);
     border-radius:8px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:13.5px;
@@ -5801,7 +5815,7 @@ tbody td:first-child{
 }
 
 .edit-cancel-btn:hover{
-    background:#fff;
+    background:var(--surface);
 }
 
 .edit-save-btn{
@@ -5842,7 +5856,7 @@ tbody td:first-child{
     margin-bottom:10px;
     font-size:14.5px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .setting-item,
@@ -5877,13 +5891,13 @@ tbody td:first-child{
 .setting-left h4{
     font-size:13.5px;
     font-weight:700;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .setting-left p{
     margin-top:1px;
     font-size:11.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .setting-item input[type="text"]{
@@ -5892,7 +5906,7 @@ tbody td:first-child{
 
     border:1px solid rgba(0,0,0,.08);
     border-radius:10px;
-    background:#f7f9fd;
+    background:var(--surface-muted);
 
     font-family:inherit;
     font-size:13px;
@@ -5905,7 +5919,7 @@ tbody td:first-child{
 
     border:1px solid rgba(0,0,0,.08);
     border-radius:10px;
-    background:#f7f9fd;
+    background:var(--surface-muted);
 
     font-family:inherit;
     font-size:12.5px;
@@ -5979,7 +5993,7 @@ tbody td:first-child{
 .setting-link > iconify-icon:last-child{
     flex-shrink:0;
     font-size:15px;
-    color:#9aa6b6;
+    color:var(--muted);
 }
 
 .btn{
@@ -6106,7 +6120,7 @@ tbody td:first-child{
     margin:0 auto;
     border:1px solid #d8e2f0;
     border-radius:10px;
-    background:#fff;
+    background:var(--surface);
     color:#273650;
     font-family:inherit;
     font-size:15px;
@@ -6356,7 +6370,7 @@ body:has(.auth-page) .auth-brand-logo{
 }
 
 body:has(.auth-page) .auth-card{
-    background:#fff;
+    background:var(--surface);
     font-family:Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -6416,7 +6430,7 @@ body:has(.auth-page) .auth-form-heading p{
 body:has(.auth-page) .auth-card .edit-field input{
     border-color:#d8e2f3;
     color:#17233d;
-    background:#fff;
+    background:var(--surface);
 }
 
 body:has(.auth-page) .auth-card .edit-field input:focus{
@@ -6462,13 +6476,13 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 }
 
 .btn-outline{
-    background:#fff;
+    background:var(--surface);
     border:1px solid rgba(0,0,0,.08);
     color:#5a6879;
 }
 
 .btn-outline:hover{
-    background:#f7f9fd;
+    background:var(--surface-muted);
 }
 
 .btn-danger{
@@ -6648,7 +6662,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     margin-bottom:6px;
     font-size:12px;
     font-weight:700;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 .edit-field input,
@@ -6658,7 +6672,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 
     border:1px solid rgba(37,99,235,.3);
     border-radius:10px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:13.5px;
@@ -6691,7 +6705,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     margin-bottom:14px;
     font-size:14.5px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .modal-tab-panel .card .section-header{
@@ -6735,7 +6749,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     height:20px;
     border:1px solid rgba(37,99,235,.25);
     border-radius:8px;
-    background:#fff;
+    background:var(--surface);
     color:#5b6b84;
     font-size:15px;
     cursor:pointer;
@@ -6766,7 +6780,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     height:84px;
     border:1px solid rgba(37,99,235,.3);
     border-radius:10px;
-    background:#fff;
+    background:var(--surface);
     overflow:hidden;
 }
 
@@ -6890,7 +6904,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 .add-device-card p{
     margin-top:2px;
     font-size:12px;
-    color:#7a8698;
+    color:var(--muted);
 }
 
 [data-theme="dark"] .add-device-card{
@@ -6922,7 +6936,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 .add-device-modal-header h2{
     font-size:18px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .add-device-modal-header p{
@@ -6953,7 +6967,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 
     font-size:12px;
     font-weight:800;
-    color:#8a96aa;
+    color:var(--muted);
 
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
 }
@@ -7012,7 +7026,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 
     border:1.5px solid rgba(0,0,0,.06);
     border-radius:14px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     cursor:pointer;
@@ -7039,7 +7053,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     flex:1;
     font-size:14px;
     font-weight:700;
-    color:#1f2b3a;
+    color:var(--foreground);
     text-align:left;
 }
 
@@ -7083,12 +7097,12 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 
     border:1.5px solid rgba(0,0,0,.1);
     border-radius:12px;
-    background:#fff;
+    background:var(--surface);
 
     font-family:inherit;
     font-size:22px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
     text-align:center;
 
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
@@ -7104,7 +7118,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     margin-top:14px;
     font-size:12px;
     text-align:center;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .code-hint.error{
@@ -7137,7 +7151,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 .success-panel h3{
     font-size:17px;
     font-weight:800;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .success-panel p{
@@ -7174,7 +7188,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
 .detected-device-card h4{
     font-size:13.5px;
     font-weight:700;
-    color:#1f2b3a;
+    color:var(--foreground);
 }
 
 .detected-device-card > div{
@@ -7186,7 +7200,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     display:block;
     margin-top:1px;
     font-size:11.5px;
-    color:#8a96aa;
+    color:var(--muted);
 }
 
 .detected-battery{
@@ -7287,7 +7301,7 @@ body:has(.auth-page) .auth-card .auth-input-wrap > iconify-icon{
     background:rgba(255,255,255,.6);
     backdrop-filter:blur(16px);
     -webkit-backdrop-filter:blur(16px);
-    color:#4c5d78;
+    color:var(--body-text);
     box-shadow:0 4px 14px rgba(90,120,170,.1);
 }
 

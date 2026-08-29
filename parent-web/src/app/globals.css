@@ -10,6 +10,11 @@
   --foreground: #1f2b3a;
   --muted: #7a8698;
   --border: #e7ebf2;
+  /* Mid-tone body text: menu items, list rows, outline buttons —
+     between --foreground and --muted. */
+  --body-text: #4c5d78;
+  /* Quiet inset surface (mini-stats, wells) — a step back from --surface. */
+  --surface-muted: #f7f9fd;
   --accent: #2fbfa6;
   --accent-dark: #22a68c;
   --brand-blue: #3b82f6;
@@ -84,6 +89,8 @@
   --foreground: #e8edf5;
   --muted: #94a3b8;
   --border: #2b3648;
+  --body-text: #b9c4d2;
+  --surface-muted: #16202e;
   --accent: #34d3b8;
   --accent-dark: #2fbfa6;
   --brand-blue: #60a5fa;

@@ -287,7 +287,7 @@ export default function DevicesPage() {
                       <button
                         key={child.id}
                         type="button"
-                        className={`child-pick-item ${selectedChildId === child.id ? 'active' : ''}`}
+                        className={`child-pick-item ${selectedChildId === child.id ? 'selected' : ''}`}
                         onClick={() => setSelectedChildId(child.id)}
                       >
                         {child.photo_url ? <img src={mediaUrl(child.photo_url)} alt="" loading="lazy" decoding="async" style={{objectFit: 'cover'}} /> : <img src="/assets/child-boy.png" alt="" loading="lazy" decoding="async" />}
