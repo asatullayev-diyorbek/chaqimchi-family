@@ -169,6 +169,11 @@ export default function LoginPage() {
             </button>
           </div>
 
+          <a href="/download" className="auth-download-link">
+            <iconify-icon icon="lucide:download" />
+            Windows dasturini yuklab olish
+          </a>
+
         </form>
       </div>
     </div>
