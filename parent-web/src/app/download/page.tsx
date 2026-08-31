@@ -5,13 +5,17 @@ export const metadata: Metadata = {
   description: "ChaqimchiAI Guard Windows dasturini yuklab olish.",
 };
 
-// Written by scripts/windows/build-guard-setup.ps1 from the artifact it just
-// produced, so the version, size and hash shown here cannot drift from the
-// file being served. Never edit by hand — the size already went stale once.
-// Only the single GUI installer is published, never the internal binaries.
+// release.json is written by scripts/windows/build-guard-setup.ps1 from the
+// artifact it just produced, so the version, size and hash shown here cannot
+// drift from the file being served. Never edit it by hand.
+//
+// test-release.json is the rougher cross-compiled build (no Inno wrapper) for
+// hand testing on a borrowed Windows machine — kept in a separate section and
+// separate file so it never gets mistaken for the real installer.
 import RELEASE from "./release.json";
+import TEST_RELEASE from "./test-release.json";
 
-const sizeMB = (RELEASE.bytes / (1024 * 1024)).toFixed(1);
+const mb = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1);
 
 export default function DownloadPage() {
   return (
@@ -50,7 +54,7 @@ export default function DownloadPage() {
             <dt style={{ fontWeight: 600 }}>Nashr sanasi</dt>
             <dd style={{ margin: 0 }}>{RELEASE.date}</dd>
             <dt style={{ fontWeight: 600 }}>Hajmi</dt>
-            <dd style={{ margin: 0 }}>{sizeMB} MB</dd>
+            <dd style={{ margin: 0 }}>{mb(RELEASE.bytes)} MB</dd>
             <dt style={{ fontWeight: 600 }}>Noshir</dt>
             <dd style={{ margin: 0 }}>{RELEASE.publisher}</dd>
             <dt style={{ fontWeight: 600 }}>SHA-256</dt>
@@ -72,6 +76,27 @@ export default function DownloadPage() {
               <li>Bog&apos;lash tasdiqlangach, Guard xizmati avtomatik o&apos;rnatiladi.</li>
             </ol>
           </div>
+
+          <details style={{ textAlign: "left", fontSize: "0.8125rem", opacity: 0.75, borderTop: "1px solid var(--border, rgba(0,0,0,.1))", paddingTop: "1rem" }}>
+            <summary style={{ cursor: "pointer", fontWeight: 600 }}>Sinovchilar uchun build (rc.2)</summary>
+            <p style={{ margin: "0.75rem 0" }}>
+              Bu — Inno Setup o&apos;ramisiz, qo&apos;lda sinash uchun build. Yangiroq agent
+              kodi, lekin &quot;Dasturlarni o&apos;chirish&quot; ro&apos;yxatida
+              ko&apos;rinmaydi — o&apos;chirish qo&apos;lda (ichidagi <code>O&apos;QING.txt</code>).
+              Umumiy foydalanish uchun emas.
+            </p>
+            <a href={`/downloads/${TEST_RELEASE.file}`} download style={{ fontWeight: 600 }}>
+              ↓ {TEST_RELEASE.file} ({mb(TEST_RELEASE.bytes)} MB)
+            </a>
+            <dl style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "0.2rem 0.6rem", margin: "0.75rem 0 0", lineHeight: 1.5 }}>
+              <dt style={{ fontWeight: 600 }}>Versiya</dt>
+              <dd style={{ margin: 0 }}>{TEST_RELEASE.version}</dd>
+              <dt style={{ fontWeight: 600 }}>Sana</dt>
+              <dd style={{ margin: 0 }}>{TEST_RELEASE.date}</dd>
+              <dt style={{ fontWeight: 600 }}>SHA-256</dt>
+              <dd style={{ margin: 0, wordBreak: "break-all", fontFamily: "monospace" }}>{TEST_RELEASE.sha256}</dd>
+            </dl>
+          </details>
         </div>
       </div>
     </div>

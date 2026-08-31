@@ -1,0 +1,8 @@
+{
+  "version": "0.4.0-rc.2",
+  "file": "ChaqimchiAI-Guard-test.zip",
+  "bytes": 23186761,
+  "sha256": "2ED0115AE22D5A8BE091FD39A1F93986DDE3EBE13846020D1A0584CE8D03B18B",
+  "date": "2026-08-31",
+  "note": "Inno Setup o'ramisiz sinov build — installer.exe + desktop.exe. macOS'da cross-compile qilingan."
+}
