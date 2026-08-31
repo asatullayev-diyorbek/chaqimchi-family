@@ -175,11 +175,19 @@ func (u *Uploader) SyncOnce(ctx context.Context) error {
 	// queue if an intermediary ever responds with an acknowledgement for a
 	// different batch. Empty bodies remain accepted for older dev backends.
 	var ack struct {
-		BatchID      string `json:"batch_id"`
-		Acknowledged bool   `json:"acknowledged"`
+		BatchID       string `json:"batch_id"`
+		Acknowledged  bool   `json:"acknowledged"`
+		EventsSaved   int    `json:"events_saved"`
+		EventsSkipped int    `json:"events_skipped"`
+		IconsUpdated  int    `json:"icons_updated"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&ack); err == nil && ack.BatchID != "" && (ack.BatchID != batchID || !ack.Acknowledged) {
-		return fmt.Errorf("invalid sync acknowledgement for batch %s", batchID)
+	if err := json.NewDecoder(resp.Body).Decode(&ack); err == nil {
+		if ack.BatchID != "" && (ack.BatchID != batchID || !ack.Acknowledged) {
+			return fmt.Errorf("invalid sync acknowledgement for batch %s", batchID)
+		}
+		if ack.EventsSkipped > 0 || ack.IconsUpdated > 0 {
+			log.Printf("ingest %s: saved=%d skipped=%d icons=%d", batchID, ack.EventsSaved, ack.EventsSkipped, ack.IconsUpdated)
+		}
 	}
 
 	if err := u.Store.CompleteBatch(batchID, ids); err != nil {

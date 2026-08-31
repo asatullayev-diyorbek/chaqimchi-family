@@ -1,8 +1,8 @@
 {
-  "version": "0.4.0-rc.2",
+  "version": "0.4.0-rc.3",
   "file": "ChaqimchiAI-Guard-test.zip",
-  "bytes": 23186761,
-  "sha256": "2ED0115AE22D5A8BE091FD39A1F93986DDE3EBE13846020D1A0584CE8D03B18B",
+  "bytes": 23193347,
+  "sha256": "2FF7EE3718430CD6EB7DE20A0C3136A06AB38294F3DD3A81BF88AE2C6DF1BB8D",
   "date": "2026-08-31",
-  "note": "Inno Setup o'ramisiz sinov build — installer.exe + desktop.exe. macOS'da cross-compile qilingan."
+  "note": "Inno Setup o'ramisiz sinov build. Backend to'g'ridan-to'g'ri PythonAnywhere, ikonka ajratish tuzatildi, agent log yozadi."
 }

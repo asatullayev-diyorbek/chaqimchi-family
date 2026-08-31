@@ -78,7 +78,7 @@ export default function DownloadPage() {
           </div>
 
           <details style={{ textAlign: "left", fontSize: "0.8125rem", opacity: 0.75, borderTop: "1px solid var(--border, rgba(0,0,0,.1))", paddingTop: "1rem" }}>
-            <summary style={{ cursor: "pointer", fontWeight: 600 }}>Sinovchilar uchun build (rc.2)</summary>
+            <summary style={{ cursor: "pointer", fontWeight: 600 }}>Sinovchilar uchun build (rc.3)</summary>
             <p style={{ margin: "0.75rem 0" }}>
               Bu — Inno Setup o&apos;ramisiz, qo&apos;lda sinash uchun build. Yangiroq agent
               kodi, lekin &quot;Dasturlarni o&apos;chirish&quot; ro&apos;yxatida

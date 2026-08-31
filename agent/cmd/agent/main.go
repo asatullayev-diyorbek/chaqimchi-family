@@ -112,6 +112,20 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 		return fmt.Errorf("creating data dir: %w", err)
 	}
 
+	// A windowsgui service has no console, so log.* would otherwise vanish.
+	// Send it to a capped file next to the buffer so a parent can retrieve
+	// it when something (e.g. missing app icons) needs diagnosing.
+	if !interactive {
+		logPath := filepath.Join(dataDir, "agent.log")
+		if fi, statErr := os.Stat(logPath); statErr == nil && fi.Size() > 4<<20 {
+			_ = os.Truncate(logPath, 0)
+		}
+		if lf, logErr := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); logErr == nil {
+			log.SetOutput(lf)
+		}
+	}
+	log.Printf("agent %s starting (interactive=%v)", version, interactive)
+
 	store, err := buffer.Open(filepath.Join(dataDir, "buffer.db"))
 	if err != nil {
 		return fmt.Errorf("opening buffer: %w", err)
@@ -224,6 +238,7 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 				case <-ctx.Done():
 					return
 				case rep := <-iconCh:
+					log.Printf("icon received from session helper: %s (%d b64 chars)", rep.AppID, len(rep.PNGB64))
 					tracker.AppendIconEvent(store, rep.AppID, rep.SHA256, rep.PNGB64)
 				}
 			}
@@ -246,6 +261,32 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 // recovery restarts without dropping the reporter. (parentPID is accepted
 // for diagnostic context only: a user-session process cannot reliably
 // OpenProcess a SYSTEM service to poll its liveness — "Access is denied".)
+// reporterLogPath is where the session helper writes its diagnostic line —
+// per-user, always writable, and easy for a parent to find and send back.
+func reporterLogPath() string {
+	if dir, err := os.UserCacheDir(); err == nil {
+		return filepath.Join(dir, "ChaqimchiFamily", "reporter.log")
+	}
+	return filepath.Join(os.TempDir(), "chaqimchi-reporter.log")
+}
+
+// reporterLog appends one timestamped line to the helper's log, truncating
+// first if it has grown past ~1 MB. Best-effort: a logging failure is never
+// allowed to disturb the reporter loop.
+func reporterLog(format string, args ...any) {
+	p := reporterLogPath()
+	_ = os.MkdirAll(filepath.Dir(p), 0o755)
+	if fi, err := os.Stat(p); err == nil && fi.Size() > 1<<20 {
+		_ = os.Truncate(p, 0)
+	}
+	f, err := os.OpenFile(p, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	fmt.Fprintf(f, "%s  %s\n", time.Now().Format("2006-01-02 15:04:05"), fmt.Sprintf(format, args...))
+}
+
 func runForegroundReporter(parentPID int) {
 	const (
 		pollInterval   = 10 * time.Second
@@ -253,6 +294,12 @@ func runForegroundReporter(parentPID int) {
 		maxConsecFails = 12
 	)
 	_ = parentPID
+	reporterLog("foreground reporter started")
+	// SHGetFileInfo(SHGFI_ICON) needs a COM apartment on the calling thread;
+	// this helper has no message pump, so without it every icon extraction
+	// returns a null HICON. Do it once here and keep this goroutine alive.
+	tracker.InitShellCOM()
+
 	// A dedicated transport with no environment proxy: this is loopback IPC
 	// and must never be routed anywhere.
 	client := &http.Client{Timeout: 3 * time.Second, Transport: &http.Transport{}}
@@ -260,21 +307,28 @@ func runForegroundReporter(parentPID int) {
 	defer ticker.Stop()
 	fails := 0
 
-	// Icons are extracted once per exe path, then attached to the report for
-	// the matching app until one POST succeeds carrying them (the service
-	// acks with 2xx). A fresh reporter re-extracts, and the backend dedupes
-	// by sha256, so an occasional lost icon is self-healing.
+	// Icons are attached to the report for the matching app until one POST
+	// succeeds carrying them (the service acks 2xx), then dropped. Extraction
+	// is retried a few times per exe before giving up — the first attempt can
+	// land before the shell is ready. The backend dedupes by sha256.
 	type iconPayload struct{ sha, b64 string }
-	extracted := map[string]bool{}
+	const maxIconAttempts = 4
+	iconAttempts := map[string]int{}
 	pendingIcons := map[string]iconPayload{}
 
 	for range ticker.C {
 		name, path := tracker.ForegroundProcessInfo()
 		report := localipc.ForegroundReport{App: name}
-		if name != "" && path != "" && !extracted[path] {
-			extracted[path] = true
-			if pngBytes, sha, iconErr := tracker.ExtractIconPNG(path); iconErr == nil && len(pngBytes) > 0 {
-				pendingIcons[name] = iconPayload{sha: sha, b64: base64.StdEncoding.EncodeToString(pngBytes)}
+		if name != "" && path != "" && iconAttempts[path] < maxIconAttempts {
+			if _, have := pendingIcons[name]; !have {
+				iconAttempts[path]++
+				pngBytes, sha, iconErr := tracker.ExtractIconPNG(path)
+				if iconErr == nil && len(pngBytes) > 0 {
+					pendingIcons[name] = iconPayload{sha: sha, b64: base64.StdEncoding.EncodeToString(pngBytes)}
+					reporterLog("icon extracted: %s (%d bytes)", name, len(pngBytes))
+				} else if iconAttempts[path] >= maxIconAttempts {
+					reporterLog("icon extraction gave up for %s: %v", path, iconErr)
+				}
 			}
 		}
 		if ic, ok := pendingIcons[name]; ok {
