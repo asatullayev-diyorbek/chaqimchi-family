@@ -1,0 +1,89 @@
+name: windows-installer
+
+# Builds the one public artifact — ChaqimchiAI Guard Setup.exe — on a Windows
+# runner, because Inno Setup's compiler is Windows-only. Reuses the existing
+# scripts/windows/build-guard-setup.ps1 rather than reimplementing the build,
+# so CI and a local Windows build stay identical.
+#
+# Runs on demand (Actions tab -> Run workflow) and on any tag like v0.4.0.
+# The installer is uploaded as a run artifact; a tag build also attaches it
+# to the GitHub Release. It is left UNSIGNED — that is the MVP decision
+# (CT-08). SmartScreen will warn; the /download page already says so.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version string (e.g. 0.4.0-rc.2)"
+        required: true
+        default: "0.4.0-rc.2"
+      server_url:
+        description: "Backend base URL baked into the installer"
+        required: true
+        default: "https://api.guard.chaqimchi-ai.uz"
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: agent/go.mod
+          cache-dependency-path: agent/go.sum
+
+      - name: Install goversioninfo
+        run: go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Resolve version
+        id: v
+        shell: pwsh
+        run: |
+          $v = "${{ github.event.inputs.version }}"
+          if (-not $v) { $v = "${{ github.ref_name }}" -replace '^v', '' }
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $gvi  = "$(go env GOPATH)\bin\goversioninfo.exe"
+          .\scripts\windows\build-guard-setup.ps1 `
+            -Version "${{ steps.v.outputs.version }}" `
+            -ServerUrl "${{ github.event.inputs.server_url || 'https://api.guard.chaqimchi-ai.uz' }}" `
+            -ISCC $iscc `
+            -GoVersionInfo $gvi
+
+      - name: Checksum
+        shell: pwsh
+        run: |
+          $exe = "releases\windows\ChaqimchiAI Guard Setup.exe"
+          $h = (Get-FileHash -Algorithm SHA256 $exe).Hash
+          Write-Host "SHA-256: $h"
+          "$h  ChaqimchiAI-Guard-Setup.exe" | Out-File -Encoding ascii "$exe.sha256"
+          "### ChaqimchiAI Guard Setup.exe`n`n- Version: ${{ steps.v.outputs.version }}`n- SHA-256: ``$h```n- Unsigned (MVP) — SmartScreen will warn; choose **More info -> Run anyway**." `
+            | Out-File -Encoding utf8 $env:GITHUB_STEP_SUMMARY -Append
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ChaqimchiAI-Guard-Setup-${{ steps.v.outputs.version }}
+          path: |
+            releases/windows/ChaqimchiAI Guard Setup.exe
+            releases/windows/ChaqimchiAI Guard Setup.exe.sha256
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Attach to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            releases/windows/ChaqimchiAI Guard Setup.exe
+            releases/windows/ChaqimchiAI Guard Setup.exe.sha256
