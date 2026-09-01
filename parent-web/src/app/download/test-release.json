@@ -1,8 +1,8 @@
 {
   "version": "0.4.0-rc.3",
   "file": "ChaqimchiAI-Guard-test.zip",
-  "bytes": 36492217,
-  "sha256": "6067B75B1616F21C9657299B5AB068597FC2212F2801224997A5632725A30C8E",
+  "bytes": 36501181,
+  "sha256": "722BA24D61CB9C0212B8AB5DDF92D5802055971D7DE8A1C7B90CCEA10AE5AA33",
   "date": "2026-09-01",
-  "note": "Sinov build #5: installer endi bitta yaxlit oyna (sahifadan sahifaga). Xato bo'lsa %TEMP%/chaqimchi-installer.log ni yuboring. Installer.exe Administrator sifatida."
+  "note": "Sinov build #6: bitta yaxlit installer oynasi + qurilma barmoq izi (qayta o'rnatishda dublikat yaratmaydi). Installer.exe Administrator sifatida."
 }
