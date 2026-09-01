@@ -125,6 +125,21 @@ Source: "{#BootstrapPath}"; DestDir: "{app}"; DestName: "ChaqimchiAI Guard Insta
 Source: "{#DesktopPath}"; DestDir: "{app}"; DestName: "ChaqimchiAI Guard Desktop.exe"; Flags: ignoreversion
 Source: "{#WebView2BootstrapPath}"; DestDir: "{tmp}"; Flags: dontcopy
 
+[Tasks]
+Name: "desktopicon"; Description: "Ish stolida yorliq yaratish"; GroupDescription: "Qo‘shimcha:"; Flags: unchecked
+
+[Icons]
+; Without these the app was unfindable after install: no Start Menu entry,
+; and — because ChaqimchiAI Guard Desktop.exe (the tray/status companion) has
+; no other autostart mechanism, only the SYSTEM service does — no way back
+; to it after the first reboot or sign-out either. The {commonstartup} entry
+; relaunches it for whichever user signs in; Inno removes every shortcut
+; here automatically on uninstall.
+Name: "{group}\ChaqimchiAI Guard"; Filename: "{app}\ChaqimchiAI Guard Desktop.exe"; Comment: "ChaqimchiAI Guard holati"
+Name: "{group}\ChaqimchiAI Guard'ni o‘chirish"; Filename: "{uninstallexe}"
+Name: "{commondesktop}\ChaqimchiAI Guard"; Filename: "{app}\ChaqimchiAI Guard Desktop.exe"; Tasks: desktopicon
+Name: "{commonstartup}\ChaqimchiAI Guard Desktop"; Filename: "{app}\ChaqimchiAI Guard Desktop.exe"
+
 [Run]
 ; The bootstrap (ChaqimchiAI Guard Installer.exe) has a requireAdministrator
 ; manifest — it writes to {app} and registers a service. Inno Setup runs
