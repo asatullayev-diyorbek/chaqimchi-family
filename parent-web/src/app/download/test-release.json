@@ -1,8 +1,8 @@
 {
   "version": "0.4.0-rc.3",
   "file": "ChaqimchiAI-Guard-test.zip",
-  "bytes": 23193347,
-  "sha256": "2FF7EE3718430CD6EB7DE20A0C3136A06AB38294F3DD3A81BF88AE2C6DF1BB8D",
-  "date": "2026-08-31",
-  "note": "Inno Setup o'ramisiz sinov build. Backend to'g'ridan-to'g'ri PythonAnywhere, ikonka ajratish tuzatildi, agent log yozadi."
+  "bytes": 36490534,
+  "sha256": "05A890C7168330A43502BD2908EF9CB25C33C1813A35E941BD9D347A198A6EB4",
+  "date": "2026-09-01",
+  "note": "Inno Setup o'ramisiz sinov build (3 EXE). Yangi: WebView2 installer/tray oynalari, re-install xavfsizligi, block ekranlar. Installer.exe ni Administrator sifatida ishga tushiring. Start Menu/Startup yorliqlari va uninstaller YO'Q (to'liq Setup.exe da bo'ladi). WebView2 uchun Windows 11 tavsiya etiladi."
 }
