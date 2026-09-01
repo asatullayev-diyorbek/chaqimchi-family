@@ -84,14 +84,33 @@ har farzand uchun karta (ism, onlayn nuqta, bugungi vaqt, alert belgisi) +
 - Nav uzayib ketyapti (Bosh/Faoliyat/Qurilmalar/Qoidalar/Bildirishnomalar/Sozlamalar/Hisobotlar) — guruhlash
 - "Yuklanmoqda..." matni o'rniga skeleton
 
-## Tavsiya etilgan tartib
+## Holat (2026-09-02)
 
-1. **P1** — Sozlamalar (parol o'zgartirish + parolni unutish). Aniq bo'shliq, orta hajm.
-2. **P2** — Overview ko'p-farzandli (dizaynning bош ekrani). Faqat frontend.
-3. **P5** — Alert filtr. Kichik, tez.
-4. **P4** — Faoliyat kategoriya + eksport.
-5. **P3** — Qoidalar (hafta kuni + vaqt oynasi) — agent ishi ham kerak.
-6. **P6** — sayqal.
+- **P1 — DONE:** `/settings` (hisob, ism tahrirlash, parol o'zgartirish/o'rnatish, Yordam);
+  `/forgot-password` — Telegram'ga 6 xonali kod → yangi parol. Backend
+  `password/{change,reset/start,reset/verify}`, `PATCH /me/`. **Migration
+  `accounts/0005` PA'da kutmoqda** (CPU kvota, quyida).
+- **P2 — DONE (qisman):** Overview'da farzand kartochkalari qatori (ism, onlayn,
+  bugungi vaqt, alert belgisi) + "Qurilma qo'shish". Haftalik solishtirma bar
+  chart — hali yo'q.
+- **P5 — DONE:** Alert sahifasida filtr chiplari (klient-side).
+- **P4 — qisman:** app-usage jadvali CSV eksport. Saralanadigan ustunlar +
+  kategoriya-rangli grafik hali yo'q. `appDisplay.ts` kategoriya tizimi
+  allaqachon bor.
+- **P3 — hali:** qoidalar hafta kuni + vaqt oynalari (agent enforcer ishi kerak).
+- **P6 — hali:** Liquid Glass, responsive sidebar, skeleton'lar.
+
+**PA deploy kutayotgan migratsiyalar (CPU kvota 2026-09-01, ~14:30 UTC reset):**
+`accounts/0005_passwordresetcode`, `tracking/0004_dailydigestrun`. Bittada:
+`cd ~/server && python manage.py migrate`. Shungача: Telegram parol-tiklash va
+`digest/run/` 500 qaytaradi (qolgan hammasi ishlaydi).
+
+## Keyingi
+
+1. **P3** — qoidalar (hafta kuni + vaqt oynasi) — eng katta, agent bilan.
+2. **P4 qolgani** — saralash, kategoriya grafik, maxsus sana oralig'i.
+3. **P2 qolgani** — haftalik solishtirma chart.
+4. **P6** — sayqal.
 
 ## Backend ta'siri
 
