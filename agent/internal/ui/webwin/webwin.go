@@ -73,10 +73,13 @@ type Options struct {
 	Height int
 }
 
-// Window is one open app window.
+// Window is one open app window. It can be navigated between embedded pages
+// while it stays open — the installer is one window walking welcome.html ->
+// consent.html -> ... rather than a stack of separate windows.
 type Window struct {
 	wv     webview.WebView
-	url    string
+	base   string // loopback URL prefix, e.g. http://127.0.0.1:PORT/
+	page   string // initial page; "" means the caller navigates explicitly
 	mu     sync.Mutex
 	closed bool
 }
@@ -122,7 +125,7 @@ func New(opts Options) (*Window, error) {
 	pw, ph := int(float64(opts.Width)*scale+0.5), int(float64(opts.Height)*scale+0.5)
 	wv.SetSize(pw, ph, webview.HintFixed)
 	recenter(hwnd)
-	return &Window{wv: wv, url: base + opts.Page}, nil
+	return &Window{wv: wv, base: base, page: opts.Page}, nil
 }
 
 // webView2DataPath pins every window in the process to one user-data folder,
@@ -189,6 +192,13 @@ func (w *Window) SetState(v any) {
 // Eval runs JS on the UI thread. Safe from any goroutine.
 func (w *Window) Eval(js string) { w.wv.Dispatch(func() { w.wv.Eval(js) }) }
 
+// navigate loads another embedded page in this same window. Safe from any
+// goroutine. The goAction bridge (an AddScriptToExecuteOnDocumentCreated
+// script) is re-injected into every new document, so bindings survive.
+func (w *Window) navigate(page string) {
+	w.wv.Dispatch(func() { w.wv.Navigate(w.base + page) })
+}
+
 // Close ends Run. Safe from any goroutine, and idempotent.
 //
 // It posts WM_CLOSE to the native window rather than calling Terminate()
@@ -205,10 +215,12 @@ func (w *Window) Close() {
 	procPostMessageW.Call(uintptr(w.wv.Window()), wmClose, 0, 0)
 }
 
-// Run navigates to the page (now that OnAction has registered the bridge),
-// shows the window, and blocks until it is closed (by Close or the user
-// clicking the window's X).
+// Run navigates to the initial page (if one was set — RunInstaller sets none
+// and drives navigation itself), shows the window, and blocks until it is
+// closed (by Close or the user clicking the window's X).
 func (w *Window) Run() {
-	w.wv.Navigate(w.url)
+	if w.page != "" {
+		w.wv.Navigate(w.base + w.page)
+	}
 	w.wv.Run()
 }

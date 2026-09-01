@@ -9,11 +9,25 @@
 //   a 'uistate' CustomEvent is dispatched with the full state as detail.
 
 (function () {
+  // If a click lands before Go's goAction binding is injected (a race on the
+  // very first page load), hold the action and flush it once goAction shows up.
+  var queued = [];
+  function send(name, payload) {
+    if (typeof window.goAction === 'function') {
+      window.goAction(String(name), payload === undefined ? null : payload);
+      return true;
+    }
+    return false;
+  }
+  var flushTimer = setInterval(function () {
+    if (typeof window.goAction !== 'function') return;
+    clearInterval(flushTimer);
+    while (queued.length) { var q = queued.shift(); send(q[0], q[1]); }
+  }, 50);
+
   window.ui = {
     action: function (name, payload) {
-      if (typeof window.goAction === 'function') {
-        window.goAction(String(name), payload === undefined ? null : payload);
-      }
+      if (!send(name, payload)) queued.push([name, payload]);
     },
     onState: function (fn) {
       window.addEventListener('uistate', function (e) { fn(e.detail); });
