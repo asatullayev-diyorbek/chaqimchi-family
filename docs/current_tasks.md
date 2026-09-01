@@ -46,7 +46,7 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
   - `welcome.html` app-ready (Guard ohangi), `cmd/installer` ishlatadi (walk fallback), `uitest -screen webwelcome`.
 - [~] **WebView2 UI — B bosqich DONE** (installer oqimi to'liq WebView2'ga o'tdi, walk fallback bilan; `GOOS=windows` build+vet PASS, Windows'da ko'rilmagan): consent/existing/connect(jonli QR+sanoq+link)/installing(step progress)/complete/error. Tafsilot: `docs/webview-ui-plan.md`.
 - [~] **WebView2 UI — C bosqich DONE** (tray oynalari: status(jonli)/privacy/adult-gate/adult-panel/info, hammasi webview-birinchi + walk zaxira; `GOOS=windows` build+vet PASS, Windows'da ko'rilmagan). Walk kod **o'chirilmaydi** — doimiy zaxira sifatida qoladi (qaror o'zgardi, sabab: `docs/webview-ui-plan.md`).
-  - Keyingi: D — block ekranlarni HTML palitrasiga yaqinlashtirish (allaqachon qisman qilingan), E — Inno'ga WebView2 runtime bootstrapper.
+- [~] **WebView2 UI — D+E bosqich DONE (kod), Windows'da tasdiqlanmagan:** block ekranlar reason'ga qarab amber/ko'k "symbol chip" bilan brendlandi (`BlockScreen(reason, message)`); `build-guard-setup.ps1` har buildda WebView2 Evergreen Bootstrapper'ini yuklaydi, `.iss` `PrepareToInstall`'da runtime yo'q bo'lsa sokin o'rnatadi. **A-E bosqichlarning barchasi kod jihatidan tugallandi** — endi Windows build mashinasida haqiqiy `ISCC` build + toza o'rnatish + har bir oynani ko'zdan kechirish kerak. Tafsilot: `docs/webview-ui-plan.md`.
 - [ ] **Kelajak:** lokal paneldan qurilmani qayta bog'lash (relink kod API), diagnostika jurnalini serverga yuklash.
 
 ## Hozirgi holat — 2026-08-28 yangilanishi (real Windows)

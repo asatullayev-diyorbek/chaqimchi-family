@@ -56,7 +56,27 @@ burchak, soya, gradient, rangli tugma — printsipial mumkin emas.
   uchun tarmoqsiz backstop). Walk kod **doimiy zaxira** sifatida qoladi;
   E bosqichda WebView2 runtime bootstrapper Windows'da ishonchli tasdiqlansa,
   bu qarorni qayta ko'rib chiqish mumkin.
-- **D-E bosqichlar** — quyida.
+- **D bosqich — DONE** (`GOOS=windows` build+vet PASS; Windows'da ko'rilmagan):
+  - `block_screen.go`: `BlockScreen(reason, message string)` — `reason`
+    (`"daily_limit"` / `"blocked_app"`, `internal/rules.Enforcer.Block` dan)
+    endi `webui/limit-reached.html` (amber) yoki `app-restricted.html` (ko'k)
+    palitrasini tanlaydi. GDI `RoundRect`+`Ellipse` bilan tinted "symbol chip"
+    + accent nuqta qo'shildi — solar ikonka glifining o'rnini bosadi (GDI'da
+    haqiqiy ikonka chizish oson emas). Mexanizm o'zgarmadi.
+  - `cmd/uitest -screen block` (daily_limit) va `-screen blockapp` (blocked_app).
+- **E bosqich — DONE (kod), Windows build mashinasida hali ishga tushirilmagan:**
+  - `scripts/windows/build-guard-setup.ps1`: har buildda Microsoft'ning
+    WebView2 Evergreen Bootstrapper'ini (`go.microsoft.com/fwlink/p/?LinkId=2124703`,
+    ~2 MB) yuklab oladi — repo'ga committed emas, build vaqtida internet kerak
+    (GitHub Actions `windows-installer.yml` runner'ida bor).
+  - `chaqimchi-guard.iss`: `WebView2Present()` ikkala registry view'ni
+    (`HKLM` va `HKLM32`, klient GUID `{F3017226-...}`) tekshiradi;
+    `PrepareToInstall` — runtime yo'q bo'lsa bootstrapper'ni `/silent /install`
+    bilan ishga tushiradi (xatolik o'rnatishni to'xtatmaydi — har oyna
+    walk'ga qaytadi).
+  - **Qolgan tekshiruv (faqat Windows'da mumkin):** haqiqiy `ISCC` build,
+    WebView2 runtime **yo'q** toza Win10 mashinada bootstrapper ishlashi,
+    va barcha oynalarning real render sifati.
 
 ---
 

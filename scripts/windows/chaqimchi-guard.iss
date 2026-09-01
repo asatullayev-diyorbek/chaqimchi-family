@@ -11,6 +11,14 @@
 #ifndef DesktopPath
   #error DesktopPath is required. Run build-guard-setup.ps1.
 #endif
+; The Microsoft Edge WebView2 Evergreen Bootstrapper (~2 MB): agent/installer
+; windows render through WebView2 (docs/webview-ui-plan.md); this installs
+; the runtime silently when it's missing (Win10 machines that never got Edge
+; auto-update; Win11 always has it). Not committed to the repo — downloaded
+; fresh by build-guard-setup.ps1 from Microsoft's stable redistribution link.
+#ifndef WebView2BootstrapPath
+  #error WebView2BootstrapPath is required. Run build-guard-setup.ps1.
+#endif
 ; Numeric a.b.c.d build number for the Windows VersionInfo resource.
 ; MyAppVersion may carry a pre-release tag (e.g. 0.4.0-rc.1) that these
 ; fields reject; build-guard-setup.ps1 derives NumericVersion from it.
@@ -72,10 +80,30 @@ begin
     MsgBox('ChaqimchiAI Guard jimgina (silent) o''rnatilmaydi.', mbError, MB_OK);
 end;
 
+// WebView2Present checks both registry views (Setup runs 64-bit per
+// ArchitecturesInstallIn64BitMode, so the per-machine runtime's key can be
+// native HKLM or the WOW6432Node mirror depending on how it was installed)
+// for the WebView2 Runtime's client GUID with a non-empty product version.
+function WebView2Present(): Boolean;
+var
+  pv: String;
+begin
+  Result := False;
+  if RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', pv) and (pv <> '') then
+    Result := True;
+  if not Result then
+    if RegQueryStringValue(HKLM32, 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}', 'pv', pv) and (pv <> '') then
+      Result := True;
+end;
+
 // Stop the tray app and the Guard service before any file is copied. On
 // Windows a running .exe can't be overwritten; the embedded bootstrap also
 // stops the service, but doing it here first keeps the [Files] step clean
-// and lets the bootstrap own only the re-install decision.
+// and lets the bootstrap own only the re-install decision. Also installs the
+// WebView2 Runtime here if it's missing, so it's ready before the bootstrap
+// tries to open its first WebView2 window — a failure here is silently
+// survivable (every window falls back to a native dialog), so it is never
+// allowed to fail the install.
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 var
   rc: Integer;
@@ -85,11 +113,17 @@ begin
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/f /im "ChaqimchiAI Guard Desktop.exe"', '', SW_HIDE, ewWaitUntilTerminated, rc);
   Exec(ExpandConstant('{sys}\sc.exe'), 'stop ChaqimchiFamilyAgent', '', SW_HIDE, ewWaitUntilTerminated, rc);
   Sleep(800);
+
+  if not WebView2Present() then begin
+    ExtractTemporaryFile('MicrosoftEdgeWebview2Setup.exe');
+    Exec(ExpandConstant('{tmp}\MicrosoftEdgeWebview2Setup.exe'), '/silent /install', '', SW_HIDE, ewWaitUntilTerminated, rc);
+  end;
 end;
 
 [Files]
 Source: "{#BootstrapPath}"; DestDir: "{app}"; DestName: "ChaqimchiAI Guard Installer.exe"; Flags: ignoreversion
 Source: "{#DesktopPath}"; DestDir: "{app}"; DestName: "ChaqimchiAI Guard Desktop.exe"; Flags: ignoreversion
+Source: "{#WebView2BootstrapPath}"; DestDir: "{tmp}"; Flags: dontcopy
 
 [Run]
 ; The bootstrap (ChaqimchiAI Guard Installer.exe) has a requireAdministrator

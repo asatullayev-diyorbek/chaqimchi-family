@@ -74,7 +74,13 @@ func main() {
 			time.Sleep(8 * time.Second)
 			ui.Close()
 		}()
-		ui.BlockScreen("Bugungi ekran vaqting tugadi. Ertaga davom etasan!\n\nSavoling bo‘lsa, ota-onangga murojaat qil")
+		ui.BlockScreen("daily_limit", "Bugungi ekran vaqting tugadi. Ertaga davom etasan!\n\nSavoling bo‘lsa, ota-onangga murojaat qil")
+	case "blockapp":
+		go func() {
+			time.Sleep(8 * time.Second)
+			ui.Close()
+		}()
+		ui.BlockScreen("blocked_app", "Bu ilova hozircha mavjud emas\n\nSavoling bo‘lsa, ota-onangga murojaat qil")
 	case "adult":
 		if ui.ShowAdultAccessGate() {
 			ui.ShowAdultPanel(localipc.Status{Online: true, Version: "0.4.0-rc.2", LastSyncAt: "2026-09-01T10:20:00Z", TodayMinutes: 135}, "https://guard.chaqimchi-ai.uz", `C:\ProgramData\ChaqimchiFamily\agent.log`)

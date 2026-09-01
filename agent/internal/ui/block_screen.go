@@ -46,6 +46,9 @@ var (
 	procSelectObject     = gdi32Block.NewProc("SelectObject")
 	procDeleteObject     = gdi32Block.NewProc("DeleteObject")
 	procGetDeviceCaps    = gdi32Block.NewProc("GetDeviceCaps")
+	procGetStockObject   = gdi32Block.NewProc("GetStockObject")
+	procRoundRect        = gdi32Block.NewProc("RoundRect")
+	procEllipse          = gdi32Block.NewProc("Ellipse")
 
 	procGetModuleHandleW = kernel32Block.NewProc("GetModuleHandleW")
 )
@@ -57,14 +60,26 @@ const (
 	blockBodyColor = 0x00E8E9C7 // muted teal-tint (theme colorAccentSub)
 	blockMarkColor = 0x00CFDCDB // faint, for the wordmark
 
+	// Reason accents for the symbol chip, matching webui/style.css's
+	// .block-symbol (amber, daily_limit) and .blocked .block-symbol (blue,
+	// blocked_app): a tinted rounded chip with a solid dot in the accent
+	// colour — GDI has no easy path for the actual solar icon glyph.
+	blockAmberChip = 0x00CBF0FF // #fff0cb
+	blockAmberDot  = 0x0026A9EF // #efa926
+	blockBlueChip  = 0x00FFF5E8 // #e8f5ff
+	blockBlueDot   = 0x00E48E4D // #4d8ee4
+
 	logPixelsY        = 90
 	defaultCharset    = 1
 	cleartypeQuality  = 5
 	fwNormal          = 400
 	fwSemibold        = 600
 	fwBold            = 700
+	nullPen           = 8 // GetStockObject stock object id
 	dtSingleLine      = 0x00000020
 	blockSideMarginPc = 12 // % of width kept clear on each side of the heading
+	chipSize          = 84
+	chipGap           = 22
 )
 
 const (
@@ -128,21 +143,28 @@ type paintStructT struct {
 const blockClassName = "ChaqimchiBlockScreen"
 
 var (
-	blockScreenMu    sync.Mutex
-	currentBlockHwnd uintptr
-	currentBlockText string
-	classRegistered  bool
+	blockScreenMu      sync.Mutex
+	currentBlockHwnd   uintptr
+	currentBlockText   string
+	currentBlockReason string
+	classRegistered    bool
 )
 
-// BlockScreen shows a fullscreen, borderless, always-on-top overlay with
-// the given message and blocks the calling goroutine until Close() is
-// called from elsewhere. There is deliberately no close button, title bar,
-// or system menu — WS_POPUP has none of those to begin with, and WM_CLOSE
-// is only ever sent programmatically via Close() — matching the bola-app
-// doc's "no way for the child to dismiss it themselves" requirement.
-func BlockScreen(message string) {
+// BlockScreen shows a fullscreen, borderless, always-on-top overlay with the
+// given message and blocks the calling goroutine until Close() is called
+// from elsewhere. There is deliberately no close button, title bar, or
+// system menu — WS_POPUP has none of those to begin with, and WM_CLOSE is
+// only ever sent programmatically via Close() — matching the bola-app doc's
+// "no way for the child to dismiss it themselves" requirement.
+//
+// reason is the same string internal/rules.Enforcer passes to BlockFunc
+// ("daily_limit" or "blocked_app") and only picks the symbol chip's accent
+// colour (webui/limit-reached.html vs app-restricted.html); any other value
+// falls back to the amber daily-limit look.
+func BlockScreen(reason, message string) {
 	blockScreenMu.Lock()
 	currentBlockText = message
+	currentBlockReason = reason
 	blockScreenMu.Unlock()
 
 	hInstance, _, _ := procGetModuleHandleW.Call(0)
@@ -238,7 +260,13 @@ func blockWndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 func paintBlockScreen(hdc uintptr) {
 	blockScreenMu.Lock()
 	head, body := splitBlockMessage(currentBlockText)
+	reason := currentBlockReason
 	blockScreenMu.Unlock()
+
+	chipFill, chipDot := uintptr(blockAmberChip), uintptr(blockAmberDot)
+	if reason == "blocked_app" {
+		chipFill, chipDot = blockBlueChip, blockBlueDot
+	}
 
 	screenW, _, _ := procGetSystemMetrics.Call(smCXScreen)
 	screenH, _, _ := procGetSystemMetrics.Call(smCYScreen)
@@ -281,8 +309,27 @@ func paintBlockScreen(hdc uintptr) {
 	if body != "" {
 		gap = h / 28
 	}
-	total := headH + gap + bodyH
-	top := (h - total) / 2
+	total := chipSize + chipGap + headH + gap + bodyH
+	blockTop := (h - total) / 2
+	top := blockTop + chipSize + chipGap
+
+	// Symbol chip: a tinted rounded square with a solid accent dot, standing
+	// in for the solar icon glyph webui uses (GDI has no easy path to that).
+	nilPen, _, _ := procGetStockObject.Call(nullPen)
+	oldPen, _, _ := procSelectObject.Call(hdc, nilPen)
+	chipBrush, _, _ := procCreateSolidBrush.Call(chipFill)
+	oldBrush, _, _ := procSelectObject.Call(hdc, chipBrush)
+	chipLeft := w/2 - chipSize/2
+	procRoundRect.Call(hdc, uintptr(chipLeft), uintptr(blockTop), uintptr(chipLeft+chipSize), uintptr(blockTop+chipSize), 28, 28)
+	dotBrush, _, _ := procCreateSolidBrush.Call(chipDot)
+	procSelectObject.Call(hdc, dotBrush)
+	dotSize := int32(30)
+	dotLeft, dotTop := w/2-dotSize/2, blockTop+chipSize/2-dotSize/2
+	procEllipse.Call(hdc, uintptr(dotLeft), uintptr(dotTop), uintptr(dotLeft+dotSize), uintptr(dotTop+dotSize))
+	procSelectObject.Call(hdc, oldBrush)
+	procSelectObject.Call(hdc, oldPen)
+	procDeleteObject.Call(chipBrush)
+	procDeleteObject.Call(dotBrush)
 
 	procSelectObject.Call(hdc, headFont)
 	procSetTextColor.Call(hdc, blockHeadColor)

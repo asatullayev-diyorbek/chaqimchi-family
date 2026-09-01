@@ -55,6 +55,20 @@ $agentExe = Join-Path $buildDir "ChaqimchiAI Guard.exe"
 $bootstrapExe = Join-Path $buildDir "ChaqimchiAI Guard Installer.exe"
 $desktopExe = Join-Path $buildDir "ChaqimchiAI Guard Desktop.exe"
 
+# Agent/installer windows render through WebView2 (docs/webview-ui-plan.md).
+# Fetch Microsoft's Evergreen Bootstrapper fresh on every build rather than
+# committing a third-party binary to the repo; the .iss only runs it when
+# the runtime isn't already on the machine, and a failure there is
+# non-fatal (every WebView2 window falls back to a native dialog) — but a
+# failure *here* should stop the build, since a release built without it
+# would silently ship without the runtime installer at all.
+$webview2BootstrapExe = Join-Path $buildDir "MicrosoftEdgeWebview2Setup.exe"
+Write-Host "WebView2 Evergreen Bootstrapper yuklanmoqda..."
+Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/p/?LinkId=2124703" -OutFile $webview2BootstrapExe -UseBasicParsing
+if (-not (Test-Path $webview2BootstrapExe -PathType Leaf) -or (Get-Item $webview2BootstrapExe).Length -lt 500KB) {
+  throw "WebView2 Bootstrapper yuklab olinmadi yoki kutilganidan kichik: $webview2BootstrapExe"
+}
+
 function New-VersionResource {
   param(
     [string]$OutputPath,
@@ -136,7 +150,7 @@ finally {
   Pop-Location
 }
 
-& $ISCC "/DMyAppVersion=$Version" "/DNumericVersion=$numericVersion" "/DBootstrapPath=$bootstrapExe" "/DDesktopPath=$desktopExe" $installerSource
+& $ISCC "/DMyAppVersion=$Version" "/DNumericVersion=$numericVersion" "/DBootstrapPath=$bootstrapExe" "/DDesktopPath=$desktopExe" "/DWebView2BootstrapPath=$webview2BootstrapExe" $installerSource
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup build muvaffaqiyatsiz." }
 
 $finalInstaller = Join-Path $repoRoot "releases\windows\ChaqimchiAI Guard Setup.exe"
