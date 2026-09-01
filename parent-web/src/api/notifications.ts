@@ -24,3 +24,17 @@ export async function updateNotificationPrefs(
     body: JSON.stringify({ alerts }),
   });
 }
+
+export async function telegramLinkStart(): Promise<{ token: string; bot_url: string }> {
+  return apiFetch("/api/auth/telegram/link/start/", { method: "POST" });
+}
+
+export async function telegramLinkStatus(
+  token: string,
+): Promise<{ status: "pending" | "linked" | "rejected" | "expired" }> {
+  return apiFetch(`/api/auth/telegram/link/status/${token}/`, { noCache: true });
+}
+
+export async function telegramUnlink(): Promise<{ status: string }> {
+  return apiFetch("/api/auth/telegram/unlink/", { method: "POST" });
+}

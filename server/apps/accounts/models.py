@@ -75,6 +75,9 @@ class TelegramLoginToken(models.Model):
         ParentUser, on_delete=models.CASCADE, null=True, blank=True, related_name="+"
     )
     is_new_user = models.BooleanField(default=False)
+    # is_link tokens are created by an already-authenticated parent to attach
+    # a Telegram account to their existing login, rather than to sign in.
+    is_link = models.BooleanField(default=False)
     telegram_id = models.BigIntegerField(null=True, blank=True)
     telegram_username = models.CharField(max_length=150, blank=True, default="")
     consumed = models.BooleanField(default=False)

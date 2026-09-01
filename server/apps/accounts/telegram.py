@@ -64,12 +64,17 @@ def send_text(chat_id, text):
     return _telegram_api_call("sendMessage", {"chat_id": chat_id, "text": text})
 
 
-def _send_confirmation_prompt(chat_id, token):
+def _send_confirmation_prompt(chat_id, token, is_link=False):
+    text = (
+        "ChaqimchiAI Guard hisobingizga ushbu Telegram'ni ulaysizmi?"
+        if is_link
+        else "ChaqimchiAI Guard'ga ushbu Telegram hisobingiz orqali kirishni tasdiqlaysizmi?"
+    )
     _telegram_api_call(
         "sendMessage",
         {
             "chat_id": chat_id,
-            "text": "ChaqimchiAI Guard'ga ushbu Telegram hisobingiz orqali kirishni tasdiqlaysizmi?",
+            "text": text,
             "reply_markup": {
                 "inline_keyboard": [
                     [
@@ -80,6 +85,16 @@ def _send_confirmation_prompt(chat_id, token):
             },
         },
     )
+
+
+def _resolve_link_token(payload_token):
+    try:
+        return TelegramLoginToken.objects.select_related("user").get(
+            token=payload_token, is_link=True, consumed=False, rejected=False,
+            user__isnull=False, expires_at__gt=timezone.now(),
+        )
+    except (TelegramLoginToken.DoesNotExist, ValueError):
+        return None
 
 
 def _resolve_login_token(payload_token):
@@ -137,8 +152,8 @@ class TelegramWebhookView(APIView):
         payload_token = text.removeprefix("/start ").strip()
         chat_id = (message.get("chat") or {}).get("id")
 
-        login_token = _resolve_login_token(payload_token)
-        if login_token is None:
+        token = _resolve_login_token(payload_token) or _resolve_link_token(payload_token)
+        if token is None:
             if chat_id:
                 _telegram_api_call(
                     "sendMessage",
@@ -150,7 +165,7 @@ class TelegramWebhookView(APIView):
             return
 
         if chat_id:
-            _send_confirmation_prompt(chat_id, login_token.token)
+            _send_confirmation_prompt(chat_id, token.token, is_link=token.is_link)
 
     def _handle_callback_query(self, callback_query):
         callback_id = callback_query.get("id")
@@ -167,7 +182,7 @@ class TelegramWebhookView(APIView):
         else:
             return
 
-        login_token = _resolve_login_token(payload_token)
+        login_token = _resolve_login_token(payload_token) or _resolve_link_token(payload_token)
         if login_token is None:
             if callback_id:
                 _telegram_api_call(
@@ -179,7 +194,9 @@ class TelegramWebhookView(APIView):
         if action == "reject":
             login_token.rejected = True
             login_token.save(update_fields=["rejected"])
-            result_text = "❌ Kirish rad etildi."
+            result_text = "❌ Rad etildi."
+        elif login_token.is_link:
+            result_text = self._link_account(login_token, from_user)
         else:
             telegram_id = from_user.get("id")
             telegram_username = from_user.get("username", "")
@@ -207,6 +224,28 @@ class TelegramWebhookView(APIView):
                 "editMessageText",
                 {"chat_id": chat_id, "message_id": message_id, "text": result_text},
             )
+
+    @staticmethod
+    def _link_account(link_token, from_user):
+        telegram_id = from_user.get("id")
+        username = from_user.get("username", "")
+        parent = link_token.user
+
+        clash = ParentUser.objects.filter(telegram_id=telegram_id).exclude(pk=parent.pk).exists()
+        if clash:
+            link_token.rejected = True
+            link_token.save(update_fields=["rejected"])
+            return "❌ Bu Telegram allaqachon boshqa ChaqimchiAI hisobiga ulangan."
+
+        parent.telegram_id = telegram_id
+        parent.telegram_username = username
+        parent.save(update_fields=["telegram_id", "telegram_username"])
+
+        link_token.telegram_id = telegram_id
+        link_token.telegram_username = username
+        link_token.consumed = True
+        link_token.save(update_fields=["telegram_id", "telegram_username", "consumed"])
+        return "✅ Telegram hisobingizga ulandi. Endi bildirishnomalar shu yerga keladi."
 
 
 class TelegramStatusView(APIView):
@@ -273,3 +312,52 @@ class TelegramCompleteView(APIView):
         user.save(update_fields=["username", "full_name", "password"])
 
         return Response(ParentUserSerializer(user).data)
+
+
+class TelegramLinkStartView(APIView):
+    """POST /api/auth/telegram/link/start/ — an authenticated parent begins
+    attaching a Telegram account to their existing login."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        if request.user.telegram_id is not None:
+            return Response({"detail": "Telegram allaqachon ulangan"}, status=status.HTTP_400_BAD_REQUEST)
+        expires_at = timezone.now() + timedelta(minutes=settings.TELEGRAM_TOKEN_TTL_MINUTES)
+        token = TelegramLoginToken.objects.create(
+            expires_at=expires_at, user=request.user, is_link=True
+        )
+        bot_url = f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}?start={token.token}"
+        return Response({"token": str(token.token), "bot_url": bot_url}, status=status.HTTP_201_CREATED)
+
+
+class TelegramLinkStatusView(APIView):
+    """GET /api/auth/telegram/link/status/<token>/ — polled by the settings
+    page while the parent confirms in Telegram."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, token):
+        link = get_object_or_404(
+            TelegramLoginToken, token=token, is_link=True, user=request.user
+        )
+        if link.rejected:
+            return Response({"status": "rejected"})
+        if link.consumed:
+            return Response({"status": "linked"})
+        if link.expires_at < timezone.now():
+            return Response({"status": "expired"})
+        return Response({"status": "pending"})
+
+
+class TelegramUnlinkView(APIView):
+    """POST /api/auth/telegram/unlink/ — detach Telegram from this account."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        user.telegram_id = None
+        user.telegram_username = ""
+        user.save(update_fields=["telegram_id", "telegram_username"])
+        return Response({"status": "unlinked"})
