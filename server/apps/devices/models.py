@@ -43,6 +43,12 @@ class ChildDevice(models.Model):
         max_length=20, choices=STATUS_CHOICES, default=STATUS_UNLINKED
     )
     device_secret = models.CharField(max_length=255, default=secrets.token_hex)
+    # A stable per-machine fingerprint (SHA-256 of the Windows MachineGuid),
+    # sent by the installer at generate-code time. Lets a re-install on the
+    # same computer reuse its existing (unlinked) device row instead of
+    # piling up an orphan every time. Blank for devices enrolled before this
+    # field existed, or platforms that don't provide one.
+    hardware_id = models.CharField(max_length=64, blank=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     linked_at = models.DateTimeField(null=True, blank=True)
     last_sync = models.DateTimeField(null=True, blank=True)

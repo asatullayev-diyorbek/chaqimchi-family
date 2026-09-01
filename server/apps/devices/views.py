@@ -55,9 +55,11 @@ class GenerateCodeView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        device = ChildDevice.objects.create(
-            child_name=request.data.get("device_hint", "")
-        )
+        device_hint = request.data.get("device_hint", "")
+        hardware_id = (request.data.get("hardware_id") or "").strip()[:64]
+
+        device, previously_linked = self._device_for(hardware_id, device_hint)
+
         code = _generate_unique_code()
         expires_at = timezone.now() + timedelta(minutes=CODE_TTL_MINUTES)
         enrollment_code = EnrollmentCode.objects.create(
@@ -72,9 +74,38 @@ class GenerateCodeView(APIView):
                 "code": enrollment_code.code,
                 "qr_payload": enrollment_code.qr_payload,
                 "expires_at": enrollment_code.expires_at,
+                "previously_linked": previously_linked,
             }
         ).data
         return Response(data, status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def _device_for(hardware_id, device_hint):
+        """Reuse this machine's existing device row when it's safe to — i.e.
+        when the fingerprint matches a device that isn't currently linked to
+        an account. If it matches a *linked* device we hand out a fresh row
+        (so re-running our installer can never move someone else's active
+        device to a new account) but flag previously_linked so the wizard
+        can tell the operator the old entry stays behind."""
+        if hardware_id:
+            match = (
+                ChildDevice.objects.filter(hardware_id=hardware_id)
+                .order_by("-created_at")
+                .first()
+            )
+            if match is not None:
+                if match.status == ChildDevice.STATUS_UNLINKED or match.family_id is None:
+                    match.device_secret = secrets.token_hex()
+                    if device_hint:
+                        match.child_name = device_hint
+                    match.save(update_fields=["device_secret", "child_name"])
+                    EnrollmentCode.objects.filter(device=match, used=False).update(used=True)
+                    return match, False
+                return (
+                    ChildDevice.objects.create(child_name=device_hint, hardware_id=hardware_id),
+                    True,
+                )
+        return ChildDevice.objects.create(child_name=device_hint, hardware_id=hardware_id), False
 
 
 class VerifyCodeView(APIView):

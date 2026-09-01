@@ -160,3 +160,38 @@ class VerifyCodeDeviceReplacementTests(TestCase):
         self.assertEqual([a["app"] for a in phone_summary["top_apps"]], ["telegram"])
         self.assertEqual(laptop_summary["total_screen_minutes"], 30)
         self.assertEqual(phone_summary["total_screen_minutes"], 10)
+
+
+class GenerateCodeFingerprintTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse("generate-code")
+
+    def test_first_enrollment_creates_a_device_with_the_fingerprint(self):
+        r = self.client.post(self.url, {"device_hint": "PC-1", "hardware_id": "fp-aaa"}, format="json")
+        self.assertEqual(r.status_code, 201)
+        self.assertFalse(r.json()["previously_linked"])
+        self.assertEqual(ChildDevice.objects.filter(hardware_id="fp-aaa").count(), 1)
+
+    def test_reinstall_on_an_unlinked_device_reuses_the_row(self):
+        first = self.client.post(self.url, {"hardware_id": "fp-bbb"}, format="json").json()
+        # parent never links it (row stays unlinked); re-run the installer
+        second = self.client.post(self.url, {"hardware_id": "fp-bbb"}, format="json").json()
+        self.assertEqual(first["device_id"], second["device_id"])
+        self.assertNotEqual(first["device_secret"], second["device_secret"])  # rotated
+        self.assertEqual(ChildDevice.objects.filter(hardware_id="fp-bbb").count(), 1)
+
+    def test_reinstall_on_a_linked_device_gets_a_fresh_row_and_a_flag(self):
+        parent = ParentUser.objects.create_user(email="p@example.com", password="supersecret123")
+        linked = ChildDevice.objects.create(
+            family=parent.family, status=ChildDevice.STATUS_LINKED, hardware_id="fp-ccc"
+        )
+        r = self.client.post(self.url, {"hardware_id": "fp-ccc"}, format="json").json()
+        self.assertTrue(r["previously_linked"])
+        self.assertNotEqual(r["device_id"], str(linked.id))
+        self.assertEqual(ChildDevice.objects.filter(hardware_id="fp-ccc").count(), 2)
+
+    def test_no_fingerprint_always_creates_a_new_row(self):
+        a = self.client.post(self.url, {}, format="json").json()
+        b = self.client.post(self.url, {}, format="json").json()
+        self.assertNotEqual(a["device_id"], b["device_id"])

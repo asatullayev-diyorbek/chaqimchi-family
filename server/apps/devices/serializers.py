@@ -51,6 +51,10 @@ class GenerateCodeResponseSerializer(serializers.Serializer):
     code = serializers.CharField()
     qr_payload = serializers.CharField()
     expires_at = serializers.DateTimeField()
+    # True when this machine's fingerprint matched a device that is still
+    # linked to some account — the installer shows a "this was linked
+    # before" note. A fresh row is still handed out in that case.
+    previously_linked = serializers.BooleanField(default=False)
 
 
 class VerifyCodeSerializer(serializers.Serializer):

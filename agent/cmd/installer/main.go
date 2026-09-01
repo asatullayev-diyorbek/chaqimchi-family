@@ -70,6 +70,8 @@ func main() {
 
 	client := enroll.NewClient(*baseURL)
 	hostname, _ := os.Hostname()
+	hardwareID := enroll.HardwareID()
+	log.Printf("hardware id: %t", hardwareID != "")
 
 	install := func(c context.Context, wc webwin.Code, progress func(int, float64)) error {
 		log.Printf("install: agent fayli yozilmoqda")
@@ -103,14 +105,15 @@ func main() {
 		},
 		StopOldService: func() error { return service.Stop(service.ServiceName) },
 		NewCode: func(c context.Context) (webwin.Code, error) {
-			code, err := client.GenerateCode(c, hostname)
+			code, err := client.GenerateCode(c, hostname, hardwareID)
 			if err != nil {
 				return webwin.Code{}, err
 			}
-			log.Printf("kod olindi: device %s, muddat %s", code.DeviceID, code.ExpiresAt.Format(time.Kitchen))
+			log.Printf("kod olindi: device %s, muddat %s, avval ulangan=%v", code.DeviceID, code.ExpiresAt.Format(time.Kitchen), code.PreviouslyLinked)
 			return webwin.Code{
 				Code: code.Code, QRPayload: code.QRPayload,
 				DeviceID: code.DeviceID, Secret: code.DeviceSecret, ExpiresAt: code.ExpiresAt,
+				PreviouslyLinked: code.PreviouslyLinked,
 			}, nil
 		},
 		WaitForLink: func(c context.Context, wc webwin.Code, onErr func(error)) error {
@@ -129,7 +132,7 @@ func main() {
 		log.Println("o'rnatish bekor qilindi (foydalanuvchi)")
 	case errors.Is(err, webwin.ErrUnavailable):
 		log.Printf("WebView2 mavjud emas, walk oqimiga o'tamiz")
-		runWalkInstaller(ctx, client, hostname, *baseURL, *agentPath, install)
+		runWalkInstaller(ctx, client, hostname, hardwareID, *baseURL, *agentPath, install)
 	default:
 		// The wizard already showed the error page; just exit non-zero.
 		os.Exit(1)
@@ -139,7 +142,7 @@ func main() {
 // runWalkInstaller is the WebView2-unavailable fallback: the old sequence of
 // separate walk dialogs. The real installer bundles the WebView2 runtime, so
 // this is a rare path.
-func runWalkInstaller(ctx context.Context, client *enroll.Client, hostname, baseURL, agentPath string, install func(context.Context, webwin.Code, func(int, float64)) error) {
+func runWalkInstaller(ctx context.Context, client *enroll.Client, hostname, hardwareID, baseURL, agentPath string, install func(context.Context, webwin.Code, func(int, float64)) error) {
 	if !ui.ShowWelcome() {
 		return
 	}
@@ -162,7 +165,7 @@ func runWalkInstaller(ctx context.Context, client *enroll.Client, hostname, base
 		return
 	}
 	for {
-		code, err := client.GenerateCode(ctx, hostname)
+		code, err := client.GenerateCode(ctx, hostname, hardwareID)
 		if err != nil {
 			fatalInstaller("Bog‘lash kodini olishda xatolik: %v", err)
 		}

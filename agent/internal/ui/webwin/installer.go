@@ -23,11 +23,12 @@ var ErrCanceled = errors.New("bekor qilindi")
 // Code is one pairing code for the installer flow. Secret is the device
 // credential the Install hook needs; it never reaches the page.
 type Code struct {
-	Code      string
-	QRPayload string
-	DeviceID  string
-	Secret    string
-	ExpiresAt time.Time
+	Code             string
+	QRPayload        string
+	DeviceID         string
+	Secret           string
+	ExpiresAt        time.Time
+	PreviouslyLinked bool
 }
 
 // InstallHooks are the Go-side operations the wizard calls. cmd/installer
@@ -192,9 +193,10 @@ func (d *wizard) pair(ctx context.Context) error {
 
 		codeCtx, cancelCode := context.WithDeadline(ctx, code.ExpiresAt)
 		d.nav("connect.html", map[string]any{
-			"code":       spaced(code.Code),
-			"qr":         qrDataURI(code.QRPayload),
-			"expires_at": code.ExpiresAt.UTC().Format(time.RFC3339),
+			"code":              spaced(code.Code),
+			"qr":                qrDataURI(code.QRPayload),
+			"expires_at":        code.ExpiresAt.UTC().Format(time.RFC3339),
+			"previously_linked": code.PreviouslyLinked,
 		})
 
 		linkCh := make(chan error, 1)

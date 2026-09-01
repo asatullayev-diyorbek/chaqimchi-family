@@ -31,11 +31,15 @@ type Code struct {
 	Code         string    `json:"code"`
 	QRPayload    string    `json:"qr_payload"`
 	ExpiresAt    time.Time `json:"expires_at"`
+	// PreviouslyLinked is true when this machine's fingerprint matched a
+	// device still linked to some account; the wizard shows a note.
+	PreviouslyLinked bool `json:"previously_linked"`
 }
 
-// GenerateCode calls POST /api/enroll/generate-code/.
-func (c *Client) GenerateCode(ctx context.Context, deviceHint string) (*Code, error) {
-	body, _ := json.Marshal(map[string]string{"device_hint": deviceHint})
+// GenerateCode calls POST /api/enroll/generate-code/. hardwareID is the
+// stable machine fingerprint from HardwareID() (may be "").
+func (c *Client) GenerateCode(ctx context.Context, deviceHint, hardwareID string) (*Code, error) {
+	body, _ := json.Marshal(map[string]string{"device_hint": deviceHint, "hardware_id": hardwareID})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		c.BaseURL+"/api/enroll/generate-code/", bytes.NewReader(body))
 	if err != nil {
