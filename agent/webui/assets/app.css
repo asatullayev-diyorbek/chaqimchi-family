@@ -8,32 +8,43 @@ body {
   cursor: default;
 }
 
-/* Fill the window instead of centring a page-width column. */
+/* The whole window is one vertical stack: header row + the card fills the
+   rest. Nothing scrolls the page; overflow is handled inside .form-side. */
 .shell {
   width: 100%;
-  min-height: 100%;
+  height: 100vh;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Installer: the two-column card becomes the whole window. */
+/* Installer header: keeps the step dots, brand is not a link. */
+.top {
+  flex: 0 0 auto;
+  padding: 16px 40px 10px;
+  margin: 0;
+}
+.brand { cursor: default; }
+
+/* Installer: the two-column card fills the space left under the header.
+   min-height:0 is what lets it shrink inside the flex column instead of
+   overflowing the window and clipping the button row. */
 .card.install-layout {
-  min-height: 100vh;
+  flex: 1 1 auto;
+  min-height: 0;
   border: none;
   border-radius: 0;
   background: rgba(255, 255, 255, .72);
 }
-.install-art { padding: 40px 40px 32px; }
-.install-art h1 { font-size: 30px; line-height: 1.15; margin: 16px 0 12px; }
+.install-art { padding: 36px 40px; overflow: hidden; }
+.install-art h1 { font-size: 29px; line-height: 1.15; margin: 14px 0 12px; }
 .install-art p { font-size: 14px; }
-.install-art .art-icon { width: 104px; height: 104px; font-size: 52px; margin-top: 34px; }
-.form-side { padding: 38px; overflow-y: auto; }
-.form-side h2 { font-size: 24px; }
-
-/* The installer flow can't be navigated by the child; the header keeps the
-   step dots but the brand is not a link. */
-.top { padding: 22px 40px 0; margin-bottom: 0; }
-.brand { cursor: default; }
+.install-art .art-icon { width: 96px; height: 96px; font-size: 48px; margin-top: 26px; }
+.form-side { padding: 32px 38px; min-height: 0; overflow-y: auto; }
+.form-side h2 { font-size: 23px; }
+.form-side > p { margin: 8px 0 20px; }
+.actions { flex: 0 0 auto; margin-top: 20px; }
 
 /* Buttons are real actions now. */
 .btn { cursor: pointer; }
@@ -41,11 +52,19 @@ body {
 
 /* Tray windows: a compact single card filling the small window, no scroll,
    no page-mockup chrome (stepper, footer clock, minimize button). */
+body.tray .shell { padding: 0; }
 body.tray { background: #eef5ff; }
-body.tray .shell { padding: 14px; display: flex; }
-body.tray .card { flex: 1; box-shadow: none; border: none; background: transparent; backdrop-filter: none; }
+body.tray .card {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  backdrop-filter: none;
+}
 body.tray .status-window { padding: 4px; }
-body.tray .privacy-page { margin: 0; max-width: none; }
-body.tray .privacy-page .top { padding: 0; margin-bottom: 18px; }
+body.tray .privacy-page { margin: 0; max-width: none; padding: 20px; overflow-y: auto; }
+body.tray .privacy-page .top { padding: 0; margin-bottom: 16px; }
 body.tray .tray-demo,
 body.tray .window-head button { display: none; }

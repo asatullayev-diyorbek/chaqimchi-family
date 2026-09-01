@@ -71,13 +71,17 @@ type Options struct {
 // Window is one open app window.
 type Window struct {
 	wv     webview.WebView
+	url    string
 	mu     sync.Mutex
 	closed bool
 }
 
-// New creates the window and navigates it to opts.Page. Register handlers
-// with OnAction, then call Run. Returns an error if the WebView2 runtime is
-// missing or the window can't be created — callers fall back to walk.
+// New creates the window sized for opts.Page but does NOT navigate to it yet
+// — Run() does that, after OnAction has registered its binding. (go-webview2
+// injects the goAction bridge as a "run on every new document" script; if the
+// page has already started loading when Bind is called, this document misses
+// it and window.ui.action(...) silently no-ops.) Returns an error if the
+// WebView2 runtime is missing or the window can't be created.
 func New(opts Options) (*Window, error) {
 	base, err := pagesBaseURL()
 	if err != nil {
@@ -112,8 +116,7 @@ func New(opts Options) (*Window, error) {
 	pw, ph := int(float64(opts.Width)*scale+0.5), int(float64(opts.Height)*scale+0.5)
 	wv.SetSize(pw, ph, webview.HintFixed)
 	recenter(hwnd)
-	wv.Navigate(base + opts.Page)
-	return &Window{wv: wv}, nil
+	return &Window{wv: wv, url: base + opts.Page}, nil
 }
 
 func dpiScale(hwnd uintptr) float64 {
@@ -177,9 +180,11 @@ func (w *Window) Close() {
 	w.wv.Terminate()
 }
 
-// Run shows the window and blocks until it is closed (by Close or the user
+// Run navigates to the page (now that OnAction has registered the bridge),
+// shows the window, and blocks until it is closed (by Close or the user
 // clicking the window's X). Destroys the webview before returning.
 func (w *Window) Run() {
+	w.wv.Navigate(w.url)
 	w.wv.Run()
 	w.wv.Destroy()
 }
