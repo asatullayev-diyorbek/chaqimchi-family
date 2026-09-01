@@ -82,3 +82,15 @@ class TelegramLoginToken(models.Model):
     telegram_username = models.CharField(max_length=150, blank=True, default="")
     consumed = models.BooleanField(default=False)
     rejected = models.BooleanField(default=False)
+
+
+class PasswordResetCode(models.Model):
+    """Six-digit code DM'd to a parent's linked Telegram to reset a
+    forgotten password. No email — PythonAnywhere Free can't send it."""
+
+    user = models.ForeignKey(ParentUser, on_delete=models.CASCADE, related_name="+")
+    code = models.CharField(max_length=6)
+    expires_at = models.DateTimeField()
+    used = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)

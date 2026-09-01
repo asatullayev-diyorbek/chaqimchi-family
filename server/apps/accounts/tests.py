@@ -168,3 +168,48 @@ class TelegramAlertSeenCallbackTests(TestCase):
         self._tap(self.alert.id, from_id=99999)
         self.alert.refresh_from_db()
         self.assertFalse(self.alert.seen)
+
+
+@override_settings(TELEGRAM_BOT_TOKEN="x", TELEGRAM_WEBHOOK_SECRET="s")
+class AccountSelfServiceTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(email="p@example.com", password="oldpass12", username="diyor")
+
+    def test_change_password_requires_correct_old(self):
+        self.client.force_authenticate(user=self.parent)
+        r = self.client.post(reverse("password-change"), {"old_password": "wrong", "new_password": "newpass123"}, format="json")
+        self.assertEqual(r.status_code, 400)
+        r = self.client.post(reverse("password-change"), {"old_password": "oldpass12", "new_password": "newpass123"}, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.parent.refresh_from_db()
+        self.assertTrue(self.parent.check_password("newpass123"))
+
+    def test_patch_me_updates_full_name_only(self):
+        self.client.force_authenticate(user=self.parent)
+        r = self.client.patch(reverse("me"), {"full_name": "Diyor A", "email": "hacker@x.com"}, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.parent.refresh_from_db()
+        self.assertEqual(self.parent.full_name, "Diyor A")
+        self.assertEqual(self.parent.email, "p@example.com")  # read-only
+
+    @mock.patch("apps.accounts.account_views.send_text")
+    def test_telegram_reset_flow(self, send_text):
+        self.parent.telegram_id = 42
+        self.parent.save(update_fields=["telegram_id"])
+        self.assertEqual(self.client.post(reverse("password-reset-start"), {"username": "diyor"}, format="json").status_code, 200)
+        send_text.assert_called_once()
+        code = send_text.call_args[0][1].split("kodi: ")[1].split("\n")[0]
+
+        r = self.client.post(reverse("password-reset-verify"), {"username": "diyor", "code": "000000", "new_password": "brandnew12"}, format="json")
+        self.assertEqual(r.status_code, 400)
+        r = self.client.post(reverse("password-reset-verify"), {"username": "diyor", "code": code, "new_password": "brandnew12"}, format="json")
+        self.assertEqual(r.status_code, 200)
+        self.parent.refresh_from_db()
+        self.assertTrue(self.parent.check_password("brandnew12"))
+
+    @mock.patch("apps.accounts.account_views.send_text")
+    def test_reset_start_is_silent_for_unknown_or_no_telegram(self, send_text):
+        self.assertEqual(self.client.post(reverse("password-reset-start"), {"username": "nobody"}, format="json").status_code, 200)
+        self.assertEqual(self.client.post(reverse("password-reset-start"), {"username": "diyor"}, format="json").status_code, 200)
+        send_text.assert_not_called()

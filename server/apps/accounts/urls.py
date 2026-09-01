@@ -1,6 +1,11 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from .account_views import (
+    PasswordChangeView,
+    PasswordResetStartView,
+    PasswordResetVerifyView,
+)
 from .telegram import (
     TelegramCompleteView,
     TelegramLinkStartView,
@@ -17,6 +22,9 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("login/refresh/", TokenRefreshView.as_view(), name="login-refresh"),
     path("me/", MeView.as_view(), name="me"),
+    path("password/change/", PasswordChangeView.as_view(), name="password-change"),
+    path("password/reset/start/", PasswordResetStartView.as_view(), name="password-reset-start"),
+    path("password/reset/verify/", PasswordResetVerifyView.as_view(), name="password-reset-verify"),
     path("telegram/start/", TelegramStartView.as_view(), name="telegram-start"),
     path("telegram/webhook/", TelegramWebhookView.as_view(), name="telegram-webhook"),
     path("telegram/status/<uuid:token>/", TelegramStatusView.as_view(), name="telegram-status"),

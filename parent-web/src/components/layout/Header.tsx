@@ -66,7 +66,7 @@ export default function Header() {
             <p>Telegram orqali qanday xabarlar kelishini boshqaring.</p>
           </>
         )}
-        {!["/overview", "/activity", "/devices", "/settings", "/rules", "/alerts", "/notifications"].includes(pathname) && (
+        {!["/overview", "/activity", "/devices", "/settings", "/rules", "/alerts", "/notifications"].includes(pathname) && !pathname.startsWith("/devices/") && (
           <>
             <h1>Sergak AI</h1>
             <p>Farzandingiz xavfsizligi sizning qo'lingizda</p>

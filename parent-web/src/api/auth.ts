@@ -29,9 +29,45 @@ export type CurrentUser = {
   username: string | null;
   full_name: string;
   telegram_username: string;
+  telegram_linked: boolean;
+  has_password: boolean;
   family: string;
   created_at: string;
 };
+
+export async function updateProfile(full_name: string): Promise<CurrentUser> {
+  return apiFetch("/api/auth/me/", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ full_name }),
+  });
+}
+
+export async function changePassword(oldPassword: string, newPassword: string): Promise<void> {
+  await apiFetch("/api/auth/password/change/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }),
+  });
+}
+
+export async function resetPasswordStart(username: string): Promise<void> {
+  await apiFetch("/api/auth/password/reset/start/", {
+    method: "POST",
+    skipAuth: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username }),
+  });
+}
+
+export async function resetPasswordVerify(username: string, code: string, newPassword: string): Promise<void> {
+  await apiFetch("/api/auth/password/reset/verify/", {
+    method: "POST",
+    skipAuth: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, code, new_password: newPassword }),
+  });
+}
 
 export async function telegramStart(): Promise<{ token: string; bot_url: string }> {
   return apiFetch("/api/auth/telegram/start/", { method: "POST", skipAuth: true }) as Promise<{

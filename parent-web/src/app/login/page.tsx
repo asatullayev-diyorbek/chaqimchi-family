@@ -141,7 +141,10 @@ export default function LoginPage() {
           </div>
 
           <div className="edit-field">
-            <div className="auth-field-heading"><label htmlFor="login-password">Parol</label></div>
+            <div className="auth-field-heading">
+              <label htmlFor="login-password">Parol</label>
+              <a href="/forgot-password" style={{ fontSize: 12, color: "var(--brand-blue)", fontWeight: 600 }}>Parolni unutdingizmi?</a>
+            </div>
             <div className="auth-input-wrap"><iconify-icon icon="lucide:lock-keyhole" />
               <input id="login-password" type={showPassword ? "text" : "password"} required autoComplete="current-password" placeholder="Parolingizni kiriting" value={password} onChange={(e) => setPassword(e.target.value)} />
               <button type="button" className="password-toggle" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? "Parolni yashirish" : "Parolni ko'rsatish"}><iconify-icon icon={showPassword ? "lucide:eye-off" : "lucide:eye"} /></button>
