@@ -36,10 +36,13 @@ body {
 .btn { cursor: pointer; }
 .btn[disabled], .btn.is-disabled { opacity: .5; cursor: not-allowed; }
 
-/* Tray windows: a compact single card, no page scroll. */
-body.tray .shell { padding: 0; }
-body.tray .status-page,
-body.tray .privacy-page { display: block; min-height: 100vh; margin: 0; padding: 20px; }
-body.tray .intro { display: none; }
+/* Tray windows: a compact single card filling the small window, no scroll,
+   no page-mockup chrome (stepper, footer clock, minimize button). */
+body.tray { background: #eef5ff; }
+body.tray .shell { padding: 14px; display: flex; }
+body.tray .card { flex: 1; box-shadow: none; border: none; background: transparent; backdrop-filter: none; }
+body.tray .status-window { padding: 4px; }
+body.tray .privacy-page { margin: 0; max-width: none; }
+body.tray .privacy-page .top { padding: 0; margin-bottom: 18px; }
 body.tray .tray-demo,
 body.tray .window-head button { display: none; }

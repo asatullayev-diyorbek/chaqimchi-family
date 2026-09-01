@@ -1,1 +1,45 @@
-<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChaqimchiAI Child — Holat</title><script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script><link rel="stylesheet" href="style.css"></head><body><main class="shell"><header class="top"><a class="brand" href="index.html"><span class="brand-mark"><iconify-icon icon="solar:heart-angle-bold-duotone"></iconify-icon></span>ChaqimchiAI <small>Child</small></a><span class="eyebrow">TRAY STATUS OYNASI</span></header><section class="status-page"><div class="intro"><span class="eyebrow">HAMMASI JOYIDA</span><h1>Buguningni xotirjam davom ettir.</h1><p>Tray belgisini bosganda chiqadigan kichik oyna. Bola qoidalarni ko‘radi, ammo o‘zgartira olmaydi.</p></div><section class="card status-window"><div class="window-head"><div class="mini"><span><iconify-icon icon="solar:heart-angle-bold-duotone"></iconify-icon></span>ChaqimchiAI Child</div><button><iconify-icon icon="solar:alt-arrow-down-linear"></iconify-icon></button></div><div class="greeting"><div><b>Salom, Ali! 👋</b><small>Bugun yaxshi ketayapti.</small></div><iconify-icon icon="solar:sun-2-bold-duotone"></iconify-icon></div><div class="time-block"><div class="time-meta"><span>Bugungi ekran vaqting</span><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div><strong>2 <small>soat</small> 15 <small>daq</small></strong><div class="progress"><span></span></div><div class="time-foot"><span>Kunlik limit: 3 soat</span><b>45 daq qoldi</b></div></div><a class="info-link" href="privacy.html"><span><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></span><div><b>Ota-onam nimani ko‘radi?</b><small>Bu yerda hammasi ochiq tushuntirilgan</small></div><iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon></a></section></section></main><footer class="tray-demo"><span class="agent"><iconify-icon icon="solar:heart-angle-bold-duotone"></iconify-icon></span><iconify-icon icon="solar:volume-loud-linear"></iconify-icon><iconify-icon icon="solar:wifi-router-minimalistic-linear"></iconify-icon><b>14:20</b></footer></body></html>
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ChaqimchiAI Child — Holat</title>
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/app.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/bridge.js" defer></script>
+</head>
+<body class="tray">
+  <main class="shell">
+    <section class="card status-window">
+      <div class="window-head">
+        <div class="mini"><span><iconify-icon icon="solar:heart-angle-bold-duotone"></iconify-icon></span>ChaqimchiAI Child</div>
+      </div>
+      <div class="greeting">
+        <div><b data-bind="greeting">Salom! 👋</b><small data-bind="substate">Bugun yaxshi ketayapti.</small></div>
+        <iconify-icon icon="solar:sun-2-bold-duotone" id="mood"></iconify-icon>
+      </div>
+      <div class="time-block">
+        <div class="time-meta"><span>Bugungi ekran vaqting</span><iconify-icon icon="solar:clock-circle-bold-duotone"></iconify-icon></div>
+        <strong data-bind="today_label">0 daq</strong>
+        <div class="progress"><span data-bind-width="progress_pct"></span></div>
+        <div class="time-foot"><span data-bind="limit_label">Kunlik limit belgilanmagan</span><b data-bind="remaining_label"></b></div>
+      </div>
+      <button class="info-link" style="border:0;background:none;width:100%;cursor:pointer;font:inherit" onclick="ui.action('privacy')">
+        <span><iconify-icon icon="solar:eye-bold-duotone"></iconify-icon></span>
+        <div><b>Ota-onam nimani ko‘radi?</b><small>Bu yerda hammasi ochiq tushuntirilgan</small></div>
+        <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon>
+      </button>
+    </section>
+  </main>
+  <script>
+    ui.onState(function (s) {
+      var mood = document.getElementById('mood');
+      if (s.state === 'offline') mood.setAttribute('icon', 'solar:wifi-router-minimalistic-linear');
+      else if (s.state === 'warn') mood.setAttribute('icon', 'solar:danger-triangle-linear');
+      else mood.setAttribute('icon', 'solar:sun-2-bold-duotone');
+    });
+  </script>
+</body>
+</html>

@@ -45,7 +45,8 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
   - `go-webview2` dep; `child-ui/` → `agent/webui/` (embed manbasi); `bridge.js`/`icons.js`/offline Inter/`app.css`; `internal/ui/webwin` helper.
   - `welcome.html` app-ready (Guard ohangi), `cmd/installer` ishlatadi (walk fallback), `uitest -screen webwelcome`.
 - [~] **WebView2 UI — B bosqich DONE** (installer oqimi to'liq WebView2'ga o'tdi, walk fallback bilan; `GOOS=windows` build+vet PASS, Windows'da ko'rilmagan): consent/existing/connect(jonli QR+sanoq+link)/installing(step progress)/complete/error. Tafsilot: `docs/webview-ui-plan.md`.
-  - Keyingi: C — tray oynalari (status/privacy/adult-gate/adult-panel/info), walk kodini o'chirish.
+- [~] **WebView2 UI — C bosqich DONE** (tray oynalari: status(jonli)/privacy/adult-gate/adult-panel/info, hammasi webview-birinchi + walk zaxira; `GOOS=windows` build+vet PASS, Windows'da ko'rilmagan). Walk kod **o'chirilmaydi** — doimiy zaxira sifatida qoladi (qaror o'zgardi, sabab: `docs/webview-ui-plan.md`).
+  - Keyingi: D — block ekranlarni HTML palitrasiga yaqinlashtirish (allaqachon qisman qilingan), E — Inno'ga WebView2 runtime bootstrapper.
 - [ ] **Kelajak:** lokal paneldan qurilmani qayta bog'lash (relink kod API), diagnostika jurnalini serverga yuklash.
 
 ## Hozirgi holat — 2026-08-28 yangilanishi (real Windows)

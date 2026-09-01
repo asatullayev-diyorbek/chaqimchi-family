@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ChaqimchiAI Child — Kattalar paneli</title>
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/app.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/bridge.js" defer></script>
+  <style>
+    body.tray .shell { padding: 22px; }
+    .kv { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:11px 0; border-top:1px solid var(--line); font-size:13px; font-weight:700; }
+    .kv:first-child { border-top:0; }
+    .kv span { color:#7a8698; }
+    .kv b { color:#1f2b3a; }
+    .kv b.ok { color:#1e8e3e; }
+    .kv b.bad { color:#c0392b; }
+    .logpath { margin-top:10px; padding:11px 13px; border-radius:12px; background:rgba(37,99,235,.06); font-size:11px; color:#4c5d78; word-break:break-all; }
+    .row { display:flex; gap:10px; margin-top:20px; }
+  </style>
+</head>
+<body class="tray">
+  <main class="shell">
+    <section class="card" style="padding:26px">
+      <span class="eyebrow">QURILMA HOLATI</span>
+      <h1 style="margin:10px 0 18px;font-size:22px">ChaqimchiAI Guard</h1>
+      <div class="kv"><span>Server bilan aloqa</span><b id="online">—</b></div>
+      <div class="kv"><span>Oxirgi sinxronizatsiya</span><b data-bind="last_sync">—</b></div>
+      <div class="kv"><span>Agent versiyasi</span><b data-bind="version">—</b></div>
+      <div class="kv"><span>Bugungi ekran vaqti</span><b data-bind="today_label">—</b></div>
+      <p style="margin:18px 0 4px;color:#7a8698;font-size:11px;font-weight:800;letter-spacing:.03em">DIAGNOSTIKA JURNALI</p>
+      <div class="logpath" data-bind="log_path">—</div>
+      <div class="row">
+        <button class="btn outline" onclick="ui.action('uninstall')">O‘chirish (Windows)</button>
+        <span style="flex:1"></span>
+        <button class="btn outline" onclick="ui.action('help')">Yordam</button>
+        <button class="btn primary" onclick="ui.action('close')">Yopish</button>
+      </div>
+    </section>
+  </main>
+  <script>
+    ui.onState(function (s) {
+      var el = document.getElementById('online');
+      if (typeof s.online === 'boolean') {
+        el.textContent = s.online ? 'Ulangan' : 'Uzilgan';
+        el.className = s.online ? 'ok' : 'bad';
+      }
+    });
+  </script>
+</body>
+</html>

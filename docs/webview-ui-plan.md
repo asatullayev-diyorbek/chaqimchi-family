@@ -37,7 +37,26 @@ burchak, soya, gradient, rangli tugma — printsipial mumkin emas.
     `runEnroll`). QR endi Go tomonda `go-qrcode` bilan PNG→base64 generatsiya
     qilinadi (avval walk ichida edi).
   - `cmd/uitest -screen web{welcome,consent,connect,existing,complete,error}`.
-- **C–E bosqichlar** — quyida.
+- **C bosqich — DONE** (`GOOS=windows` build+vet PASS; Windows'da real render ko'rilmagan):
+  - Yangi sahifalar: `adult-gate.html`, `adult-panel.html`, `info.html`.
+  - `status.html`/`privacy.html` app-ready (Child ohangi, o'zgarishsiz mazmun).
+  - `webwin/tray.go`: `ShowChildStatus`, `ShowPrivacy`, `ShowAdultAccessGate`,
+    `ShowAdultPanel`, `ShowInfo`. Tray oynalari alohida goroutine'larda
+    ochilgani uchun har biri `runtime.LockOSThread()` bilan o'z OS thread'iga
+    biriktiriladi (Win32 xabar navbati thread-affine); `trayMu` bilan bir
+    vaqtda faqat bitta tray oyna ochiq bo'ladi.
+  - `internal/ui.Tray` ga `OnStatus/OnPrivacy/OnLogs` callback maydonlari
+    qo'shildi (`OnAdultPanel` kabi) — `internal/ui` `webwin`ni import qila
+    olmaydi (`webwin` allaqachon `ui`ni import qiladi, `ExistingChoice` uchun),
+    shuning uchun webview-birinchi/walk-zaxira tanlovi `cmd/desktop`da.
+  - `cmd/desktop`: barcha 4 callback webview-birinchi + walk fallback.
+- **Qaror o'zgardi: walk kod o'chirilmaydi.** Dastlabki rejada "C dan keyin
+  walk oynalar o'chiriladi" deyilgan edi, lekin amalda har bir WebView2 oyna
+  `webwin.ErrUnavailable` bo'lsa walk'ga qaytadi (runtime yo'q/singan holatlar
+  uchun tarmoqsiz backstop). Walk kod **doimiy zaxira** sifatida qoladi;
+  E bosqichda WebView2 runtime bootstrapper Windows'da ishonchli tasdiqlansa,
+  bu qarorni qayta ko'rib chiqish mumkin.
+- **D-E bosqichlar** — quyida.
 
 ---
 

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ChaqimchiAI Child — Ma’lumot</title>
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/app.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/bridge.js" defer></script>
+  <style>
+    body.tray .shell { padding: 22px; }
+    #body { white-space: pre-wrap; color:#4c5d78; font-size:13px; line-height:1.7; }
+  </style>
+</head>
+<body class="tray">
+  <main class="shell">
+    <section class="card" style="padding:26px;display:flex;flex-direction:column;height:calc(100vh - 44px)">
+      <span class="eyebrow" data-bind="eyebrow">MA’LUMOT</span>
+      <h1 style="margin:10px 0 16px;font-size:20px" data-bind="heading">—</h1>
+      <div id="body" style="flex:1;overflow:auto" data-bind="body">—</div>
+      <div style="margin-top:18px;text-align:right">
+        <button class="btn primary" onclick="ui.action('close')">Yopish</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

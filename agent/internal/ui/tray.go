@@ -35,6 +35,15 @@ type Tray struct {
 	// which owns the flow: report the access to the parent, then show the
 	// panel. Left nil in tests / if unset the menu item does nothing.
 	OnAdultPanel func()
+
+	// OnStatus, OnPrivacy, OnLogs override the built-in walk windows for the
+	// matching menu item. cmd/desktop sets these to WebView2 (webwin)
+	// versions that fall back to the walk ones on error — internal/ui can't
+	// import webwin itself (webwin already imports ui, for ExistingChoice).
+	// nil means: use the built-in walk window below.
+	OnStatus  func(data localipc.Status, current Status)
+	OnPrivacy func()
+	OnLogs    func(logs string)
 }
 
 func NewTray() *Tray {
@@ -65,8 +74,13 @@ func (t *Tray) onReady() {
 			t.mu.RLock()
 			current := t.status
 			data := t.statusData
+			onStatus := t.OnStatus
 			t.mu.RUnlock()
-			ShowChildStatusWindow(data, current)
+			if onStatus != nil {
+				onStatus(data, current)
+			} else {
+				ShowChildStatusWindow(data, current)
+			}
 		}
 	}()
 	logsMenu := systray.AddMenuItem("Oxirgi amallar", "Guard Service loglari")
@@ -74,16 +88,28 @@ func (t *Tray) onReady() {
 		for range logsMenu.ClickedCh {
 			t.mu.RLock()
 			logs := t.logs
+			onLogs := t.OnLogs
 			t.mu.RUnlock()
 			if logs == "" {
 				logs = "Hali log mavjud emas."
 			}
-			showInfoWindow("ChaqimchiAI Guard — Oxirgi amallar", "OXIRGI AMALLAR", "So‘nggi hodisalar", logs)
+			if onLogs != nil {
+				onLogs(logs)
+			} else {
+				showInfoWindow("ChaqimchiAI Guard — Oxirgi amallar", "OXIRGI AMALLAR", "So‘nggi hodisalar", logs)
+			}
 		}
 	}()
 	go func() {
 		for range privacyMenu.ClickedCh {
-			ShowPrivacyNotice()
+			t.mu.RLock()
+			onPrivacy := t.OnPrivacy
+			t.mu.RUnlock()
+			if onPrivacy != nil {
+				onPrivacy()
+			} else {
+				ShowPrivacyNotice()
+			}
 		}
 	}()
 

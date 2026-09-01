@@ -5,6 +5,9 @@
 // service status endpoint and presents it in the notification area, plus
 // the local "Kattalar uchun" panel — whose access it reports to the parent
 // through the service before showing it.
+//
+// Every tray window tries WebView2 (internal/ui/webwin) first and falls
+// back to the matching walk dialog (internal/ui) if the runtime is missing.
 package main
 
 import (
@@ -12,12 +15,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
+	"os/exec"
 	"sync"
 	"time"
 
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui/webwin"
 )
 
 const (
@@ -35,16 +41,53 @@ func main() {
 		mu     sync.Mutex
 		latest localipc.Status
 	)
+	getLatest := func() localipc.Status {
+		mu.Lock()
+		defer mu.Unlock()
+		return latest
+	}
 
+	tray.OnStatus = func(data localipc.Status, current ui.Status) {
+		if err := webwin.ShowChildStatus(data, trayState(current)); err != nil {
+			log.Printf("webview status fallback: %v", err)
+			ui.ShowChildStatusWindow(data, current)
+		}
+	}
+	tray.OnPrivacy = func() {
+		if err := webwin.ShowPrivacy(); err != nil {
+			log.Printf("webview privacy fallback: %v", err)
+			ui.ShowPrivacyNotice()
+		}
+	}
+	tray.OnLogs = func(logs string) {
+		if err := webwin.ShowInfo("OXIRGI AMALLAR", "So‘nggi hodisalar", logs); err != nil {
+			log.Printf("webview logs fallback: %v", err)
+			ui.ShowError("ChaqimchiAI Guard — Oxirgi amallar", logs) // best-effort; not fatal
+		}
+	}
 	tray.OnAdultPanel = func() {
-		if !ui.ShowAdultAccessGate() {
+		ok, err := webwin.ShowAdultAccessGate()
+		if err != nil {
+			log.Printf("webview adult-gate fallback: %v", err)
+			ok = ui.ShowAdultAccessGate()
+		}
+		if !ok {
 			return
 		}
 		reportAdultAccess()
-		mu.Lock()
-		s := latest
-		mu.Unlock()
-		ui.ShowAdultPanel(s, supportURL, agentLogPath)
+
+		action, err := webwin.ShowAdultPanel(getLatest(), agentLogPath)
+		if err != nil {
+			log.Printf("webview adult-panel fallback: %v", err)
+			ui.ShowAdultPanel(getLatest(), supportURL, agentLogPath)
+			return
+		}
+		switch action {
+		case webwin.AdultPanelHelp:
+			openExternal(supportURL)
+		case webwin.AdultPanelUninstall:
+			openExternal("ms-settings:appsfeatures")
+		}
 	}
 
 	go func() {
@@ -72,6 +115,22 @@ func main() {
 		}
 	}()
 	tray.Run()
+}
+
+func trayState(s ui.Status) string {
+	switch s {
+	case ui.StatusWarning:
+		return "warn"
+	case ui.StatusOffline:
+		return "offline"
+	default:
+		return "ok"
+	}
+}
+
+// openExternal hands a URL or ms-settings: URI to the shell. Best-effort.
+func openExternal(target string) {
+	_ = exec.Command("rundll32", "url.dll,FileProtocolHandler", target).Start()
 }
 
 // reportAdultAccess asks the service to raise a parent-visible alert that
