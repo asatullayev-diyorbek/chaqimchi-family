@@ -90,9 +90,10 @@ O'rnatilgan + ishlab turgan holatda `Setup.exe`ni **qayta** ishga tushir:
 
 ## 5. Tray oynalari + parent alert (⚠️ backend deploy kerak)
 
-**Old shart:** backend PythonAnywhere'ga deploy qilingan bo'lishi kerak
-(`apps/alerts` migration `0002` + `notifications.py` + `telegram.py`), aks
-holda `settings_panel_access` alert 400 qaytaradi.
+**Old shart:** ✅ **BAJARILDI (2026-09-01)** — backend PA'ga deploy qilindi
+(`apps/alerts` migration `0002` + `notifications.py` + `telegram.py`),
+migratsiya qo'llandi, webapp reload, PA'da 8/8 alerts test PASS. WSGI'da
+`TELEGRAM_BOT_TOKEN` bor — Telegram xabari ishlashi kerak.
 
 - [ ] Tray → "Bugungi holat" — status oynasi jonli ma'lumot bilan (ekran vaqti, limit)
 - [ ] Tray → "Nima kuzatiladi?" — shaffoflik oynasi
