@@ -7,6 +7,7 @@ package webwin
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -15,6 +16,10 @@ import (
 	"github.com/chaqimchi/chaqimchi-family/agent/webui"
 	webview "github.com/jchv/go-webview2"
 )
+
+// ErrUnavailable means a WebView2 window could not be created — almost always
+// because the WebView2 runtime is not installed. Callers fall back to walk.
+var ErrUnavailable = errors.New("WebView2 mavjud emas")
 
 // One loopback file server for the whole process serves the embedded pages
 // so relative links (style.css, assets/*) resolve.
@@ -85,7 +90,7 @@ func New(opts Options) (*Window, error) {
 		},
 	})
 	if wv == nil {
-		return nil, fmt.Errorf("WebView2 oynasini yaratib bo'lmadi (runtime o'rnatilmaganmi?)")
+		return nil, ErrUnavailable
 	}
 	wv.SetSize(opts.Width, opts.Height, webview.HintFixed)
 	wv.Navigate(base + opts.Page)

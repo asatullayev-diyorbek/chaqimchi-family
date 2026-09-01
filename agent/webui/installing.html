@@ -1,1 +1,62 @@
-<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChaqimchiAI Child — O‘rnatilmoqda</title><script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script><link rel="stylesheet" href="style.css"></head><body><main class="shell"><header class="top"><a class="brand" href="index.html"><span class="brand-mark"><iconify-icon icon="solar:heart-angle-bold-duotone"></iconify-icon></span>ChaqimchiAI <small>Child</small></a><span class="stepper"><i class="active"></i><i class="active"></i><i class="active"></i><i class="active"></i></span></header><section class="card install-layout"><div class="install-art"><span class="eyebrow">O‘RNATILMOQDA</span><h1>Deyarli tayyor.</h1><p>Kerakli fayllar tayyorlanmoqda va ilova kompyuterda ishlashga sozlanmoqda.</p><div class="art-icon"><iconify-icon icon="solar:settings-bold-duotone"></iconify-icon></div></div><div class="form-side"><div class="form-body"><h2>ChaqimchiAI Child o‘rnatilmoqda</h2><p>O‘rnatish tugaguncha ushbu oynani ochiq qoldiring.</p><div class="progress-label"><span>O‘rnatish jarayoni</span><b>72%</b></div><div class="progress"><span style="width:72%"></span></div><div class="install-rows"><div class="install-row done"><iconify-icon icon="solar:check-circle-bold"></iconify-icon>Fayllar tayyorlandi</div><div class="install-row done"><iconify-icon icon="solar:check-circle-bold"></iconify-icon>Oilaga bog‘landi</div><div class="install-row"><iconify-icon icon="solar:refresh-circle-linear"></iconify-icon>Xizmat sozlanmoqda...</div><div class="install-row"><iconify-icon icon="solar:circle-linear"></iconify-icon>Yakunlanmoqda</div></div></div><div class="actions"><span class="helper">Bir necha soniya qoldi.</span></div></div></section></main></body></html>
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ChaqimchiAI Guard — O‘rnatilmoqda</title>
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/app.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/bridge.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <span class="brand"><span class="brand-mark"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon></span>ChaqimchiAI <small>Guard</small></span>
+      <span class="stepper"><i class="active"></i><i class="active"></i><i class="active"></i><i class="active"></i><i></i></span>
+    </header>
+    <section class="card install-layout">
+      <div class="install-art">
+        <span class="eyebrow">O‘RNATILMOQDA</span>
+        <h1>Deyarli tayyor.</h1>
+        <p>Kerakli fayllar tayyorlanmoqda va dastur kompyuterda ishlashga sozlanmoqda.</p>
+        <div class="art-icon"><iconify-icon icon="solar:settings-bold-duotone"></iconify-icon></div>
+      </div>
+      <div class="form-side">
+        <div class="form-body">
+          <h2>ChaqimchiAI Guard o‘rnatilmoqda</h2>
+          <p>O‘rnatish tugaguncha ushbu oynani ochiq qoldiring.</p>
+          <div class="progress-label"><span>O‘rnatish jarayoni</span><b data-bind="pct_label">0%</b></div>
+          <div class="progress"><span data-bind-width="pct" style="width:0%"></span></div>
+          <div class="install-rows" id="rows"></div>
+        </div>
+        <div class="actions"><span class="helper" data-bind="note">Bir necha soniya qoldi.</span></div>
+      </div>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var STEPS = ['Fayllar tayyorlanmoqda', 'Oilaga bog‘landi', 'Xizmat sozlanmoqda', 'Yakunlanmoqda'];
+      function render(stage) {
+        var html = '';
+        for (var i = 0; i < STEPS.length; i++) {
+          var n = i + 1, cls = '', icon = 'solar:circle-linear';
+          if (stage > n) { cls = 'done'; icon = 'solar:check-circle-bold'; }
+          else if (stage === n) { icon = 'solar:refresh-circle-linear'; }
+          html += '<div class="install-row ' + cls + '"><iconify-icon icon="' + icon + '"></iconify-icon>' + STEPS[i] + '</div>';
+        }
+        document.getElementById('rows').innerHTML = html;
+      }
+      render(1);
+      ui.onState(function (s) {
+        if (typeof s.stage === 'number') render(s.stage);
+        if (typeof s.pct === 'number') {
+          var b = document.querySelector('[data-bind="pct_label"]');
+          if (b) b.textContent = Math.round(s.pct) + '%';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

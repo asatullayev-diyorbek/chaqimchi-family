@@ -30,6 +30,15 @@
       var k = el.getAttribute('data-bind-width');
       if (s[k] !== undefined && s[k] !== null) el.style.width = s[k] + '%';
     });
+    document.querySelectorAll('[data-bind-src]').forEach(function (el) {
+      var k = el.getAttribute('data-bind-src');
+      if (s[k]) el.src = s[k];
+    });
+    document.querySelectorAll('[data-bind-class]').forEach(function (el) {
+      // "key:className" — toggle className when state.key is truthy
+      var spec = el.getAttribute('data-bind-class').split(':');
+      if (spec[0] in s) el.classList.toggle(spec[1], !!s[spec[0]]);
+    });
     document.querySelectorAll('[data-show]').forEach(function (el) {
       var k = el.getAttribute('data-show');
       el.hidden = !s[k];
@@ -42,4 +51,13 @@
     var a = e.target.closest && e.target.closest('a[href]');
     if (a && !a.hasAttribute('data-allow-nav')) e.preventDefault();
   });
+
+  // Tell Go the page is ready so it can push the initial state deterministically
+  // (rather than racing a timer).
+  function ready() { window.ui.action('__ready'); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', ready);
+  } else {
+    ready();
+  }
 })();

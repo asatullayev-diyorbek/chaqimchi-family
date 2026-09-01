@@ -1,1 +1,83 @@
-<!doctype html><html lang="uz"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChaqimchiAI Child — Bog‘lash</title><script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script><link rel="stylesheet" href="style.css"></head><body><main class="shell"><header class="top"><a class="brand" href="index.html"><span class="brand-mark"><iconify-icon icon="solar:heart-angle-bold-duotone"></iconify-icon></span>ChaqimchiAI <small>Child</small></a><span class="stepper"><i class="active"></i><i class="active"></i><i class="active"></i><i></i></span></header><section class="card install-layout"><div class="install-art"><span class="eyebrow">OILAGA BOG‘LASH</span><h1>Telefon bilan bir zumda ulang.</h1><p>Ota-ona telefonidagi ChaqimchiAI Family ilovasidan QR-kodni skaner qiling yoki 6 xonali kodni kiriting.</p><div class="art-icon"><iconify-icon icon="solar:qr-code-bold-duotone"></iconify-icon></div></div><div class="form-side center"><div class="form-body"><h2>Qurilmani hisobingizga bog‘lang</h2><p>Mobil ilova → “Qurilma qo‘shish” bo‘limini oching.</p><div class="qr-box" aria-label="QR kod namunasi"></div><strong class="code">482 913</strong><div class="guide"><b>Kod 08:42 daqiqa</b> davomida amal qiladi. Telefon kamerasi ishlamasa, raqamli kodni kiriting.</div></div><div class="actions"><a class="btn outline" href="consent.html">Orqaga</a><a class="btn primary" href="installing.html">Bog‘landi <iconify-icon icon="solar:check-circle-bold"></iconify-icon></a></div></div></section></main></body></html>
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ChaqimchiAI Guard — Oilaga bog‘lash</title>
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/app.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/bridge.js" defer></script>
+  <style>
+    .qr-img { display:block; width:195px; height:195px; margin:10px auto 18px; border:10px solid #fff; border-radius:20px; box-shadow:0 12px 28px rgba(74,120,149,.13); background:#fff; }
+    .waiting { display:flex; align-items:center; gap:9px; margin-top:16px; color:#5d8290; font-size:12px; font-weight:800; }
+    .waiting .dot { width:9px; height:9px; border-radius:50%; background:#2fbfa6; animation:pulse 1.2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:.25} 50%{opacity:1} }
+    .conn-warn { color:#c0562b; }
+    .linked-ok { color:#1e8e3e; }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <span class="brand"><span class="brand-mark"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon></span>ChaqimchiAI <small>Guard</small></span>
+      <span class="stepper"><i class="active"></i><i class="active"></i><i class="active"></i><i></i><i></i></span>
+    </header>
+    <section class="card install-layout">
+      <div class="install-art">
+        <span class="eyebrow">OILAGA BOG‘LASH</span>
+        <h1>Telefon bilan bir zumda ulang.</h1>
+        <p>Ota-ona telefonidagi ChaqimchiAI Family ilovasidan QR-kodni skaner qiling yoki 6 xonali kodni kiriting.</p>
+        <div class="art-icon"><iconify-icon icon="solar:qr-code-bold-duotone"></iconify-icon></div>
+      </div>
+      <div class="form-side center">
+        <div class="form-body">
+          <h2>Qurilmani hisobingizga bog‘lang</h2>
+          <p>Mobil ilova → “Qurilma qo‘shish” bo‘limini oching.</p>
+          <img class="qr-img" id="qr" alt="QR kod" data-bind-src="qr">
+          <strong class="code" data-bind="code">— — —</strong>
+          <div class="guide">
+            <b><span data-bind="countdown">—</span></b> davomida amal qiladi.
+            Telefon kamerasi ishlamasa, raqamli kodni kiriting.
+          </div>
+          <div class="waiting" id="waitrow">
+            <span class="dot"></span>
+            <span id="waittext">Bog‘lanish kutilmoqda…</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn outline" onclick="ui.action('back')">Orqaga</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    (function () {
+      var expiresAt = null, timer = null;
+      function fmt(ms) {
+        if (ms <= 0) return '00:00';
+        var s = Math.floor(ms / 1000);
+        return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+      }
+      function tick() {
+        var el = document.querySelector('[data-bind="countdown"]');
+        if (!el || !expiresAt) return;
+        el.textContent = 'Kod ' + fmt(expiresAt - Date.now());
+      }
+      ui.onState(function (s) {
+        if (s.expires_at) { expiresAt = Date.parse(s.expires_at); if (!timer) timer = setInterval(tick, 1000); tick(); }
+        var wt = document.getElementById('waittext');
+        var wr = document.getElementById('waitrow');
+        if (s.linked) {
+          wr.classList.add('linked-ok'); wt.textContent = '✓ Qurilma bog‘landi';
+        } else if (s.conn_error) {
+          wr.classList.add('conn-warn'); wt.textContent = 'Internetga ulanib bo‘lmayapti, qayta urinilmoqda…';
+        } else {
+          wr.classList.remove('conn-warn'); wt.textContent = 'Bog‘lanish kutilmoqda…';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

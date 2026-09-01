@@ -42,8 +42,48 @@ var embeddedAgent []byte
 func fatalInstaller(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	log.Print(message)
-	ui.ShowError("ChaqimchiAI Guard — O‘rnatishda xatolik", message)
+	if err := webwin.ShowError(message); err != nil {
+		ui.ShowError("ChaqimchiAI Guard — O‘rnatishda xatolik", message)
+	}
 	os.Exit(1)
+}
+
+// Each installer window tries WebView2 first and falls back to the walk
+// dialog if the runtime is unavailable (the real installer bundles the
+// runtime, so the fallback is belt-and-suspenders).
+
+func showWelcome() bool {
+	ok, err := webwin.ShowWelcome()
+	if err != nil {
+		log.Printf("webview welcome fallback: %v", err)
+		return ui.ShowWelcome()
+	}
+	return ok
+}
+
+func showConsent() bool {
+	ok, err := webwin.ShowConsent()
+	if err != nil {
+		log.Printf("webview consent fallback: %v", err)
+		ok, _ = ui.RequireInstallerConsent()
+	}
+	return ok
+}
+
+func showExisting(running bool) ui.ExistingChoice {
+	c, err := webwin.ShowExisting(running)
+	if err != nil {
+		log.Printf("webview existing-install fallback: %v", err)
+		return ui.AskExistingInstall(running)
+	}
+	return c
+}
+
+func showComplete(heading string) {
+	if err := webwin.ShowComplete(heading); err != nil {
+		log.Printf("webview complete fallback: %v", err)
+		ui.ShowComplete()
+	}
 }
 
 func main() {
@@ -58,12 +98,7 @@ func main() {
 		fatalInstaller("Backend manzili rad etildi: %v", err)
 	}
 
-	proceed, werr := webwin.ShowWelcome()
-	if werr != nil {
-		log.Printf("WebView2 xush kelibsiz oynasi ochilmadi, walk'ga qaytamiz: %v", werr)
-		proceed = ui.ShowWelcome()
-	}
-	if !proceed {
+	if !showWelcome() {
 		log.Println("o'rnatish to'xtatildi: xush kelibsiz oynasida bekor qilindi")
 		return
 	}
@@ -76,13 +111,13 @@ func main() {
 		log.Printf("mavjud o'rnatmani tekshirib bo'lmadi (yangi o'rnatish deb davom etamiz): %v", inspectErr)
 	}
 	if existing.Installed {
-		switch ui.AskExistingInstall(existing.Running) {
+		switch showExisting(existing.Running) {
 		case ui.ExistingUpgrade:
 			if err := upgradeInPlace(existing, *agentPath); err != nil {
 				fatalInstaller("Yangilashda xatolik: %v", err)
 			}
 			fmt.Println("✓ Yangilandi.")
-			ui.ShowComplete()
+			showComplete("Yangilandi. Guard ishlashda davom etadi.")
 			return
 		case ui.ExistingRelink:
 			if err := service.Stop(service.ServiceName); err != nil {
@@ -94,69 +129,79 @@ func main() {
 		}
 	}
 
-	accepted, err := ui.RequireInstallerConsent()
-	if err != nil {
-		fatalInstaller("Rozilik oynasini ochib bo‘lmadi: %v", err)
-	}
-	if !accepted {
+	if !showConsent() {
 		log.Println("o'rnatish to'xtatildi: shaffoflik va rozilik tasdiqlanmadi")
 		return
 	}
 
 	client := enroll.NewClient(*baseURL)
 	hostname, _ := os.Hostname()
-	var code *enroll.Code
 	for {
-		var err error
-		code, err = client.GenerateCode(ctx, hostname)
+		code, err := client.GenerateCode(ctx, hostname)
 		if err != nil {
 			fatalInstaller("Bog‘lash kodini olishda xatolik: %v", err)
 		}
 
 		codeCtx, cancelCode := context.WithDeadline(ctx, code.ExpiresAt)
-		err = ui.ShowEnrollment(codeCtx, code.Code, code.QRPayload, code.ExpiresAt, func(waitCtx context.Context, onError func(error)) error {
-			return client.WaitForLink(waitCtx, code.DeviceID, onError)
-		}, func(setStatus func(string)) error {
-			setStatus("Xizmat sozlanmoqda...")
-			exePath, installErr := installAgentBinary(*agentPath)
-			if installErr != nil {
-				return fmt.Errorf("agent faylini o‘rnatib bo‘lmadi: %w", installErr)
-			}
-			setStatus("Windows service o‘rnatilmoqda...")
-			args := []string{
-				"-server", *baseURL,
-				"-device-id", code.DeviceID,
-				"-device-secret", code.DeviceSecret,
-			}
-			if serviceErr := service.Install(service.ServiceName, service.DisplayName, exePath, args); serviceErr != nil {
-				return fmt.Errorf("Windows service o‘rnatishda xatolik: %w", serviceErr)
-			}
-			setStatus("Xizmat ishga tushirilmoqda...")
-			return nil
-		})
+		enrollErr := runEnroll(codeCtx, client, code, *baseURL, *agentPath)
 		expired := codeCtx.Err() == context.DeadlineExceeded
 		cancelCode()
-		if err == nil {
+
+		if enrollErr == nil {
 			break
 		}
-		if expired {
+		if errors.Is(enrollErr, webwin.ErrCodeExpired) || expired {
 			fmt.Println("Kod muddati tugadi. Yangi kod olinmoqda...")
 			continue
 		}
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(enrollErr, context.Canceled) {
 			log.Println("Foydalanuvchi qurilmani bog'lashni bekor qildi.")
 			return
 		}
 		if ctx.Err() != nil {
 			fatalInstaller("Bog‘lash vaqti tugadi: %v", ctx.Err())
 		}
-		fatalInstaller("Bog‘lash/o‘rnatishda xatolik: %v", err)
+		fatalInstaller("Bog‘lash/o‘rnatishda xatolik: %v", enrollErr)
 	}
 
 	fmt.Println("✓ Bog'landi!")
 	fmt.Println("Tayyor! ChaqimchiAI Family endi ishlamoqda.")
+	showComplete("")
+}
 
-	ui.ShowComplete()
+// runEnroll shows the pairing + install UI (WebView2, or the walk dialog if
+// the runtime is missing) for one generated code.
+func runEnroll(ctx context.Context, client *enroll.Client, code *enroll.Code, baseURL, agentPath string) error {
+	wait := func(waitCtx context.Context, onError func(error)) error {
+		return client.WaitForLink(waitCtx, code.DeviceID, onError)
+	}
+	install := func(step func(stage int, pct float64)) error {
+		step(3, 55)
+		exePath, installErr := installAgentBinary(agentPath)
+		if installErr != nil {
+			return fmt.Errorf("agent faylini o‘rnatib bo‘lmadi: %w", installErr)
+		}
+		step(3, 78)
+		args := []string{"-server", baseURL, "-device-id", code.DeviceID, "-device-secret", code.DeviceSecret}
+		if serviceErr := service.Install(service.ServiceName, service.DisplayName, exePath, args); serviceErr != nil {
+			return fmt.Errorf("Windows service o‘rnatishda xatolik: %w", serviceErr)
+		}
+		step(4, 92)
+		return nil
+	}
+
+	err := webwin.ShowEnroll(ctx, webwin.EnrollParams{
+		Code: code.Code, QRPayload: code.QRPayload, ExpiresAt: code.ExpiresAt,
+		Wait: wait, Install: install,
+	})
+	if errors.Is(err, webwin.ErrUnavailable) {
+		log.Printf("webview enroll fallback: %v", err)
+		return ui.ShowEnrollment(ctx, code.Code, code.QRPayload, code.ExpiresAt, wait,
+			func(setStatus func(string)) error {
+				return install(func(int, float64) { setStatus("O‘rnatilmoqda...") })
+			})
+	}
+	return err
 }
 
 // upgradeInPlace replaces the installed agent binary with this installer's

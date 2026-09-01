@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	screen := flag.String("screen", "enroll", "enroll|consent|welcome|complete|info|childstatus|adult|existing|block")
+	screen := flag.String("screen", "enroll", "enroll|consent|welcome|complete|info|childstatus|adult|existing|block|web{welcome,consent,connect,existing,complete,error}")
 	flag.Parse()
 
 	switch *screen {
@@ -25,6 +25,42 @@ func main() {
 	case "webwelcome":
 		ok, err := webwin.ShowWelcome()
 		println("webwelcome:", ok, errString(err))
+	case "webconsent":
+		ok, err := webwin.ShowConsent()
+		println("webconsent:", ok, errString(err))
+	case "webexisting":
+		c, err := webwin.ShowExisting(true)
+		println("webexisting:", int(c), errString(err))
+	case "webcomplete":
+		println("webcomplete:", errString(webwin.ShowComplete("")))
+	case "weberror":
+		println("weberror:", errString(webwin.ShowError("Windows service o‘rnatishda xatolik: access is denied.")))
+	case "webconnect":
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+		defer cancel()
+		err := webwin.ShowEnroll(ctx, webwin.EnrollParams{
+			Code: "482913", QRPayload: "chaqimchi://enroll?token=482913",
+			ExpiresAt: time.Now().Add(9 * time.Minute),
+			Wait: func(c context.Context, onErr func(error)) error {
+				select {
+				case <-c.Done():
+					return c.Err()
+				case <-time.After(6 * time.Second): // simulate the parent linking
+					return nil
+				}
+			},
+			Install: func(step func(int, float64)) error {
+				for _, s := range []struct {
+					st  int
+					pct float64
+				}{{1, 25}, {2, 45}, {3, 70}, {4, 92}} {
+					step(s.st, s.pct)
+					time.Sleep(700 * time.Millisecond)
+				}
+				return nil
+			},
+		})
+		println("webconnect:", errString(err))
 	case "complete":
 		ui.ShowComplete()
 	case "info":

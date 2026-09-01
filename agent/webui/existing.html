@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ChaqimchiAI Guard — Allaqachon o‘rnatilgan</title>
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/app.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/bridge.js" defer></script>
+  <style>
+    .choice { display:grid; gap:12px; margin-top:6px; }
+    .choice button { display:flex; gap:14px; align-items:flex-start; text-align:left; width:100%;
+      padding:16px; border:1px solid rgba(37,99,235,.14); border-radius:16px;
+      background:rgba(247,250,252,.8); cursor:pointer; }
+    .choice button:hover { border-color:#2563eb; background:#fff; }
+    .choice iconify-icon { font-size:24px; color:#2563eb; flex:0 0 auto; margin-top:2px; }
+    .choice b { display:block; font-size:14px; }
+    .choice small { display:block; margin-top:3px; color:#7a8698; font-size:12px; font-weight:600; line-height:1.5; }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <span class="brand"><span class="brand-mark"><iconify-icon icon="solar:shield-check-bold-duotone"></iconify-icon></span>ChaqimchiAI <small>Guard</small></span>
+    </header>
+    <section class="card install-layout">
+      <div class="install-art">
+        <span class="eyebrow">ALLAQACHON O‘RNATILGAN</span>
+        <h1>Bu kompyuterda Guard allaqachon bor.</h1>
+        <p data-bind="state_line">ChaqimchiAI Guard xizmati shu kompyuterda topildi.</p>
+        <div class="art-icon"><iconify-icon icon="solar:settings-bold-duotone"></iconify-icon></div>
+      </div>
+      <div class="form-side">
+        <div class="form-body">
+          <h2>Nima qilamiz?</h2>
+          <div class="choice">
+            <button onclick="ui.action('upgrade')">
+              <iconify-icon icon="solar:refresh-circle-linear"></iconify-icon>
+              <span><b>Yangilash</b><small>Dasturni yangi versiyaga almashtiradi. Qurilma o‘sha oilaga bog‘langan holda qoladi — qayta kod kiritish shart emas.</small></span>
+            </button>
+            <button onclick="ui.action('relink')">
+              <iconify-icon icon="solar:qr-code-bold-duotone"></iconify-icon>
+              <span><b>Qayta bog‘lash</b><small>Eski xizmatni to‘xtatadi va qurilmani yangi kod bilan boshqa hisobga bog‘laydi.</small></span>
+            </button>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn outline" onclick="ui.action('cancel')">Bekor qilish</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    ui.onState(function (s) {
+      var el = document.querySelector('[data-bind="state_line"]');
+      if (el) el.textContent = 'ChaqimchiAI Guard xizmati topildi — ' + (s.running ? 'hozir ishlab turibdi.' : 'hozir to‘xtagan.');
+    });
+  </script>
+</body>
+</html>

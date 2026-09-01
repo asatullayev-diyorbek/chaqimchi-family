@@ -19,7 +19,25 @@ burchak, soya, gradient, rangli tugma — printsipial mumkin emas.
   - `welcome.html` app-ready (Guard/ota-ona ohangi). `cmd/installer` uni
     ishlatadi; xato bo'lsa walk `ui.ShowWelcome()` ga qaytadi.
   - `cmd/uitest -screen webwelcome`.
-- **B–E bosqichlar** — quyida.
+- **B bosqich — DONE** (`GOOS=windows` build+vet PASS; Windows'da real render ko'rilmagan):
+  - `consent.html`, `existing.html` (yangi), `connect.html`, `installing.html`,
+    `complete.html`, `error.html` (yangi) — barchasi app-ready, Guard ohangida.
+  - `bridge.js` kengaytirildi: `data-bind-src`, `data-bind-class`, va sahifa
+    yuklanganda avtomatik `ui.action('__ready')` (Go boshlang'ich holatni shu
+    voqeadan keyin yuboradi — timing race yo'q).
+  - `webwin/installer.go`: `ShowConsent`, `ShowExisting`, `ShowComplete`,
+    `ShowError`, `ShowEnroll`. `ShowEnroll` bitta oynada ishlaydi: `connect.html`
+    (QR/kod/sanoq, JS-side countdown) → link topilgach `installing.html`ga
+    `window.location.href` bilan o'tadi → `Install` callback'idan step/pct
+    push qiladi (`__ready` orqali "catch-up" — sahifa qayta yuklansa oxirgi
+    holat qayta yuboriladi). `ErrCodeExpired` / `context.Canceled` / real xato
+    farqlanadi.
+  - `cmd/installer/main.go`: har bosqich avval WebView2, `webwin.ErrUnavailable`
+    bo'lsa walk'ga qaytadi (`showWelcome/showConsent/showExisting/showComplete`,
+    `runEnroll`). QR endi Go tomonda `go-qrcode` bilan PNG→base64 generatsiya
+    qilinadi (avval walk ichida edi).
+  - `cmd/uitest -screen web{welcome,consent,connect,existing,complete,error}`.
+- **C–E bosqichlar** — quyida.
 
 ---
 

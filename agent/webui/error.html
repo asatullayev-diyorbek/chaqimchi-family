@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ChaqimchiAI Guard — Xatolik</title>
+  <link rel="stylesheet" href="assets/fonts.css">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="assets/app.css">
+  <script src="assets/icons.js" defer></script>
+  <script src="assets/bridge.js" defer></script>
+  <style>
+    body { display:grid; place-items:center; }
+    .err { width:min(460px,calc(100% - 48px)); padding:40px; text-align:center;
+      border:1px solid rgba(255,255,255,.9); border-radius:28px;
+      background:rgba(255,255,255,.8); box-shadow:var(--shadow); }
+    .err .sym { display:grid; place-items:center; width:84px; height:84px; margin:0 auto 18px;
+      border-radius:26px; background:#fdeceb; color:#c0392b; font-size:44px; }
+    .err h1 { margin:0 0 8px; font-size:22px; }
+    .err p { margin:0 0 22px; color:#7a8698; font-size:13px; line-height:1.6; word-break:break-word; }
+  </style>
+</head>
+<body>
+  <div class="err">
+    <div class="sym"><iconify-icon icon="solar:shield-warning-bold-duotone"></iconify-icon></div>
+    <h1>O‘rnatishda xatolik</h1>
+    <p data-bind="message">Noma’lum xatolik.</p>
+    <button class="btn primary" onclick="ui.action('close')">Yopish</button>
+  </div>
+</body>
+</html>
