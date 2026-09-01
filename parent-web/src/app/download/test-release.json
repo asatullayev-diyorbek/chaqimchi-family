@@ -1,8 +1,8 @@
 {
   "version": "0.4.0-rc.3",
   "file": "ChaqimchiAI-Guard-test.zip",
-  "bytes": 36490534,
-  "sha256": "05A890C7168330A43502BD2908EF9CB25C33C1813A35E941BD9D347A198A6EB4",
+  "bytes": 36491084,
+  "sha256": "0E22F417FB937AC4D733BC88EB52771122EC370538DC3600FD217E66E0858526",
   "date": "2026-09-01",
-  "note": "Inno Setup o'ramisiz sinov build (3 EXE). Yangi: WebView2 installer/tray oynalari, re-install xavfsizligi, block ekranlar. Installer.exe ni Administrator sifatida ishga tushiring. Start Menu/Startup yorliqlari va uninstaller YO'Q (to'liq Setup.exe da bo'ladi). WebView2 uchun Windows 11 tavsiya etiladi."
+  "note": "Inno Setup o'ramisiz sinov build (3 EXE). WebView2 installer/tray oynalari + DPI-scaling tuzatildi (150%/175% ekranlar). Installer.exe ni Administrator sifatida. Start Menu/Startup yorliqlari va uninstaller YO'Q (to'liq Setup.exe da). Windows 11 tavsiya."
 }

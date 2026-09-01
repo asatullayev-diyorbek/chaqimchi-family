@@ -14,7 +14,8 @@ import (
 	qrcode "github.com/skip2/go-qrcode"
 )
 
-const instW, instH = 960, 620
+// Installer window CSS size (webwin.New scales it to physical px by DPI).
+const instW, instH = 940, 640
 
 // ErrCodeExpired is returned by ShowEnroll when the pairing code lapsed
 // before the parent linked the device; the caller regenerates and retries.

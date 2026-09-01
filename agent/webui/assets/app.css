@@ -23,9 +23,12 @@ body {
   border-radius: 0;
   background: rgba(255, 255, 255, .72);
 }
-.install-art { padding: 44px; }
-.install-art h1 { font-size: 34px; }
-.form-side { padding: 40px; }
+.install-art { padding: 40px 40px 32px; }
+.install-art h1 { font-size: 30px; line-height: 1.15; margin: 16px 0 12px; }
+.install-art p { font-size: 14px; }
+.install-art .art-icon { width: 104px; height: 104px; font-size: 52px; margin-top: 34px; }
+.form-side { padding: 38px; overflow-y: auto; }
+.form-side h2 { font-size: 24px; }
 
 /* The installer flow can't be navigated by the child; the header keeps the
    step dots but the brand is not a link. */

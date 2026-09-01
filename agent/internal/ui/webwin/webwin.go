@@ -12,9 +12,19 @@ import (
 	"net"
 	"net/http"
 	"sync"
+	"unsafe"
 
 	"github.com/chaqimchi/chaqimchi-family/agent/webui"
 	webview "github.com/jchv/go-webview2"
+	"golang.org/x/sys/windows"
+)
+
+var (
+	user32              = windows.NewLazySystemDLL("user32.dll")
+	procGetDpiForWindow = user32.NewProc("GetDpiForWindow")
+	procGetWindowRect   = user32.NewProc("GetWindowRect")
+	procSetWindowPos    = user32.NewProc("SetWindowPos")
+	procGetSystemMetric = user32.NewProc("GetSystemMetrics")
 )
 
 // ErrUnavailable means a WebView2 window could not be created — almost always
@@ -92,9 +102,51 @@ func New(opts Options) (*Window, error) {
 	if wv == nil {
 		return nil, ErrUnavailable
 	}
-	wv.SetSize(opts.Width, opts.Height, webview.HintFixed)
+	// opts.Width/Height are CSS pixels (the page's design size). go-webview2
+	// sizes the native window in physical pixels and does not scale for DPI,
+	// so on a 150% display a "960" window gives the page only 640 CSS px and
+	// trips its mobile breakpoint. Scale the window by the monitor DPI so the
+	// page always gets the CSS size it was designed for.
+	hwnd := uintptr(wv.Window())
+	scale := dpiScale(hwnd)
+	pw, ph := int(float64(opts.Width)*scale+0.5), int(float64(opts.Height)*scale+0.5)
+	wv.SetSize(pw, ph, webview.HintFixed)
+	recenter(hwnd)
 	wv.Navigate(base + opts.Page)
 	return &Window{wv: wv}, nil
+}
+
+func dpiScale(hwnd uintptr) float64 {
+	if procGetDpiForWindow.Find() != nil {
+		return 1
+	}
+	dpi, _, _ := procGetDpiForWindow.Call(hwnd)
+	if dpi < 96 {
+		return 1
+	}
+	return float64(dpi) / 96
+}
+
+// recenter re-positions the window on the primary monitor after SetSize
+// (which keeps the top-left corner, so a DPI-enlarged window drifts off).
+func recenter(hwnd uintptr) {
+	var r struct{ left, top, right, bottom int32 }
+	if ret, _, _ := procGetWindowRect.Call(hwnd, uintptr(unsafe.Pointer(&r))); ret == 0 {
+		return
+	}
+	w, h := r.right-r.left, r.bottom-r.top
+	sw, _, _ := procGetSystemMetric.Call(0) // SM_CXSCREEN
+	sh, _, _ := procGetSystemMetric.Call(1) // SM_CYSCREEN
+	x := (int32(sw) - w) / 2
+	y := (int32(sh) - h) / 2
+	if x < 0 {
+		x = 0
+	}
+	if y < 0 {
+		y = 0
+	}
+	const swpNoSize, swpNoZOrder, swpNoActivate = 0x0001, 0x0004, 0x0010
+	procSetWindowPos.Call(hwnd, 0, uintptr(x), uintptr(y), 0, 0, swpNoSize|swpNoZOrder|swpNoActivate)
 }
 
 // OnAction binds the page's window.ui.action(name, payload) calls. payload is
