@@ -53,33 +53,40 @@ func fatalInstaller(format string, args ...any) {
 // runtime, so the fallback is belt-and-suspenders).
 
 func showWelcome() bool {
+	log.Println("oyna: welcome")
 	ok, err := webwin.ShowWelcome()
 	if err != nil {
 		log.Printf("webview welcome fallback: %v", err)
 		return ui.ShowWelcome()
 	}
+	log.Printf("welcome -> davom=%v", ok)
 	return ok
 }
 
 func showConsent() bool {
+	log.Println("oyna: consent")
 	ok, err := webwin.ShowConsent()
 	if err != nil {
 		log.Printf("webview consent fallback: %v", err)
 		ok, _ = ui.RequireInstallerConsent()
 	}
+	log.Printf("consent -> qabul=%v", ok)
 	return ok
 }
 
 func showExisting(running bool) ui.ExistingChoice {
+	log.Printf("oyna: existing (running=%v)", running)
 	c, err := webwin.ShowExisting(running)
 	if err != nil {
 		log.Printf("webview existing-install fallback: %v", err)
 		return ui.AskExistingInstall(running)
 	}
+	log.Printf("existing -> tanlov=%d", c)
 	return c
 }
 
 func showComplete(heading string) {
+	log.Println("oyna: complete")
 	if err := webwin.ShowComplete(heading); err != nil {
 		log.Printf("webview complete fallback: %v", err)
 		ui.ShowComplete()
@@ -91,6 +98,16 @@ func main() {
 	agentPath := flag.String("agent-path", "", "development override: agent.exe to embed into the installation")
 	allowInsecureHTTP := flag.Bool("allow-insecure-http", false, "development only: allow a non-HTTPS backend URL")
 	flag.Parse()
+
+	// A windowsgui binary has no console, so route log.* to a file the tester
+	// (and support) can read when the wizard fails partway.
+	logPath := filepath.Join(os.TempDir(), "chaqimchi-installer.log")
+	if lf, e := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644); e == nil {
+		log.SetOutput(lf)
+		defer lf.Close()
+	}
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.Printf("installer boshlandi (pid %d)", os.Getpid())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
@@ -190,10 +207,12 @@ func runEnroll(ctx context.Context, client *enroll.Client, code *enroll.Code, ba
 		return nil
 	}
 
+	log.Printf("oyna: enroll (device %s, kod muddati %s)", code.DeviceID, code.ExpiresAt.Format(time.Kitchen))
 	err := webwin.ShowEnroll(ctx, webwin.EnrollParams{
 		Code: code.Code, QRPayload: code.QRPayload, ExpiresAt: code.ExpiresAt,
 		Wait: wait, Install: install,
 	})
+	log.Printf("enroll -> %v", err)
 	if errors.Is(err, webwin.ErrUnavailable) {
 		log.Printf("webview enroll fallback: %v", err)
 		return ui.ShowEnrollment(ctx, code.Code, code.QRPayload, code.ExpiresAt, wait,

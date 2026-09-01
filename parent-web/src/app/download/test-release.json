@@ -1,8 +1,8 @@
 {
   "version": "0.4.0-rc.3",
   "file": "ChaqimchiAI-Guard-test.zip",
-  "bytes": 36490812,
-  "sha256": "F42F7904CF4C7628F7F40FCC4B4FCB71E5B3F78A59CCF820F17A12642758165C",
+  "bytes": 36494307,
+  "sha256": "18B58AA96B6BBE1746718C2E095728C3713556B251F3CAF5DF2B8FF2EFFF4F67",
   "date": "2026-09-01",
-  "note": "Sinov build #3: DPI-scaling, tugmalar ishlashi va layout tuzatildi. Installer.exe ni Administrator sifatida. Start Menu/Startup/uninstaller YO'Q. Windows 11 tavsiya."
+  "note": "Sinov build #4: oynalar orasida qotib qolish tuzatildi. Xato bo'lsa %TEMP%/chaqimchi-installer.log ni yuboring. Installer.exe Administrator sifatida."
 }

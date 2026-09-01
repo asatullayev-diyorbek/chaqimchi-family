@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"unsafe"
 
@@ -25,7 +27,10 @@ var (
 	procGetWindowRect   = user32.NewProc("GetWindowRect")
 	procSetWindowPos    = user32.NewProc("SetWindowPos")
 	procGetSystemMetric = user32.NewProc("GetSystemMetrics")
+	procPostMessageW    = user32.NewProc("PostMessageW")
 )
+
+const wmClose = 0x0010
 
 // ErrUnavailable means a WebView2 window could not be created — almost always
 // because the WebView2 runtime is not installed. Callers fall back to walk.
@@ -96,6 +101,7 @@ func New(opts Options) (*Window, error) {
 	wv := webview.NewWithOptions(webview.WebViewOptions{
 		Debug:     false,
 		AutoFocus: true,
+		DataPath:  webView2DataPath(),
 		WindowOptions: webview.WindowOptions{
 			Title:  opts.Title,
 			Width:  uint(opts.Width),
@@ -117,6 +123,17 @@ func New(opts Options) (*Window, error) {
 	wv.SetSize(pw, ph, webview.HintFixed)
 	recenter(hwnd)
 	return &Window{wv: wv, url: base + opts.Page}, nil
+}
+
+// webView2DataPath pins every window in the process to one user-data folder,
+// so sequential windows share a single browser process instead of each
+// spinning up an environment against the default per-exe folder.
+func webView2DataPath() string {
+	base := os.Getenv("LOCALAPPDATA")
+	if base == "" {
+		base = os.TempDir()
+	}
+	return filepath.Join(base, "ChaqimchiAI", "WebView2")
 }
 
 func dpiScale(hwnd uintptr) float64 {
@@ -173,18 +190,25 @@ func (w *Window) SetState(v any) {
 func (w *Window) Eval(js string) { w.wv.Dispatch(func() { w.wv.Eval(js) }) }
 
 // Close ends Run. Safe from any goroutine, and idempotent.
+//
+// It posts WM_CLOSE to the native window rather than calling Terminate()
+// (PostQuitMessage): that way the still-running message loop actually runs
+// DestroyWindow -> WM_DESTROY, so the window and its class routing are torn
+// down before Run returns. Terminate() left the native window alive, and its
+// deferred WM_CLOSE would then be picked up by the *next* webview's message
+// loop in the same process — closing that one on sight (the installer's
+// second window flashing and the setup bailing out).
 func (w *Window) Close() {
 	w.mu.Lock()
 	w.closed = true
 	w.mu.Unlock()
-	w.wv.Terminate()
+	procPostMessageW.Call(uintptr(w.wv.Window()), wmClose, 0, 0)
 }
 
 // Run navigates to the page (now that OnAction has registered the bridge),
 // shows the window, and blocks until it is closed (by Close or the user
-// clicking the window's X). Destroys the webview before returning.
+// clicking the window's X).
 func (w *Window) Run() {
 	w.wv.Navigate(w.url)
 	w.wv.Run()
-	w.wv.Destroy()
 }
