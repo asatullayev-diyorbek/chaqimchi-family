@@ -12,6 +12,7 @@ package ui
 // reviewed draft, not a tested feature.
 
 import (
+	"strings"
 	"sync"
 	"syscall"
 	"unsafe"
@@ -41,8 +42,29 @@ var (
 	procCreateSolidBrush = gdi32Block.NewProc("CreateSolidBrush")
 	procSetTextColor     = gdi32Block.NewProc("SetTextColor")
 	procSetBkMode        = gdi32Block.NewProc("SetBkMode")
+	procCreateFontW      = gdi32Block.NewProc("CreateFontW")
+	procSelectObject     = gdi32Block.NewProc("SelectObject")
+	procDeleteObject     = gdi32Block.NewProc("DeleteObject")
+	procGetDeviceCaps    = gdi32Block.NewProc("GetDeviceCaps")
 
 	procGetModuleHandleW = kernel32Block.NewProc("GetModuleHandleW")
+)
+
+// Brand palette as GDI COLORREF (0x00BBGGRR).
+const (
+	blockBgColor   = 0x005E5F0A // deep teal — matches theme colorAccentDark
+	blockHeadColor = 0x00FFFFFF // white
+	blockBodyColor = 0x00E8E9C7 // muted teal-tint (theme colorAccentSub)
+	blockMarkColor = 0x00CFDCDB // faint, for the wordmark
+
+	logPixelsY        = 90
+	defaultCharset    = 1
+	cleartypeQuality  = 5
+	fwNormal          = 400
+	fwSemibold        = 600
+	fwBold            = 700
+	dtSingleLine      = 0x00000020
+	blockSideMarginPc = 12 // % of width kept clear on each side of the heading
 )
 
 const (
@@ -128,12 +150,12 @@ func BlockScreen(message string) {
 	if !classRegistered {
 		wndProcPtr := syscall.NewCallback(blockWndProc)
 		className, _ := syscall.UTF16PtrFromString(blockClassName)
-		blackBrush, _, _ := procCreateSolidBrush.Call(0x00000000)
+		bgBrush, _, _ := procCreateSolidBrush.Call(blockBgColor)
 		wc := wndClassExW{
 			cbSize:        uint32(unsafe.Sizeof(wndClassExW{})),
 			lpfnWndProc:   wndProcPtr,
 			hInstance:     hInstance,
-			hbrBackground: blackBrush,
+			hbrBackground: bgBrush,
 			lpszClassName: className,
 		}
 		procRegisterClassExW.Call(uintptr(unsafe.Pointer(&wc)))
@@ -201,48 +223,112 @@ func blockWndProc(hwnd, message, wParam, lParam uintptr) uintptr {
 	case wmPaint:
 		var ps paintStructT
 		hdc, _, _ := procBeginPaint.Call(hwnd, uintptr(unsafe.Pointer(&ps)))
-
-		procSetBkMode.Call(hdc, bkModeTransparent)
-		procSetTextColor.Call(hdc, 0x00ffffff) // white text on the black background
-
-		blockScreenMu.Lock()
-		text := currentBlockText
-		blockScreenMu.Unlock()
-		textPtr, _ := syscall.UTF16PtrFromString(text)
-		textLen := uintptr(len([]rune(text)))
-
-		// DT_VCENTER only applies to single-line text, and this message can
-		// be multi-line (main line + the "ota-onangga murojaat qil"
-		// follow-up) — so vertical centering is done manually: first
-		// measure the wrapped text's height with DT_CALCRECT, then offset
-		// that rect to the middle of the screen before the real paint.
-		screenRect := ps.rcPaint
-		measureRect := rectT{left: screenRect.left, right: screenRect.right}
-		procDrawTextW.Call(
-			hdc,
-			uintptr(unsafe.Pointer(textPtr)),
-			textLen,
-			uintptr(unsafe.Pointer(&measureRect)),
-			uintptr(dtCenter|dtWordBreak|dtCalcRect),
-		)
-
-		textHeight := measureRect.bottom - measureRect.top
-		screenHeight := screenRect.bottom - screenRect.top
-		top := screenRect.top + (screenHeight-textHeight)/2
-		paintRect := rectT{left: screenRect.left, top: top, right: screenRect.right, bottom: top + textHeight}
-
-		procDrawTextW.Call(
-			hdc,
-			uintptr(unsafe.Pointer(textPtr)),
-			textLen,
-			uintptr(unsafe.Pointer(&paintRect)),
-			uintptr(dtCenter|dtWordBreak),
-		)
-
+		paintBlockScreen(hdc)
 		procEndPaint.Call(hwnd, uintptr(unsafe.Pointer(&ps)))
 		return 0
 	default:
 		ret, _, _ := procDefWindowProcW.Call(hwnd, message, wParam, lParam)
 		return ret
 	}
+}
+
+// paintBlockScreen draws the branded overlay: a faint wordmark near the top,
+// then a large heading and a calmer sub-line, vertically centred as a block.
+// It leans on the window class's teal background brush for the fill.
+func paintBlockScreen(hdc uintptr) {
+	blockScreenMu.Lock()
+	head, body := splitBlockMessage(currentBlockText)
+	blockScreenMu.Unlock()
+
+	screenW, _, _ := procGetSystemMetrics.Call(smCXScreen)
+	screenH, _, _ := procGetSystemMetrics.Call(smCYScreen)
+	w, h := int32(screenW), int32(screenH)
+
+	dpiY, _, _ := procGetDeviceCaps.Call(hdc, logPixelsY)
+	markFont := createBlockFont(int(dpiY), 13, fwSemibold)
+	headFont := createBlockFont(int(dpiY), 34, fwBold)
+	bodyFont := createBlockFont(int(dpiY), 16, fwNormal)
+	old, _, _ := procSelectObject.Call(hdc, markFont)
+	defer func() {
+		procSelectObject.Call(hdc, old)
+		procDeleteObject.Call(markFont)
+		procDeleteObject.Call(headFont)
+		procDeleteObject.Call(bodyFont)
+	}()
+
+	procSetBkMode.Call(hdc, bkModeTransparent)
+
+	// Wordmark.
+	procSelectObject.Call(hdc, markFont)
+	procSetTextColor.Call(hdc, blockMarkColor)
+	markRect := rectT{left: 0, top: h / 12, right: w, bottom: h/12 + 60}
+	drawBlockText(hdc, "CHAQIMCHIAI  GUARD", &markRect, dtCenter|dtSingleLine)
+
+	side := w * blockSideMarginPc / 100
+	headW := w - 2*side
+	bodyW := headW * 82 / 100
+	bodySide := (w - bodyW) / 2
+
+	procSelectObject.Call(hdc, headFont)
+	headH := measureBlockText(hdc, head, headW, dtCenter|dtWordBreak)
+	procSelectObject.Call(hdc, bodyFont)
+	bodyH := int32(0)
+	if body != "" {
+		bodyH = measureBlockText(hdc, body, bodyW, dtCenter|dtWordBreak)
+	}
+
+	gap := int32(0)
+	if body != "" {
+		gap = h / 28
+	}
+	total := headH + gap + bodyH
+	top := (h - total) / 2
+
+	procSelectObject.Call(hdc, headFont)
+	procSetTextColor.Call(hdc, blockHeadColor)
+	headRect := rectT{left: side, top: top, right: side + headW, bottom: top + headH}
+	drawBlockText(hdc, head, &headRect, dtCenter|dtWordBreak)
+
+	if body != "" {
+		procSelectObject.Call(hdc, bodyFont)
+		procSetTextColor.Call(hdc, blockBodyColor)
+		bodyTop := top + headH + gap
+		bodyRect := rectT{left: bodySide, top: bodyTop, right: bodySide + bodyW, bottom: bodyTop + bodyH}
+		drawBlockText(hdc, body, &bodyRect, dtCenter|dtWordBreak)
+	}
+}
+
+// splitBlockMessage divides an enforcer message into a heading and a calmer
+// follow-up on the first blank line (see internal/rules.MessageLimitReached).
+func splitBlockMessage(s string) (head, body string) {
+	if i := strings.Index(s, "\n\n"); i >= 0 {
+		return strings.TrimSpace(s[:i]), strings.TrimSpace(s[i+2:])
+	}
+	return strings.TrimSpace(s), ""
+}
+
+func createBlockFont(dpiY, pointSize, weight int) uintptr {
+	height := -(dpiY * pointSize / 72)
+	face, _ := syscall.UTF16PtrFromString("Segoe UI")
+	f, _, _ := procCreateFontW.Call(
+		uintptr(height), 0, 0, 0, uintptr(weight),
+		0, 0, 0,
+		defaultCharset, 0, 0, cleartypeQuality, 0,
+		uintptr(unsafe.Pointer(face)),
+	)
+	return f
+}
+
+func drawBlockText(hdc uintptr, s string, r *rectT, format uintptr) {
+	if s == "" {
+		return
+	}
+	p, _ := syscall.UTF16PtrFromString(s)
+	procDrawTextW.Call(hdc, uintptr(unsafe.Pointer(p)), uintptr(len([]rune(s))), uintptr(unsafe.Pointer(r)), format)
+}
+
+func measureBlockText(hdc uintptr, s string, width int32, format uintptr) int32 {
+	r := rectT{left: 0, top: 0, right: width, bottom: 0}
+	drawBlockText(hdc, s, &r, format|dtCalcRect)
+	return r.bottom - r.top
 }

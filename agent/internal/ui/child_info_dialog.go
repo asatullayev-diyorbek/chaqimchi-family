@@ -11,17 +11,21 @@ import (
 // they explain the current state and data boundaries but expose no control
 // that could stop or weaken the agent from the child-facing tray menu.
 func ShowChildStatus(status Status) {
-	message := "ChaqimchiAI Child faol. Bugungi vaqt va qolgan limitni ota-onangizning ilovasida ko‘rishingiz mumkin."
+	heading, message := "Hammasi joyida", "ChaqimchiAI Child faol. Bugungi vaqt va qolgan limitni ota-onangizning ilovasida ko‘rishingiz mumkin."
 	if status == StatusWarning {
-		message = "ChaqimchiAI Child ogohlantirish holatida. Bugungi qoida yoki limitga yaqin qoldingiz. Savol bo‘lsa, ota-onangiz bilan gaplashing."
+		heading, message = "Ogohlantirish", "Bugungi qoida yoki limitga yaqin qoldingiz. Savol bo‘lsa, ota-onangiz bilan gaplashing."
 	} else if status == StatusOffline {
-		message = "ChaqimchiAI Child hozir internetga ulanmagan. Aloqa tiklanganda ma’lumotlar xavfsiz yuboriladi."
+		heading, message = "Internet aloqasi yo‘q", "ChaqimchiAI Child hozir internetga ulanmagan. Aloqa tiklanganda ma’lumotlar xavfsiz yuboriladi."
 	}
-	showInfoDialog("ChaqimchiAI Child — Holat", message)
+	showInfoWindow("ChaqimchiAI Child — Holat", "BUGUNGI HOLAT", heading, message)
 }
 
 func ShowPrivacyNotice() {
-	showInfoDialog("ChaqimchiAI Child — Shaffoflik", "Ota-ona ilova va sayt nomlari, ekran vaqti hamda qurilma holatini ko‘rishi mumkin.\n\nXabarlar, parollar, kamera yoki mikrofon, bosilgan tugmalar kuzatilmaydi.\n\nBu ilova yashirin kuzatuv uchun emas. Savolingiz bo‘lsa, ota-onangiz bilan ochiq gaplashing.")
+	showInfoWindow("ChaqimchiAI Child — Shaffoflik", "NIMA KUZATILADI",
+		"Ota-onam nimani ko‘radi?",
+		"Ota-ona ilova va sayt nomlari, ekran vaqti hamda qurilma holatini ko‘rishi mumkin.\n\n"+
+			"Xabarlar, parollar, kamera yoki mikrofon, bosilgan tugmalar kuzatilmaydi.\n\n"+
+			"Bu ilova yashirin kuzatuv uchun emas. Savolingiz bo‘lsa, ota-onangiz bilan ochiq gaplashing.")
 }
 
 // ShowError presents a fatal installer error in GUI builds where there is no

@@ -12,6 +12,37 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
 - Agent, bootstrap yoki boshqa ichki `.exe` fayllar public tarqatilmaydi. Foydalanuvchiga faqat `ChaqimchiAI Guard Setup.exe` beriladi.
 - Production’da faqat HTTPS ishlatiladi. Defender, SmartScreen, Firewall yoki UAC’ni o‘chirish tavsiya qilinmaydi.
 
+## Hozirgi holat — 2026-09-01 yangilanishi (agent GUI)
+
+- [x] **CT-06 toza o'rnatish tasdiqlandi** (foydalanuvchi): yangi installer bilan toza o'rnatish, GUI, consent, QR enroll, service autostart, `app_usage` + ikonkalar dashboard'da. CT-07 real-run keyingi navbatda.
+- [~] **Agent GUI — Faza 1 (sayqal) DONE, `GOOS=windows` build+vet PASS, Windows'da hali ko'rilmagan:**
+  - `internal/ui/theme.go` qayta yozildi: accent header band, AA yumaloq-burchak logo mark, matn shkalasi helperlari (`eyebrow/titleText/bodyText`), `card()`, `footerButtons()`.
+  - `consent_dialog.go` / `enrollment_wizard.go` yangi dizayn tiliga o'tkazildi (header band, card, QR oq kartada, katta teal kod).
+  - `info_window.go` (yangi) — tray'dagi 3 ta xom `MessageBox` o'rniga temali walk oyna.
+  - `welcome_complete.go` (yangi) — installer Oyna 1 "Xush kelibsiz" (§3.1) + Oyna 5 "Tayyor" (§3.6); `installer/main.go` ga ulandi.
+  - `cmd/uitest`: `-screen welcome|complete|info|childstatus` qo'shildi.
+- [~] **Agent GUI — Faza 2A: bola status oynasi DONE (build+vet PASS, Windows'da ko'rilmagan):**
+  - `localipc.Status` ga `Online`, `TodayMinutes`, `DailyLimitMinutes` qo'shildi; `cmd/agent` ularni poll loop + uploader'dan jonli to'ldiradi (`enforcer.DailyLimitMinutes()` yangi export).
+  - `child_status_window.go` (yangi): `status.html` dizayni — bugungi ekran vaqti, limit progress bar, "qoldi", "Ota-onam nimani ko'radi?" havolasi. Tray status menyusi endi shu oynani ochadi (`Tray.SetStatusData`).
+- [~] **Agent GUI — Faza 2C: lokal "Kattalar uchun" paneli — DONE (backend testlari 69/69 PASS; agent `GOOS=windows` build+vet PASS; Windows'da ko'rilmagan):**
+  - **Parol o'rniga — shaffoflik orqali himoya** (foydalanuvchi qarori): panel parol bilan qulflanmaydi; uni ochish ota-onaga bildiriladi (dashboard alert + Telegram).
+  - Tray'da yangi "Kattalar uchun" menyusi → `ShowAdultAccessGate()` (ogohlantirish oynasi) → `cmd/desktop` `POST /v1/adult-access` (yangi localipc route) → service `alertReporter.Report("settings_panel_access", …)` → keyin `ShowAdultPanel()`.
+  - `ShowAdultPanel`: qurilma holati (aloqa/sync/versiya/bugungi vaqt), diagnostika jurnali yo'li, "Yordam" (brauzer), "O'chirish (Windows)" (`ms-settings:appsfeatures`). Re-link va diagnostika yuklash keyingi bosqichga qoldirildi.
+  - **Backend:** `settings_panel_access` yangi alert turi (migration `0002`); `apps/alerts/notifications.py` — bu tur uchun oiladagi Telegram-ulangan ota-onalarга push (`send_text` yangi, `apps/accounts/telegram.py`). `ReportAlertView` best-effort chaqiradi. +2 test.
+  - **parent-web:** `AlertType` union + alert sahifasi/topbar label va ikonka.
+- [~] **Re-install xavfsizligi — DONE (agent build+vet PASS, Windows'da ko'rilmagan):**
+  - **Bug: installer oldin o'rnatilganini tekshirmasdi / ishlab turgan agent ustidan o'rnatardi.**
+  - `internal/service`: `Inspect(name)` (o'rnatilgan/ishlayaptimi + eski argumentlar `DecomposeCommandLine` bilan), `Stop(name)` (yo'q bo'lsa no-op), `restart` → `stopAndWait` refaktor.
+  - `cmd/installer`: enrollment'dan oldin `service.Inspect` → agar o'rnatilgan bo'lsa `ui.AskExistingInstall` oynasi: **Yangilash** (binary almashadi, qurilma o'sha hisobda qoladi — `existing.Args` bilan qayta ro'yxatdan o'tkaziladi, enrollment yo'q), **Qayta bog'lash** (eski xizmat to'xtatiladi, yangi kod), **Bekor qilish**. `installAgentBinary` rename muvaffaqiyatsiz bo'lsa `service.Stop` + retry.
+  - `chaqimchi-guard.iss`: `CloseApplications=yes` / `RestartApplications=no`; `PrepareToInstall` — `[Files]`'dan oldin Desktop.exe taskkill + `sc stop ChaqimchiFamilyAgent`.
+  - `cmd/uitest -screen existing`.
+- [~] **Agent GUI — Faza 2B: block/limit ekrani brendlandi (`GOOS=windows` build+vet PASS, Windows'da ko'rilmagan):**
+  - `block_screen.go`: qora fon → deep teal (theme `colorAccentDark`); GDI `CreateFontW` bilan 3 shrift (wordmark / katta sarlavha / xotirjam sub-matn), DPI-scaled; `\n\n` bo'yicha sarlavha+izohga bo'linadi; blok vertikal markazda; har paint'da fontlar `DeleteObject` bilan tozalanadi (GDI leak yo'q). Mexanizm o'zgarmadi (borderless WS_POPUP, yopib bo'lmaydigan, faqat `Close()` dasturiy).
+  - `cmd/uitest -screen block` (8s dan keyin avto-yopiladi).
+  - **Hali ulanmagan:** enforcer `Block` callback'i Session 0 service'da UI chizolmaydi; block ekranini ko'rsatish uchun session helper'ga buyruq kanali kerak (kelajak ishi).
+- [ ] **Kelajak:** block ekranini session helper orqali ulash (helper hozir faqat foreground reports, buyruq qabul qilmaydi).
+- [ ] **Kelajak:** lokal paneldan qurilmani qayta bog'lash (relink kod API), diagnostika jurnalini serverga yuklash.
+
 ## Hozirgi holat — 2026-08-28 yangilanishi (real Windows)
 
 ### Parent-web dashboard tuzatishlari (real foydalanuvchi test'idan) — deploy kutmoqda

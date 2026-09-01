@@ -51,6 +51,11 @@ ArchitecturesInstallIn64BitMode=x64compatible
 Compression=lzma2
 SolidCompression=yes
 ; Do not use UPX or other executable packers.
+; A re-install must not copy over a running tray app or agent. Let Inno close
+; in-use files it detects, and stop the service / tray explicitly in
+; PrepareToInstall before [Files] runs. Don't force a reboot for this.
+CloseApplications=yes
+RestartApplications=no
 
 [Languages]
 Name: "uz"; MessagesFile: "compiler:Default.isl"
@@ -65,6 +70,21 @@ begin
   Result := not WizardSilent();
   if not Result then
     MsgBox('ChaqimchiAI Guard jimgina (silent) o''rnatilmaydi.', mbError, MB_OK);
+end;
+
+// Stop the tray app and the Guard service before any file is copied. On
+// Windows a running .exe can't be overwritten; the embedded bootstrap also
+// stops the service, but doing it here first keeps the [Files] step clean
+// and lets the bootstrap own only the re-install decision.
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  rc: Integer;
+begin
+  Result := '';
+  NeedsRestart := False;
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/f /im "ChaqimchiAI Guard Desktop.exe"', '', SW_HIDE, ewWaitUntilTerminated, rc);
+  Exec(ExpandConstant('{sys}\sc.exe'), 'stop ChaqimchiFamilyAgent', '', SW_HIDE, ewWaitUntilTerminated, rc);
+  Sleep(800);
 end;
 
 [Files]

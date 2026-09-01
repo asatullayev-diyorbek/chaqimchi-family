@@ -22,7 +22,7 @@ func testServer(t *testing.T, foreground chan<- string) *httptest.Server {
 
 func testServerWithIcons(t *testing.T, foreground chan<- string, icons chan<- AppIconReport) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, foreground, icons))
+	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, foreground, icons, nil))
 	t.Cleanup(srv.Close)
 	return srv
 }

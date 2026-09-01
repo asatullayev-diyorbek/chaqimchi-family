@@ -26,6 +26,14 @@ type Status struct {
 	LastSyncAt string   `json:"last_sync_at,omitempty"`
 	Monitoring []string `json:"monitoring"`
 	RecentLogs []string `json:"recent_logs"`
+
+	// Child-facing status fields, surfaced in the tray status window
+	// (child-ui/status.html). TodayMinutes is the agent's running estimate
+	// of today's foreground time; DailyLimitMinutes is 0 when no
+	// daily_limit_minutes rule is set.
+	Online            bool `json:"online"`
+	TodayMinutes      int  `json:"today_minutes"`
+	DailyLimitMinutes int  `json:"daily_limit_minutes,omitempty"`
 }
 
 // ForegroundReport is the POST /v1/foreground body. App is an executable
@@ -52,8 +60,29 @@ type AppIconReport struct {
 // the channel is momentarily full, so a slow consumer can never block the
 // reporter); if nil, that route responds 404. Split out from Serve so tests
 // can drive it through httptest without binding the fixed Address.
-func Handler(status func() Status, foreground chan<- string, icons chan<- AppIconReport) http.Handler {
+// Handler builds the IPC routes. onAdultAccess, if non-nil, enables
+// POST /v1/adult-access: the user-session tray calls it right before it
+// opens the local "Kattalar uchun" panel, and the service turns that into a
+// parent-visible alert (dashboard + Telegram). It carries no credential or
+// control capability — it only asks the service to notify the parent.
+func Handler(status func() Status, foreground chan<- string, icons chan<- AppIconReport, onAdultAccess func(reason string)) http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/adult-access", func(w http.ResponseWriter, r *http.Request) {
+		if onAdultAccess == nil {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		var body struct {
+			Reason string `json:"reason"`
+		}
+		_ = json.NewDecoder(http.MaxBytesReader(w, r.Body, 4096)).Decode(&body)
+		onAdultAccess(body.Reason)
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.HandleFunc("/v1/status", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -96,8 +125,8 @@ func Handler(status func() Status, foreground chan<- string, icons chan<- AppIco
 
 // Serve runs the local IPC server on the fixed loopback Address until ctx is
 // cancelled.
-func Serve(ctx context.Context, status func() Status, foreground chan<- string, icons chan<- AppIconReport) error {
-	s := &http.Server{Handler: Handler(status, foreground, icons), ReadHeaderTimeout: 3 * time.Second}
+func Serve(ctx context.Context, status func() Status, foreground chan<- string, icons chan<- AppIconReport, onAdultAccess func(reason string)) error {
+	s := &http.Server{Handler: Handler(status, foreground, icons, onAdultAccess), ReadHeaderTimeout: 3 * time.Second}
 	ln, err := net.Listen("tcp4", Address)
 	if err != nil {
 		return err

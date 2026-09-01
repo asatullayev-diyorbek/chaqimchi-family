@@ -79,6 +79,10 @@ func (e *Enforcer) blockedApps() []string {
 	return apps
 }
 
+// DailyLimitMinutes exposes the current daily screen-time limit (if any) so
+// the status UI can show remaining time alongside enforcement.
+func (e *Enforcer) DailyLimitMinutes() (float64, bool) { return e.dailyLimitMinutes() }
+
 func (e *Enforcer) dailyLimitMinutes() (float64, bool) {
 	rules, err := e.Cache.All()
 	if err != nil {

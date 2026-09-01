@@ -7,8 +7,13 @@ from rest_framework.views import APIView
 from apps.accounts.models import ParentUser
 from apps.devices.models import ChildDevice
 
+import logging
+
 from .models import Alert
+from .notifications import notify_parents_of_alert
 from .serializers import AlertSerializer, ReportAlertSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class ReportAlertView(APIView):
@@ -34,6 +39,10 @@ class ReportAlertView(APIView):
             payload=data.get("payload") or {},
             triggered_at=data.get("triggered_at") or timezone.now(),
         )
+        try:
+            notify_parents_of_alert(alert)
+        except Exception:  # noqa: BLE001 - notification must not fail the report
+            logger.exception("alert parent notification failed for alert %s", alert.pk)
         return Response(AlertSerializer(alert).data, status=status.HTTP_201_CREATED)
 
 

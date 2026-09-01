@@ -57,6 +57,13 @@ def _telegram_api_call(method, payload):
         return None
 
 
+def send_text(chat_id, text):
+    """Best-effort plain-text push to a Telegram chat. Used for parent
+    notifications (e.g. the child opening the local settings panel). Returns
+    the API response dict or None; never raises."""
+    return _telegram_api_call("sendMessage", {"chat_id": chat_id, "text": text})
+
+
 def _send_confirmation_prompt(chat_id, token):
     _telegram_api_call(
         "sendMessage",

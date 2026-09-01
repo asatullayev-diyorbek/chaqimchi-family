@@ -153,7 +153,7 @@ export default function TopbarActions() {
                   <iconify-icon icon={alert.alert_type === "limit_reached" ? "solar:danger-triangle-linear" : "solar:shield-check-linear"}></iconify-icon>
                 </span>
                 <div>
-                  <p>{alert.alert_type === "limit_reached" ? "Ekran vaqti limiti tugadi" : "Cheklangan ilova ochildi"}</p>
+                  <p>{alert.alert_type === "limit_reached" ? "Ekran vaqti limiti tugadi" : alert.alert_type === "settings_panel_access" ? "«Kattalar uchun» paneli ochildi" : "Cheklangan ilova ochildi"}</p>
                   <small suppressHydrationWarning>{uzDateTime(new Date(alert.triggered_at))}</small>
                 </div>
               </Link>

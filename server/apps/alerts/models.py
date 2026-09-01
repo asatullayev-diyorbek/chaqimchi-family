@@ -2,7 +2,7 @@ import uuid
 
 from django.db import models
 
-ALERT_TYPES = ["limit_reached", "blocked_app_opened"]
+ALERT_TYPES = ["limit_reached", "blocked_app_opened", "settings_panel_access"]
 
 
 class Alert(models.Model):

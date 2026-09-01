@@ -57,6 +57,37 @@ func main() {
 		fatalInstaller("Backend manzili rad etildi: %v", err)
 	}
 
+	if !ui.ShowWelcome() {
+		log.Println("o'rnatish to'xtatildi: xush kelibsiz oynasida bekor qilindi")
+		return
+	}
+
+	// If Guard is already registered on this machine, never silently
+	// overwrite it — ask the operator whether to upgrade in place (keep the
+	// enrolled device) or stop it and pair again.
+	existing, inspectErr := service.Inspect(service.ServiceName)
+	if inspectErr != nil {
+		log.Printf("mavjud o'rnatmani tekshirib bo'lmadi (yangi o'rnatish deb davom etamiz): %v", inspectErr)
+	}
+	if existing.Installed {
+		switch ui.AskExistingInstall(existing.Running) {
+		case ui.ExistingUpgrade:
+			if err := upgradeInPlace(existing, *agentPath); err != nil {
+				fatalInstaller("Yangilashda xatolik: %v", err)
+			}
+			fmt.Println("✓ Yangilandi.")
+			ui.ShowComplete()
+			return
+		case ui.ExistingRelink:
+			if err := service.Stop(service.ServiceName); err != nil {
+				log.Printf("eski xizmatni to'xtatib bo'lmadi (davom etamiz): %v", err)
+			}
+		default:
+			log.Println("o'rnatish bekor qilindi: qurilmada Guard allaqachon bor")
+			return
+		}
+	}
+
 	accepted, err := ui.RequireInstallerConsent()
 	if err != nil {
 		fatalInstaller("Rozilik oynasini ochib bo‘lmadi: %v", err)
@@ -117,8 +148,30 @@ func main() {
 	}
 
 	fmt.Println("✓ Bog'landi!")
-
 	fmt.Println("Tayyor! ChaqimchiAI Family endi ishlamoqda.")
+
+	ui.ShowComplete()
+}
+
+// upgradeInPlace replaces the installed agent binary with this installer's
+// embedded copy and re-registers the service with the arguments it already
+// had, so the machine stays bound to the same enrolled device. The service
+// is stopped first: on Windows the running .exe can't be overwritten.
+func upgradeInPlace(existing service.Info, agentOverride string) error {
+	if len(existing.Args) == 0 {
+		return fmt.Errorf("eski xizmat argumentlari topilmadi — “Qayta bog‘lash”ni tanlang")
+	}
+	if err := service.Stop(service.ServiceName); err != nil {
+		return fmt.Errorf("eski xizmatni to‘xtatish: %w", err)
+	}
+	exePath, err := installAgentBinary(agentOverride)
+	if err != nil {
+		return fmt.Errorf("agent faylini yangilash: %w", err)
+	}
+	if err := service.Install(service.ServiceName, service.DisplayName, exePath, existing.Args); err != nil {
+		return fmt.Errorf("xizmatni qayta ro‘yxatdan o‘tkazish: %w", err)
+	}
+	return nil
 }
 
 // installAgentBinary writes the embedded payload into a stable, service-safe
@@ -155,7 +208,15 @@ func installAgentBinary(overridePath string) (string, error) {
 		return "", err
 	}
 	if err := os.Rename(tmpName, target); err != nil {
-		return "", fmt.Errorf("activating agent binary: %w", err)
+		// The target is usually locked because the service is still running
+		// (a re-install where the caller didn't stop it, or a slow stop).
+		// Stop it and try once more before giving up.
+		if stopErr := service.Stop(service.ServiceName); stopErr != nil {
+			log.Printf("agent faylini almashtirishdan oldin xizmatni to'xtatib bo'lmadi: %v", stopErr)
+		}
+		if err2 := os.Rename(tmpName, target); err2 != nil {
+			return "", fmt.Errorf("activating agent binary: %w", err2)
+		}
 	}
 	return target, nil
 }

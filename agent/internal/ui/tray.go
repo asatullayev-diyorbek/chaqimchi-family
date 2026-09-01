@@ -9,6 +9,7 @@ package ui
 import (
 	"sync"
 
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
 	"github.com/getlantern/systray"
 )
 
@@ -28,6 +29,12 @@ type Tray struct {
 	statusItem *systray.MenuItem
 	details    string
 	logs       string
+	statusData localipc.Status
+
+	// OnAdultPanel opens the local "Kattalar uchun" panel. Set by cmd/desktop,
+	// which owns the flow: report the access to the parent, then show the
+	// panel. Left nil in tests / if unset the menu item does nothing.
+	OnAdultPanel func()
 }
 
 func NewTray() *Tray {
@@ -57,13 +64,9 @@ func (t *Tray) onReady() {
 		for range statusMenu.ClickedCh {
 			t.mu.RLock()
 			current := t.status
-			details := t.details
+			data := t.statusData
 			t.mu.RUnlock()
-			if details != "" {
-				showInfoDialog("ChaqimchiAI Guard — Holat", details)
-			} else {
-				ShowChildStatus(current)
-			}
+			ShowChildStatusWindow(data, current)
 		}
 	}()
 	logsMenu := systray.AddMenuItem("Oxirgi amallar", "Guard Service loglari")
@@ -75,12 +78,22 @@ func (t *Tray) onReady() {
 			if logs == "" {
 				logs = "Hali log mavjud emas."
 			}
-			showInfoDialog("ChaqimchiAI Guard — Oxirgi amallar", logs)
+			showInfoWindow("ChaqimchiAI Guard — Oxirgi amallar", "OXIRGI AMALLAR", "So‘nggi hodisalar", logs)
 		}
 	}()
 	go func() {
 		for range privacyMenu.ClickedCh {
 			ShowPrivacyNotice()
+		}
+	}()
+
+	systray.AddSeparator()
+	adultMenu := systray.AddMenuItem("Kattalar uchun", "Ota-ona sozlamalari — ochilishi ota-onaga bildiriladi")
+	go func() {
+		for range adultMenu.ClickedCh {
+			if t.OnAdultPanel != nil {
+				t.OnAdultPanel()
+			}
 		}
 	}()
 
@@ -97,6 +110,14 @@ func (t *Tray) onReady() {
 func (t *Tray) SetDetails(details, logs string) {
 	t.mu.Lock()
 	t.details, t.logs = details, logs
+	t.mu.Unlock()
+}
+
+// SetStatusData feeds the latest service status (screen time, daily limit,
+// connectivity) into the child-facing tray status window.
+func (t *Tray) SetStatusData(s localipc.Status) {
+	t.mu.Lock()
+	t.statusData = s
 	t.mu.Unlock()
 }
 

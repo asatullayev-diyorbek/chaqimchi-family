@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -97,14 +98,53 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 		foregroundCh = make(chan string, 8)
 		iconCh = make(chan localipc.AppIconReport, 8)
 	}
+	// Live status shared with the local IPC endpoint (and through it the
+	// tray status window). Updated from the poll loop and the uploader.
+	var (
+		statusMu       sync.Mutex
+		statusToday    float64
+		statusLimit    int
+		statusLastSync string
+		statusOnline   bool
+	)
+	setLastSync := func() {
+		statusMu.Lock()
+		statusLastSync = time.Now().UTC().Format(time.RFC3339)
+		statusOnline = true
+		statusMu.Unlock()
+	}
+
+	// The user-session tray calls POST /v1/adult-access just before it opens
+	// the local "Kattalar uchun" panel. The child cannot see this panel
+	// without the parent being told: we turn it into a normal alert, which
+	// the backend also forwards to Telegram.
+	alertReporter := rules.NewAlertReporter(baseURL, deviceID, deviceSecret)
+	onAdultAccess := func(reason string) {
+		if reason == "" {
+			reason = "tray"
+		}
+		go func() {
+			nctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+			defer cancel()
+			if err := alertReporter.Report(nctx, "settings_panel_access", map[string]any{"source": reason}); err != nil {
+				log.Printf("adult-panel access alert: %v", err)
+			}
+		}()
+	}
+
 	go func() {
 		if err := localipc.Serve(ctx, func() localipc.Status {
+			statusMu.Lock()
+			today, limit, lastSync, online := int(statusToday), statusLimit, statusLastSync, statusOnline
+			statusMu.Unlock()
 			return localipc.Status{
 				Service: "running", Version: version, StartedAt: startedAt,
+				LastSyncAt: lastSync, Online: online,
+				TodayMinutes: today, DailyLimitMinutes: limit,
 				Monitoring: []string{"Ekran vaqti", "Ilova nomlari", "Qurilma holati"},
 				RecentLogs: []string{"Service Started: " + startedAt, "Automatic updates: disabled until signed-update support"},
 			}
-		}, foregroundCh, iconCh); err != nil && ctx.Err() == nil {
+		}, foregroundCh, iconCh, onAdultAccess); err != nil && ctx.Err() == nil {
 			log.Printf("local desktop IPC: %v", err)
 		}
 	}()
@@ -156,8 +196,7 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	}
 	defer rulesCache.Close()
 
-	reporter := rules.NewAlertReporter(baseURL, deviceID, deviceSecret)
-	enforcer := rules.NewEnforcer(rulesCache, reporter,
+	enforcer := rules.NewEnforcer(rulesCache, alertReporter,
 		func(reason, message string) {
 			// The Windows service is Session 0 and must never draw a user
 			// interface. The future desktop helper receives these visible
@@ -175,7 +214,10 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 
 	uploader := syncpkg.NewUploader(baseURL, deviceID, deviceSecret, store)
 	uploader.AgentVersion = version
-	uploader.OnSuccess = func() { updater.ConfirmHealthy(dataDir, version, reportAgentEvent) }
+	uploader.OnSuccess = func() {
+		updater.ConfirmHealthy(dataDir, version, reportAgentEvent)
+		setLastSync()
+	}
 	go uploader.Run(ctx, 60*time.Second)
 
 	go tracker.RunDeviceInfo(ctx, store, 60*time.Second)
@@ -220,6 +262,14 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 
 		enforcer.CheckForegroundApp(ctx, app)
 		enforcer.CheckDailyLimit(ctx, todayMinutes)
+
+		limit := 0
+		if m, ok := enforcer.DailyLimitMinutes(); ok {
+			limit = int(m)
+		}
+		statusMu.Lock()
+		statusToday, statusLimit = todayMinutes, limit
+		statusMu.Unlock()
 	}
 
 	if interactive {

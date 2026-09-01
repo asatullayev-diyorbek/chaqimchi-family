@@ -63,12 +63,12 @@ func generateICO(c color.RGBA, size int) []byte {
 	}
 	out.WriteByte(widthByte)
 	out.WriteByte(widthByte)
-	out.WriteByte(0) // color count (0 = no palette, true color)
-	out.WriteByte(0) // reserved
-	binary.Write(&out, binary.LittleEndian, uint16(1))              // color planes
-	binary.Write(&out, binary.LittleEndian, uint16(32))             // bits per pixel
-	binary.Write(&out, binary.LittleEndian, uint32(len(pngBytes)))  // image data size
-	binary.Write(&out, binary.LittleEndian, uint32(6+16))           // offset of image data
+	out.WriteByte(0)                                               // color count (0 = no palette, true color)
+	out.WriteByte(0)                                               // reserved
+	binary.Write(&out, binary.LittleEndian, uint16(1))             // color planes
+	binary.Write(&out, binary.LittleEndian, uint16(32))            // bits per pixel
+	binary.Write(&out, binary.LittleEndian, uint32(len(pngBytes))) // image data size
+	binary.Write(&out, binary.LittleEndian, uint32(6+16))          // offset of image data
 
 	out.Write(pngBytes)
 	return out.Bytes()

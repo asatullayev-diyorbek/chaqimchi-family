@@ -1,10 +1,12 @@
+from unittest import mock
+
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.accounts.models import ParentUser
-from apps.devices.models import ChildDevice
+from apps.devices.models import Child, ChildDevice
 
 from .models import Alert
 
@@ -35,6 +37,38 @@ class AlertTests(TestCase):
         alert = Alert.objects.first()
         self.assertEqual(alert.device, self.device)
         self.assertEqual(alert.alert_type, "blocked_app_opened")
+
+    @mock.patch("apps.alerts.notifications.send_text")
+    def test_settings_panel_access_alert_pushes_telegram_to_family_parents(self, send_text):
+        child = Child.objects.create(family=self.parent.family, name="Ali")
+        self.device.child = child
+        self.device.save(update_fields=["child"])
+        self.parent.telegram_id = 555_000_111
+        self.parent.save(update_fields=["telegram_id"])
+
+        response = self.client.post(
+            reverse("alerts-report"),
+            {"alert_type": "settings_panel_access", "payload": {"source": "tray"}},
+            format="json",
+            **device_auth_header(self.device),
+        )
+        self.assertEqual(response.status_code, 201)
+        send_text.assert_called_once()
+        chat_id, text = send_text.call_args[0]
+        self.assertEqual(chat_id, 555_000_111)
+        self.assertIn("Kattalar", text)
+
+    @mock.patch("apps.alerts.notifications.send_text")
+    def test_blocked_app_alert_does_not_push_telegram(self, send_text):
+        self.parent.telegram_id = 999
+        self.parent.save(update_fields=["telegram_id"])
+        self.client.post(
+            reverse("alerts-report"),
+            {"alert_type": "blocked_app_opened", "payload": {"app": "steam.exe"}},
+            format="json",
+            **device_auth_header(self.device),
+        )
+        send_text.assert_not_called()
 
     def test_report_alert_requires_device_auth(self):
         response = self.client.post(

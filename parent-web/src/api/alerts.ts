@@ -1,6 +1,6 @@
 import { apiFetch } from "./client";
 
-export type AlertType = "limit_reached" | "blocked_app_opened";
+export type AlertType = "limit_reached" | "blocked_app_opened" | "settings_panel_access";
 
 export type Alert = {
   id: string;

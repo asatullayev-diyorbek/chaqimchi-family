@@ -14,6 +14,9 @@ function describeAlert(alert: Alert) {
     const app = typeof alert.payload.app === "string" ? alert.payload.app : "Ilova";
     return `${app} ochilishi cheklandi`;
   }
+  if (alert.alert_type === "settings_panel_access") {
+    return "Qurilmada «Kattalar uchun» paneli ochildi";
+  }
   return "Bugungi ekran vaqti limiti to'ldi";
 }
 
@@ -100,9 +103,13 @@ export default function AlertsPage() {
 
 function AlertRow({ alert }: { alert: Alert }) {
   const restricted = alert.alert_type === "blocked_app_opened";
+  const settingsAccess = alert.alert_type === "settings_panel_access";
+  const iconBg = settingsAccess ? "var(--cat-teal-bg)" : restricted ? "var(--cat-blue-bg)" : "var(--cat-amber-bg)";
+  const iconColor = settingsAccess ? "var(--accent)" : restricted ? "var(--brand-blue)" : "var(--warning)";
+  const iconName = settingsAccess ? "solar:user-hand-up-linear" : restricted ? "solar:forbidden-circle-linear" : "solar:danger-triangle-linear";
   return <article style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 4px", borderBottom: "1px solid var(--border)", opacity: alert.seen ? .62 : 1 }}>
-    <span style={{ ...iconStyle, background: restricted ? "var(--cat-blue-bg)" : "var(--cat-amber-bg)", color: restricted ? "var(--brand-blue)" : "var(--warning)" }}>
-      <iconify-icon icon={restricted ? "solar:forbidden-circle-linear" : "solar:danger-triangle-linear"} style={{ fontSize: 20 }}></iconify-icon>
+    <span style={{ ...iconStyle, background: iconBg, color: iconColor }}>
+      <iconify-icon icon={iconName} style={{ fontSize: 20 }}></iconify-icon>
     </span>
     <div style={{ flex: 1, minWidth: 0 }}><strong style={{ fontSize: 14 }}>{describeAlert(alert)}</strong><p style={{ marginTop: 4, color: "var(--muted)", fontSize: 12 }}>{formatTime(alert.triggered_at)}</p></div>
     <span style={{ fontSize: 11, fontWeight: 700, color: alert.seen ? "var(--muted)" : "var(--warning)" }}>{alert.seen ? "Ko'rilgan" : "Yangi"}</span>

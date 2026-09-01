@@ -91,29 +91,34 @@ func serviceCommandLine(exePath string, args []string) string {
 	return command
 }
 
-func restart(s *mgr.Service) error {
+func stopAndWait(s *mgr.Service) error {
 	status, err := s.Query()
 	if err != nil {
 		return fmt.Errorf("querying service status: %w", err)
 	}
-	if status.State != svc.Stopped {
-		if _, err := s.Control(svc.Stop); err != nil {
-			return fmt.Errorf("stopping service: %w", err)
+	if status.State == svc.Stopped {
+		return nil
+	}
+	if _, err := s.Control(svc.Stop); err != nil {
+		return fmt.Errorf("stopping service: %w", err)
+	}
+	deadline := time.Now().Add(30 * time.Second)
+	for time.Now().Before(deadline) {
+		status, err = s.Query()
+		if err != nil {
+			return fmt.Errorf("waiting for service stop: %w", err)
 		}
-		deadline := time.Now().Add(30 * time.Second)
-		for time.Now().Before(deadline) {
-			status, err = s.Query()
-			if err != nil {
-				return fmt.Errorf("waiting for service stop: %w", err)
-			}
-			if status.State == svc.Stopped {
-				break
-			}
-			time.Sleep(200 * time.Millisecond)
+		if status.State == svc.Stopped {
+			return nil
 		}
-		if status.State != svc.Stopped {
-			return fmt.Errorf("service did not stop within 30 seconds")
-		}
+		time.Sleep(200 * time.Millisecond)
+	}
+	return fmt.Errorf("service did not stop within 30 seconds")
+}
+
+func restart(s *mgr.Service) error {
+	if err := stopAndWait(s); err != nil {
+		return err
 	}
 	if err := s.Start(); err != nil {
 		return fmt.Errorf("starting service: %w", err)
