@@ -43,6 +43,24 @@ function formatMinutes(minutes: number): string {
   return `${hours} soat ${mins} min`;
 }
 
+function exportAppsCsv(apps: { app: string; minutes: number; last_used_at: string | null }[], rangeLabel: string) {
+  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const rows = [
+    ["Ilova", "Kategoriya", "Daqiqa", "Oxirgi ishlatilgan"],
+    ...apps.map((a) => {
+      const d = appDisplay(a.app);
+      return [d.label, d.categoryLabel, String(a.minutes), a.last_used_at ?? ""];
+    }),
+  ];
+  const csv = "﻿" + rows.map((r) => r.map(esc).join(",")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `chaqimchi-faoliyat-${rangeLabel.replace(/\s+/g, "-")}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 const PAGE_SIZE = 10;
 
 function formatActivityTime(value: string | null): string {
@@ -327,7 +345,18 @@ function ActivityContent() {
               <div className="card" style={{ marginTop: 16 }}>
                 <div className="card-header">
                   <h3>Ilovalar bo'yicha foydalanish</h3>
-                  <span className="muted-sm">{RANGE_LABELS[range]} · {sortedApps.length} ta</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span className="muted-sm">{RANGE_LABELS[range]} · {sortedApps.length} ta</span>
+                    {sortedApps.length > 0 && (
+                      <button
+                        className="btn-view"
+                        onClick={() => exportAppsCsv(sortedApps, RANGE_LABELS[range])}
+                        style={{ fontSize: 12 }}
+                      >
+                        ↓ CSV
+                      </button>
+                    )}
+                  </span>
                 </div>
                 <div className="stack">
                   {sortedApps.slice(appsPageC * PAGE_SIZE, appsPageC * PAGE_SIZE + PAGE_SIZE).map((app) => {
