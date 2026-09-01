@@ -24,17 +24,28 @@ function formatTime(value: string) {
   return uzDateTime(new Date(value));
 }
 
+const FILTERS: { key: string; label: string; test: (a: Alert) => boolean }[] = [
+  { key: "all", label: "Barchasi", test: () => true },
+  { key: "unseen", label: "Yangi", test: (a) => !a.seen },
+  { key: "limit_reached", label: "Limit", test: (a) => a.alert_type === "limit_reached" },
+  { key: "blocked_app_opened", label: "Bloklangan ilova", test: (a) => a.alert_type === "blocked_app_opened" },
+  { key: "settings_panel_access", label: "Kattalar paneli", test: (a) => a.alert_type === "settings_panel_access" },
+];
+
 function AlertsContent() {
   const { deviceId, loading: devicesLoading } = useSelectedDevice();
   const [marking, setMarking] = useState(false);
   const [page, setPage] = useState(0);
+  const [filter, setFilter] = useState("all");
 
   const alertsQuery = useApiQuery(() => getAlerts(deviceId), [deviceId], { enabled: Boolean(deviceId) });
   const [seenOverride, setSeenOverride] = useState<Set<string>>(new Set());
 
-  const alerts: Alert[] = (alertsQuery.data ?? []).map((a) =>
+  const allAlerts: Alert[] = (alertsQuery.data ?? []).map((a) =>
     seenOverride.has(a.id) ? { ...a, seen: true } : a,
   );
+  const activeFilter = FILTERS.find((f) => f.key === filter) ?? FILTERS[0];
+  const alerts = allAlerts.filter(activeFilter.test);
   const loading = devicesLoading || alertsQuery.isInitialLoad;
 
   useEffect(() => {
@@ -42,14 +53,14 @@ function AlertsContent() {
   }, [alertsQuery.error]);
 
   async function markAllSeen() {
-    const unseen = alerts.filter((alert) => !alert.seen);
+    const unseen = allAlerts.filter((alert) => !alert.seen);
     if (!unseen.length || marking) return;
     setMarking(true);
     try {
       await Promise.all(unseen.map((alert) => markAlertSeen(alert.id)));
       // Mark locally rather than refetching: the server has no bulk
       // endpoint, so a refetch would be N requests for a change we already know.
-      setSeenOverride(new Set(alerts.map((a) => a.id)));
+      setSeenOverride(new Set(allAlerts.map((a) => a.id)));
       toast.success(`${unseen.length} ta ogohlantirish ko'rilgan deb belgilandi.`);
     } catch (cause) {
       toast.error(cause instanceof Error ? cause.message : "Alertlar yangilanmadi");
@@ -75,14 +86,40 @@ function AlertsContent() {
               </p>
             )}
           </div>
-          <button onClick={markAllSeen} disabled={marking || !alerts.some((alert) => !alert.seen)} style={buttonStyle}>
+          <button onClick={markAllSeen} disabled={marking || !allAlerts.some((alert) => !alert.seen)} style={buttonStyle}>
             {marking ? "Belgilanmoqda..." : "Barchasini ko'rilgan deb belgilash"}
           </button>
         </div>
 
+        {!loading && deviceId && allAlerts.length > 0 && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+            {FILTERS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => { setFilter(f.key); setPage(0); }}
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: 999,
+                  padding: "5px 12px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  background: f.key === filter ? "var(--accent-dark)" : "transparent",
+                  color: f.key === filter ? "#fff" : "var(--muted)",
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         {loading ? <p style={mutedStyle}>Yuklanmoqda...</p> : null}
         {!loading && !deviceId ? <p style={mutedStyle}>Hali bog&apos;langan qurilma yo&apos;q.</p> : null}
-        {!loading && deviceId && alerts.length === 0 ? <EmptyAlerts /> : null}
+        {!loading && deviceId && allAlerts.length === 0 ? <EmptyAlerts /> : null}
+        {!loading && deviceId && allAlerts.length > 0 && alerts.length === 0 ? (
+          <p style={{ ...mutedStyle, textAlign: "center", padding: "24px 0" }}>Bu filtr bo&apos;yicha ogohlantirish yo&apos;q.</p>
+        ) : null}
         {!loading && visible.map((alert) => <AlertRow alert={alert} key={alert.id} />)}
 
         {!loading && alerts.length > PAGE_SIZE && (
