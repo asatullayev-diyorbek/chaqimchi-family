@@ -130,3 +130,41 @@ class TelegramBotCommandTests(TestCase):
         self._send("/start 00000000-0000-0000-0000-000000000000")
         # pairing flow sends "havola muddati tugagan..." for an unknown token
         self.assertIn("muddati", api.call_args[0][1]["text"].lower())
+
+
+@override_settings(
+    TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="b", TELEGRAM_WEBHOOK_SECRET="test-secret",
+)
+@mock.patch("apps.accounts.telegram._telegram_api_call", return_value=None)
+class TelegramAlertSeenCallbackTests(TestCase):
+    def setUp(self):
+        from apps.devices.models import ChildDevice
+        from apps.alerts.models import Alert
+        from django.utils import timezone
+
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(
+            email="p@example.com", password="supersecret123", telegram_id=42,
+        )
+        device = ChildDevice.objects.create(family=self.parent.family, status=ChildDevice.STATUS_LINKED)
+        self.alert = Alert.objects.create(
+            device=device, alert_type="limit_reached", payload={}, triggered_at=timezone.now(),
+        )
+
+    def _tap(self, alert_id, from_id=42):
+        return self.client.post(
+            reverse("telegram-webhook"),
+            {"callback_query": {"id": "cb", "data": f"alertseen:{alert_id}",
+                                "message": {"chat": {"id": 1}, "message_id": 2}, "from": {"id": from_id}}},
+            format="json", **WEBHOOK_HEADERS,
+        )
+
+    def test_tapping_seen_marks_the_alert(self, _api):
+        self._tap(self.alert.id)
+        self.alert.refresh_from_db()
+        self.assertTrue(self.alert.seen)
+
+    def test_a_stranger_cannot_mark_someone_elses_alert(self, _api):
+        self._tap(self.alert.id, from_id=99999)
+        self.alert.refresh_from_db()
+        self.assertFalse(self.alert.seen)

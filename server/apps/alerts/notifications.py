@@ -24,6 +24,9 @@ TELEGRAM_ALERT_TYPES = set(ALERT_LABELS)
 _DASHBOARD_URL = getattr(settings, "PARENT_WEB_URL", "https://guard.chaqimchi-ai.uz")
 
 
+ALERT_SEEN_PREFIX = "alertseen:"
+
+
 def _message(alert):
     device = alert.device
     who = device.child_name or (device.child.name if device.child else "") or "Qurilma"
@@ -33,9 +36,18 @@ def _message(alert):
     if alert.alert_type == "blocked_app_opened" and app:
         lines.append(f"Ilova: {app}")
     lines.append(f"Vaqt: {timezone.localtime(alert.triggered_at):%Y-%m-%d %H:%M}")
-    lines.append("")
-    lines.append(f"{_DASHBOARD_URL}/alerts?device={device.id}")
     return "\n".join(lines)
+
+
+def _keyboard(alert):
+    return {
+        "inline_keyboard": [
+            [
+                {"text": "✓ Ko'rildi", "callback_data": f"{ALERT_SEEN_PREFIX}{alert.id}"},
+                {"text": "Panelda ochish", "url": f"{_DASHBOARD_URL}/alerts?device={alert.device_id}"},
+            ]
+        ]
+    }
 
 
 def notify_parents_of_alert(alert):
@@ -55,11 +67,12 @@ def notify_parents_of_alert(alert):
     )
 
     text = _message(alert)
+    keyboard = _keyboard(alert)
     parents = ParentUser.objects.filter(family_id=family_id, telegram_id__isnull=False)
     for parent in parents:
         if parent.id in opted_out:
             continue
         try:
-            send_text(parent.telegram_id, text)
+            send_text(parent.telegram_id, text, reply_markup=keyboard)
         except Exception:  # noqa: BLE001 - best effort, never break the report
             logger.exception("telegram alert push failed for parent %s", parent.pk)

@@ -4,11 +4,16 @@ from django.db import models
 
 ALERT_TYPES = ["limit_reached", "blocked_app_opened", "settings_panel_access"]
 
+# Notification-preference keys: the real alert types plus the daily digest,
+# which isn't an Alert row but shares the opt-out mechanism.
+PREF_TYPES = ALERT_TYPES + ["daily_digest"]
+
 # Human labels, shared by the Telegram push and the notification-settings API.
 ALERT_LABELS = {
     "limit_reached": "Ekran vaqti limiti tugadi",
     "blocked_app_opened": "Taqiqlangan ilova ochildi",
     "settings_panel_access": "Qurilmada «Kattalar uchun» paneli ochildi",
+    "daily_digest": "Kunlik hisobot (har oqshom)",
 }
 
 

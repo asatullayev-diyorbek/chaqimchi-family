@@ -100,7 +100,7 @@ class AlertTests(TestCase):
         self.client.force_authenticate(user=self.parent)
         r = self.client.get(reverse("notification-preferences"))
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.json()["alerts"]), 3)
+        self.assertEqual(len(r.json()["alerts"]), 4)  # 3 alert types + daily_digest
         self.assertTrue(all(a["via_telegram"] for a in r.json()["alerts"]))
 
         r = self.client.put(

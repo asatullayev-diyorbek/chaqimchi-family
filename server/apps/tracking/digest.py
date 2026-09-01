@@ -63,3 +63,43 @@ def human_minutes(minutes):
     if h:
         return f"{h} soat"
     return f"{m} daq"
+
+
+def build_family_digest(family, on_date):
+    """Yesterday's per-child screen time + alert count for one family, or
+    None when there was no activity at all (nothing to send)."""
+    from datetime import datetime, time
+
+    from apps.alerts.models import Alert
+    from apps.devices.models import ChildDevice
+
+    devices = list(
+        ChildDevice.objects.filter(family=family, status=ChildDevice.STATUS_LINKED).select_related("child")
+    )
+    if not devices:
+        return None
+
+    per_child = {}
+    for d in devices:
+        who = (d.child.name if d.child else "") or d.child_name or "Qurilma"
+        per_child[who] = per_child.get(who, 0) + screen_minutes(d, on_date)
+
+    total = sum(per_child.values())
+
+    tz = timezone.get_current_timezone()
+    start = timezone.make_aware(datetime.combine(on_date, time.min), tz)
+    end = timezone.make_aware(datetime.combine(on_date, time.max), tz)
+    alert_count = Alert.objects.filter(
+        device__in=devices, triggered_at__gte=start, triggered_at__lte=end
+    ).count()
+
+    if total == 0 and alert_count == 0:
+        return None
+
+    lines = [f"📊 Kunlik hisobot — {on_date:%d.%m}", ""]
+    for who, mins in sorted(per_child.items(), key=lambda kv: -kv[1]):
+        lines.append(f"• {who}: {human_minutes(mins)}")
+    if alert_count:
+        lines.append("")
+        lines.append(f"🔔 {alert_count} ta ogohlantirish")
+    return "\n".join(lines)

@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import ParentUser
 
-from .models import ALERT_LABELS, ALERT_TYPES, NotificationPreference
+from .models import ALERT_LABELS, PREF_TYPES, NotificationPreference
 
 
 class NotificationPreferenceView(APIView):
@@ -25,7 +25,7 @@ class NotificationPreferenceView(APIView):
         by_type = {}
         for item in items:
             t = item.get("alert_type")
-            if t in ALERT_TYPES:
+            if t in PREF_TYPES:
                 by_type[t] = bool(item.get("via_telegram", True))
 
         for alert_type, on in by_type.items():
@@ -51,6 +51,6 @@ class NotificationPreferenceView(APIView):
                     "label": ALERT_LABELS.get(t, t),
                     "via_telegram": overrides.get(t, True),
                 }
-                for t in ALERT_TYPES
+                for t in PREF_TYPES
             ],
         }

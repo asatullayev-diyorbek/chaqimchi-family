@@ -40,6 +40,7 @@ from .serializers import ParentUserSerializer
 
 CONFIRM_PREFIX = "tglogin_confirm:"
 REJECT_PREFIX = "tglogin_reject:"
+ALERT_SEEN_PREFIX = "alertseen:"
 
 
 def _telegram_api_call(method, payload):
@@ -58,11 +59,13 @@ def _telegram_api_call(method, payload):
         return None
 
 
-def send_text(chat_id, text):
-    """Best-effort plain-text push to a Telegram chat. Used for parent
-    notifications (e.g. the child opening the local settings panel). Returns
-    the API response dict or None; never raises."""
-    return _telegram_api_call("sendMessage", {"chat_id": chat_id, "text": text})
+def send_text(chat_id, text, reply_markup=None):
+    """Best-effort push to a Telegram chat, with an optional inline keyboard.
+    Returns the API response dict or None; never raises."""
+    payload = {"chat_id": chat_id, "text": text, "disable_web_page_preview": True}
+    if reply_markup is not None:
+        payload["reply_markup"] = reply_markup
+    return _telegram_api_call("sendMessage", payload)
 
 
 def _send_confirmation_prompt(chat_id, token, is_link=False):
@@ -184,6 +187,10 @@ class TelegramWebhookView(APIView):
         message_id = message.get("message_id")
         from_user = callback_query.get("from") or {}
 
+        if data.startswith(ALERT_SEEN_PREFIX):
+            self._mark_alert_seen(data.removeprefix(ALERT_SEEN_PREFIX), from_user, callback_id, chat_id, message_id)
+            return
+
         if data.startswith(CONFIRM_PREFIX):
             action, payload_token = "confirm", data.removeprefix(CONFIRM_PREFIX)
         elif data.startswith(REJECT_PREFIX):
@@ -232,6 +239,27 @@ class TelegramWebhookView(APIView):
             _telegram_api_call(
                 "editMessageText",
                 {"chat_id": chat_id, "message_id": message_id, "text": result_text},
+            )
+
+    @staticmethod
+    def _mark_alert_seen(alert_id, from_user, callback_id, chat_id, message_id):
+        from apps.alerts.models import Alert
+
+        parent = ParentUser.objects.filter(telegram_id=from_user.get("id")).first()
+        alert = Alert.objects.filter(id=alert_id).select_related("device").first() if parent else None
+        if alert is None or alert.device.family_id != parent.family_id:
+            if callback_id:
+                _telegram_api_call("answerCallbackQuery", {"callback_query_id": callback_id, "text": "Topilmadi."})
+            return
+
+        if not alert.seen:
+            alert.seen = True
+            alert.save(update_fields=["seen"])
+        if callback_id:
+            _telegram_api_call("answerCallbackQuery", {"callback_query_id": callback_id, "text": "✓ Ko'rildi"})
+        if chat_id and message_id:
+            _telegram_api_call(
+                "editMessageReplyMarkup", {"chat_id": chat_id, "message_id": message_id, "reply_markup": {}}
             )
 
     @staticmethod

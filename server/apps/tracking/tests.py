@@ -620,3 +620,37 @@ class SitesTests(TestCase):
         self.client.force_authenticate(user=stranger)
         response = self.client.get(reverse("sites", kwargs={"device_id": self.laptop.id}))
         self.assertEqual(response.status_code, 403)
+
+
+from datetime import datetime as _dt
+from unittest import mock as _mock
+
+from django.core.management import call_command
+
+from apps.accounts.models import ParentUser as _Parent
+from apps.devices.models import Child as _Child, ChildDevice as _Device
+
+
+class DailyDigestTests(TestCase):
+    @_mock.patch("apps.tracking.management.commands.send_daily_digest.send_text")
+    def test_digest_goes_to_linked_parents_with_activity(self, send_text):
+        parent = _Parent.objects.create_user(email="d@example.com", password="supersecret123", telegram_id=1234)
+        child = _Child.objects.create(family=parent.family, name="Ali")
+        device = _Device.objects.create(family=parent.family, child=child, status=_Device.STATUS_LINKED)
+        batch = EventBatch.objects.create(device=device, batch_id="d-1")
+        yday = (timezone.localtime(timezone.now()) - timedelta(days=1)).date()
+        Event.objects.create(
+            batch=batch, device=device, event_type="app_usage",
+            payload={"app_id": "chrome.exe", "duration_seconds": 1800},
+            occurred_at=timezone.make_aware(_dt.combine(yday, _dt.min.time().replace(hour=10))),
+        )
+        call_command("send_daily_digest")
+        send_text.assert_called_once()
+        self.assertIn("Ali", send_text.call_args[0][1])
+
+    @_mock.patch("apps.tracking.management.commands.send_daily_digest.send_text")
+    def test_no_activity_no_message(self, send_text):
+        parent = _Parent.objects.create_user(email="q@example.com", password="supersecret123", telegram_id=99)
+        _Device.objects.create(family=parent.family, status=_Device.STATUS_LINKED)
+        call_command("send_daily_digest")
+        send_text.assert_not_called()
