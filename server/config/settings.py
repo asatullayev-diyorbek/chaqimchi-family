@@ -161,6 +161,10 @@ PARENT_WEB_URL = os.environ.get("PARENT_WEB_URL", "https://guard.chaqimchi-ai.uz
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "")
 TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+
+# Shared secret an external cron sends to POST /api/tracking/digest/run/ so
+# the daily Telegram digest can fire without a paid scheduler.
+DIGEST_CRON_SECRET = os.environ.get("DIGEST_CRON_SECRET", "")
 TELEGRAM_TOKEN_TTL_MINUTES = 10
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"

@@ -63,3 +63,12 @@ class DeviceAppIcon(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["device", "app_id"], name="uniq_device_app_icon"),
         ]
+
+
+class DailyDigestRun(models.Model):
+    """One row per local date the Telegram daily digest has been sent for.
+    PythonAnywhere Free has no scheduled tasks, so the digest is triggered by
+    an external cron hitting an endpoint; this makes that safe to hit twice."""
+
+    date = models.DateField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)

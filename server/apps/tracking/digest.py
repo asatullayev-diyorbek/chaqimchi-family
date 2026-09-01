@@ -65,6 +65,42 @@ def human_minutes(minutes):
     return f"{m} daq"
 
 
+def run_daily_digest(for_date=None):
+    """Send yesterday's digest to every linked, opted-in parent. Idempotent
+    per date via DailyDigestRun, so it's safe to trigger from an external
+    cron (PythonAnywhere Free has no scheduled tasks) or by hand. Returns
+    (already_ran: bool, recipients: int)."""
+    from datetime import timedelta
+
+    from apps.accounts.models import Family, ParentUser
+    from apps.accounts.telegram import send_text
+    from apps.alerts.models import NotificationPreference
+
+    from .models import DailyDigestRun
+
+    day = for_date or (timezone.localtime(timezone.now()) - timedelta(days=1)).date()
+    _, created = DailyDigestRun.objects.get_or_create(date=day)
+    if not created:
+        return True, 0
+
+    sent = 0
+    for family in Family.objects.filter(parents__telegram_id__isnull=False).distinct():
+        text = build_family_digest(family, day)
+        if not text:
+            continue
+        parents = ParentUser.objects.filter(family=family, telegram_id__isnull=False)
+        opted_out = set(
+            NotificationPreference.objects.filter(
+                parent__in=parents, alert_type="daily_digest", via_telegram=False
+            ).values_list("parent_id", flat=True)
+        )
+        for parent in parents:
+            if parent.id not in opted_out:
+                send_text(parent.telegram_id, text)
+                sent += 1
+    return False, sent
+
+
 def build_family_digest(family, on_date):
     """Yesterday's per-child screen time + alert count for one family, or
     None when there was no activity at all (nothing to send)."""

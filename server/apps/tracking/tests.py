@@ -632,7 +632,7 @@ from apps.devices.models import Child as _Child, ChildDevice as _Device
 
 
 class DailyDigestTests(TestCase):
-    @_mock.patch("apps.tracking.management.commands.send_daily_digest.send_text")
+    @_mock.patch("apps.accounts.telegram.send_text")
     def test_digest_goes_to_linked_parents_with_activity(self, send_text):
         parent = _Parent.objects.create_user(email="d@example.com", password="supersecret123", telegram_id=1234)
         child = _Child.objects.create(family=parent.family, name="Ali")
@@ -648,9 +648,31 @@ class DailyDigestTests(TestCase):
         send_text.assert_called_once()
         self.assertIn("Ali", send_text.call_args[0][1])
 
-    @_mock.patch("apps.tracking.management.commands.send_daily_digest.send_text")
+    @_mock.patch("apps.accounts.telegram.send_text")
     def test_no_activity_no_message(self, send_text):
         parent = _Parent.objects.create_user(email="q@example.com", password="supersecret123", telegram_id=99)
         _Device.objects.create(family=parent.family, status=_Device.STATUS_LINKED)
         call_command("send_daily_digest")
         send_text.assert_not_called()
+
+
+from django.test import override_settings as _override
+
+
+@_override(DIGEST_CRON_SECRET="cron-x")
+class DigestRunEndpointTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.url = reverse("digest-run")
+
+    def test_wrong_secret_is_forbidden(self):
+        self.assertEqual(self.client.post(self.url).status_code, 403)
+        self.assertEqual(self.client.post(self.url, HTTP_X_DIGEST_SECRET="nope").status_code, 403)
+
+    @_mock.patch("apps.accounts.telegram.send_text")
+    def test_secret_runs_and_is_idempotent(self, send_text):
+        r1 = self.client.post(self.url, HTTP_X_DIGEST_SECRET="cron-x")
+        self.assertEqual(r1.status_code, 200)
+        self.assertFalse(r1.json()["already_sent"])
+        r2 = self.client.post(self.url, HTTP_X_DIGEST_SECRET="cron-x")
+        self.assertTrue(r2.json()["already_sent"])

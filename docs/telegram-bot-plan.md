@@ -87,12 +87,16 @@ Bo'lmasa: "Ilovadan Telegram'ni ulang."
 Buning uchun rules'da vaqtinchalik override kerak — hozir qoidalar doimiy.
 Alohida feature.)
 
-### P5 — Kunlik digest (scheduled task)
+### P5 — Kunlik digest — DONE (tashqi cron orqali)
 
-`send_daily_digest` management command (PA'da 1 ta scheduled task, ~20:00 Toshkent):
-- Har Telegram-ulangan ota-onali oila uchun: kechagi jami ekran vaqti
-  (farzandlar bo'yicha), top ilovalar, alert soni.
-- `NotificationPreference` orqali opt-in (`digest` "alert_type").
+**PA Free'da scheduled task YO'Q** (`{"detail":"Scheduled tasks are not
+available on free accounts"}`). Shuning uchun:
+- `POST /api/tracking/digest/run/` — `X-Digest-Secret` header (`DIGEST_CRON_SECRET`).
+  Idempotent (`DailyDigestRun` — kun bo'yicha bir marta).
+- Tashqi bepul cron (cron-job.org) har kuni ~15:00 UTC shu endpoint'ni uradi.
+- Mazmun: kechagi farzand bo'yicha ekran vaqti + alert soni; faoliyat
+  bo'lmasa yuborilmaydi; `daily_digest` NotificationPreference opt-out.
+- `send_daily_digest` management command ham shu funksiyani chaqiradi (qo'lda).
 
 ---
 
