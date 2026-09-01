@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Device, DeviceSummary, getDevices, getSummary } from "@/api/tracking";
 import { getDailyLimitMinutes, getRules, Rule } from "@/api/rules";
 import { Alert, getAlerts } from "@/api/alerts";
+import { Child, getChildren } from "@/api/children";
 import { toast } from "react-hot-toast";
 import AppIcon from "@/components/AppIcon";
 import CategoryDonut from "@/components/CategoryDonut";
@@ -35,6 +36,70 @@ function formatLastSync(value: string | null): string {
   return `${Math.floor(hr / 24)} kun oldin`;
 }
 
+type FamilyCard = {
+  childId: string;
+  name: string;
+  online: boolean;
+  todayMinutes: number;
+  hasDevice: boolean;
+  unseenAlerts: number;
+};
+
+async function buildFamily(devices: Device[], children: Child[]): Promise<FamilyCard[]> {
+  return Promise.all(
+    children.map(async (child) => {
+      const own = devices.filter((d) => d.child_id === child.id && d.status === "linked");
+      const summaries = await Promise.all(own.map((d) => getSummary(d.id).catch(() => null)));
+      const alertLists = await Promise.all(own.map((d) => getAlerts(d.id).catch(() => [] as Alert[])));
+      return {
+        childId: child.id,
+        name: child.name,
+        online: summaries.some((s) => s?.device_status === "online"),
+        todayMinutes: summaries.reduce((t, s) => t + (s?.total_screen_minutes ?? 0), 0),
+        hasDevice: own.length > 0,
+        unseenAlerts: alertLists.flat().filter((a) => !a.seen).length,
+      };
+    }),
+  );
+}
+
+function FamilyStrip({ cards, selectedId, onPick }: { cards: FamilyCard[]; selectedId: string | null; onPick: (id: string) => void }) {
+  return (
+    <section style={{ display: "flex", gap: 12, overflowX: "auto", paddingBottom: 4, marginBottom: 20 }}>
+      {cards.map((c) => (
+        <button
+          key={c.childId}
+          onClick={() => onPick(c.childId)}
+          className="card"
+          style={{
+            minWidth: 170,
+            padding: 16,
+            textAlign: "left",
+            cursor: "pointer",
+            border: c.childId === selectedId ? "2px solid var(--brand-blue)" : "1px solid var(--border)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <strong style={{ fontSize: 15 }}>{c.name}</strong>
+            {c.unseenAlerts > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 800, color: "var(--warning)" }}>{c.unseenAlerts} ⚠</span>
+            )}
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "6px 0", fontSize: 12, color: "var(--muted)" }}>
+            <span className={`status ${c.online ? "online" : "offline"}`} /> {c.online ? "Onlayn" : "Oflayn"}
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 800 }}>
+            {c.hasDevice ? formatMinutes(c.todayMinutes) : "—"}
+          </div>
+        </button>
+      ))}
+      <Link href="/devices" className="card" style={{ minWidth: 150, padding: 16, display: "grid", placeItems: "center", color: "var(--muted)", fontWeight: 700, fontSize: 13 }}>
+        + Qurilma qo&apos;shish
+      </Link>
+    </section>
+  );
+}
+
 function OverviewContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,13 +111,17 @@ function OverviewContent() {
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [rules, setRules] = useState<Rule[]>([]);
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [family, setFamily] = useState<FamilyCard[] | null>(null);
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   useEffect(() => {
     (async () => {
       try {
         setSummaryLoading(true);
-        const deviceList = await getDevices();
+        const [deviceList, children] = await Promise.all([getDevices(), getChildren()]);
         setDevices(deviceList);
+        void buildFamily(deviceList, children).then(setFamily);
         const device = deviceList.find((item) => item.id === requestedDeviceId) ?? deviceList.find((item) => item.child_id === requestedChildId && item.status === "linked") ?? (requestedChildId ? undefined : deviceList.find((item) => item.status === "linked"));
+        setSelectedChildId(device?.child_id ?? null);
         if (!device) {
           setSummary(null);
           setWeekSummary(null);
@@ -110,6 +179,13 @@ function OverviewContent() {
 
   return (
     <>
+      {family && family.length > 1 && (
+        <FamilyStrip
+          cards={family}
+          selectedId={selectedChildId}
+          onPick={(id) => router.push(`/overview?child=${id}`)}
+        />
+      )}
       {showEmptyState && (
         <div className="card" style={{ marginBottom: 24, background: "var(--brand-blue)", color: "#fff", border: "none" }}>
           <div style={{ padding: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
