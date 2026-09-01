@@ -59,7 +59,7 @@ class AlertTests(TestCase):
         self.assertIn("Kattalar", text)
 
     @mock.patch("apps.alerts.notifications.send_text")
-    def test_blocked_app_alert_does_not_push_telegram(self, send_text):
+    def test_every_alert_type_pushes_telegram_by_default(self, send_text):
         self.parent.telegram_id = 999
         self.parent.save(update_fields=["telegram_id"])
         self.client.post(
@@ -68,7 +68,50 @@ class AlertTests(TestCase):
             format="json",
             **device_auth_header(self.device),
         )
+        send_text.assert_called_once()
+        self.assertIn("steam.exe", send_text.call_args[0][1])
+
+    @mock.patch("apps.alerts.notifications.send_text")
+    def test_parent_opt_out_suppresses_that_alert_type(self, send_text):
+        from .models import NotificationPreference
+
+        self.parent.telegram_id = 999
+        self.parent.save(update_fields=["telegram_id"])
+        NotificationPreference.objects.create(
+            parent=self.parent, alert_type="blocked_app_opened", via_telegram=False
+        )
+        self.client.post(
+            reverse("alerts-report"),
+            {"alert_type": "blocked_app_opened", "payload": {"app": "steam.exe"}},
+            format="json",
+            **device_auth_header(self.device),
+        )
         send_text.assert_not_called()
+        # a different type is still delivered
+        self.client.post(
+            reverse("alerts-report"),
+            {"alert_type": "limit_reached", "payload": {}},
+            format="json",
+            **device_auth_header(self.device),
+        )
+        send_text.assert_called_once()
+
+    def test_preferences_get_and_put(self):
+        self.client.force_authenticate(user=self.parent)
+        r = self.client.get(reverse("notification-preferences"))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.json()["alerts"]), 3)
+        self.assertTrue(all(a["via_telegram"] for a in r.json()["alerts"]))
+
+        r = self.client.put(
+            reverse("notification-preferences"),
+            {"alerts": [{"alert_type": "limit_reached", "via_telegram": False}]},
+            format="json",
+        )
+        self.assertEqual(r.status_code, 200)
+        prefs = {a["alert_type"]: a["via_telegram"] for a in r.json()["alerts"]}
+        self.assertFalse(prefs["limit_reached"])
+        self.assertTrue(prefs["blocked_app_opened"])
 
     def test_report_alert_requires_device_auth(self):
         response = self.client.post(

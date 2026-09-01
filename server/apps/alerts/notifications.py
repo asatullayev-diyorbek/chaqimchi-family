@@ -1,50 +1,64 @@
 """Parent-facing fan-out for alerts.
 
-The dashboard already lists every alert; this module additionally pushes the
-high-signal ones to Telegram for parents who logged in that way. Best-effort:
-a Telegram failure must never fail the agent's alert report.
+The dashboard lists every alert; this module additionally pushes them to
+Telegram for parents who linked their account, honouring each parent's
+per-alert-type opt-outs (NotificationPreference). Best-effort: a Telegram
+failure must never fail the agent's alert report.
 """
 
 import logging
 
+from django.conf import settings
+from django.utils import timezone
+
 from apps.accounts.models import ParentUser
 from apps.accounts.telegram import send_text
 
+from .models import ALERT_LABELS, NotificationPreference
+
 logger = logging.getLogger(__name__)
 
-# Human labels for the Telegram message (the dashboard has its own).
-ALERT_LABELS = {
-    "limit_reached": "Bugungi ekran vaqti limiti tugadi",
-    "blocked_app_opened": "Taqiqlangan ilova ochildi",
-    "settings_panel_access": "Qurilmada «Kattalar uchun» paneli ochildi",
-}
+# Every alert type is pushable; parents opt out per type in settings.
+TELEGRAM_ALERT_TYPES = set(ALERT_LABELS)
 
-# Only these are worth a push notification; the rest live on the dashboard.
-TELEGRAM_ALERT_TYPES = {"settings_panel_access"}
+_DASHBOARD_URL = getattr(settings, "PARENT_WEB_URL", "https://guard.chaqimchi-ai.uz")
+
+
+def _message(alert):
+    device = alert.device
+    who = device.child_name or (device.child.name if device.child else "") or "Qurilma"
+    label = ALERT_LABELS.get(alert.alert_type, alert.alert_type)
+    lines = ["🔔 ChaqimchiAI Guard", "", label, f"Farzand: {who}"]
+    app = (alert.payload or {}).get("app")
+    if alert.alert_type == "blocked_app_opened" and app:
+        lines.append(f"Ilova: {app}")
+    lines.append(f"Vaqt: {timezone.localtime(alert.triggered_at):%Y-%m-%d %H:%M}")
+    lines.append("")
+    lines.append(f"{_DASHBOARD_URL}/alerts?device={device.id}")
+    return "\n".join(lines)
 
 
 def notify_parents_of_alert(alert):
     if alert.alert_type not in TELEGRAM_ALERT_TYPES:
         return
 
-    device = alert.device
-    family_id = getattr(device, "family_id", None)
+    family_id = getattr(alert.device, "family_id", None)
     if not family_id:
         return
 
-    label = ALERT_LABELS.get(alert.alert_type, alert.alert_type)
-    who = device.child_name or (device.child.name if device.child else "") or "Qurilma"
-    text = (
-        "🔔 ChaqimchiAI Guard\n\n"
-        f"{label}\n"
-        f"Qurilma: {who}\n"
-        f"Vaqt: {alert.triggered_at:%Y-%m-%d %H:%M}"
+    opted_out = set(
+        NotificationPreference.objects.filter(
+            alert_type=alert.alert_type,
+            via_telegram=False,
+            parent__family_id=family_id,
+        ).values_list("parent_id", flat=True)
     )
 
-    parents = ParentUser.objects.filter(
-        family_id=family_id, telegram_id__isnull=False
-    )
+    text = _message(alert)
+    parents = ParentUser.objects.filter(family_id=family_id, telegram_id__isnull=False)
     for parent in parents:
+        if parent.id in opted_out:
+            continue
         try:
             send_text(parent.telegram_id, text)
         except Exception:  # noqa: BLE001 - best effort, never break the report

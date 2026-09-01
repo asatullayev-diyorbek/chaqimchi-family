@@ -12,7 +12,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Bosh sahifa", href: "/overview", icon: "hugeicons:home-03" },
   { label: "Faoliyat", href: "/activity", icon: "hugeicons:activity-01" },
   { label: "Qurilmalar", href: "/devices", icon: "hugeicons:computer" },
-  { label: "Sozlamalar", href: "/rules", icon: "hugeicons:settings-02" },
+  { label: "Qoidalar", href: "/rules", icon: "hugeicons:settings-02" },
+  { label: "Bildirishnomalar", href: "/notifications", icon: "hugeicons:notification-02" },
   { label: "Hisobotlar", icon: "hugeicons:chart-histogram" },
 ];
 

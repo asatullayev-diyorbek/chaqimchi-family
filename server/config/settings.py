@@ -153,6 +153,9 @@ CHAQIMCHI_PUBLIC_API_URL = os.environ.get(
     "CHAQIMCHI_PUBLIC_API_URL", "https://ora-splittable-illuminatedly.ngrok-free.dev"
 )
 
+# Public parent-web origin, used for deep links in Telegram notifications.
+PARENT_WEB_URL = os.environ.get("PARENT_WEB_URL", "https://guard.chaqimchi-ai.uz")
+
 # Telegram login (see apps/accounts/telegram.py). Empty until a bot is
 # created via @BotFather and these are set in the hosting environment.
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")

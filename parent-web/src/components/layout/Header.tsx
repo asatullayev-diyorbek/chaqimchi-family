@@ -60,7 +60,13 @@ export default function Header() {
             <p>Xavfli yoki taqiqlangan harakatlar haqida xabarlar.</p>
           </>
         )}
-        {!["/overview", "/activity", "/devices", "/settings", "/rules", "/alerts"].includes(pathname) && (
+        {pathname === "/notifications" && (
+          <>
+            <h1>Bildirishnomalar</h1>
+            <p>Telegram orqali qanday xabarlar kelishini boshqaring.</p>
+          </>
+        )}
+        {!["/overview", "/activity", "/devices", "/settings", "/rules", "/alerts", "/notifications"].includes(pathname) && (
           <>
             <h1>Sergak AI</h1>
             <p>Farzandingiz xavfsizligi sizning qo'lingizda</p>
