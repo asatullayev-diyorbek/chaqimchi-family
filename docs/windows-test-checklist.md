@@ -9,7 +9,23 @@ Windows mashina muhiti (memory'dan): Go `C:\Users\Robbit\gosdk`,
 
 ---
 
-## 0. Sync + build
+## 0-alt. Tez yo'l — Wine-siz test build (Inno o'ramisiz)
+
+macOS'da cross-compile qilingan 3 EXE:
+`releases/windows/test-builds/ChaqimchiAI-Guard-test-0.4.0-rc.3-nowine.zip`
+(gitignore'da — Mac'dan Windows'ga qo'lda ko'chiring).
+zip SHA-256: `05A890C7168330A43502BD2908EF9CB25C33C1813A35E941BD9D347A198A6EB4`
+
+- `ChaqimchiAI Guard Installer.exe` (Administrator) → butun WebView2 oqimi
+  (§2 dagi Inno wizard qismisiz): Welcome → Consent → [Existing?] → Connect →
+  Installing → Complete + xizmat o'rnatish
+- `ChaqimchiAI Guard Desktop.exe` → tray + status/adult oynalari (§5)
+- **Bu build'da yo'q:** Start Menu/Startup yorliqlari (⇒ §3 Bug #6 tekshirib
+  bo'lmaydi), WebView2 runtime avto-o'rnatish (Win11 kerak yoki walk fallback
+  ko'riladi), Apps&Features uninstall yozuvi.
+- To'liq `Setup.exe` (§3, §6 uchun) baribir quyidagi to'liq build'ni talab qiladi.
+
+## 0. Sync + build (to'liq — Setup.exe)
 
 ```powershell
 git pull
