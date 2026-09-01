@@ -1,0 +1,45 @@
+/* Overrides for running the child-ui pages as real app windows (fixed-size,
+   chromeless WebView2), rather than as full-page browser mockups. */
+
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  user-select: none;
+  cursor: default;
+}
+
+/* Fill the window instead of centring a page-width column. */
+.shell {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Installer: the two-column card becomes the whole window. */
+.card.install-layout {
+  min-height: 100vh;
+  border: none;
+  border-radius: 0;
+  background: rgba(255, 255, 255, .72);
+}
+.install-art { padding: 44px; }
+.install-art h1 { font-size: 34px; }
+.form-side { padding: 40px; }
+
+/* The installer flow can't be navigated by the child; the header keeps the
+   step dots but the brand is not a link. */
+.top { padding: 22px 40px 0; margin-bottom: 0; }
+.brand { cursor: default; }
+
+/* Buttons are real actions now. */
+.btn { cursor: pointer; }
+.btn[disabled], .btn.is-disabled { opacity: .5; cursor: not-allowed; }
+
+/* Tray windows: a compact single card, no page scroll. */
+body.tray .shell { padding: 0; }
+body.tray .status-page,
+body.tray .privacy-page { display: block; min-height: 100vh; margin: 0; padding: 20px; }
+body.tray .intro { display: none; }
+body.tray .tray-demo,
+body.tray .window-head button { display: none; }

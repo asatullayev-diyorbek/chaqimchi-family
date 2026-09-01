@@ -41,11 +41,11 @@ agent/           Windows Go service, buffer/sync, rule enforcement, tray/block U
 parent-mobile/   Expo mobil ota-ona ilovasi
 parent-web/      Next.js real web ota-ona paneli
 parent-ui/       Parent web panelining statik HTML/CSS vizual prototipi
-child-ui/        ChaqimchiAI Child va installerning statik HTML/CSS dizayn manbasi
+agent/webui/        ChaqimchiAI Child va installerning statik HTML/CSS dizayn manbasi
 docs/            Arxitektura, UX va mahsulot konsepsiyasi
 ```
 
-`parent-ui/` va `child-ui/` production ilova emas. Ular komponent, layout, matn va holatlarni `parent-web`, `parent-mobile` yoki Windows agent UI'ga o'tkazish uchun dizayn manbalari hisoblanadi.
+`parent-ui/` va `agent/webui/` production ilova emas. Ular komponent, layout, matn va holatlarni `parent-web`, `parent-mobile` yoki Windows agent UI'ga o'tkazish uchun dizayn manbalari hisoblanadi.
 
 ## 5. Parent tajribasi
 
@@ -86,11 +86,11 @@ Child ilova boshqaruv paneli emas — bolaning qoidalar va monitoring haqida xab
 
 | Qadam | Dizayn fayli | Foydalanuvchi vazifasi |
 |---|---|---|
-| Xush kelibsiz | `child-ui/welcome.html` | O'rnatish maqsadini tushunish |
-| Shaffoflik va rozilik | `child-ui/consent.html` | Nima ko'rilishi/ko'rilmasligini o'qish va tasdiqlash |
-| Oilaga bog'lash | `child-ui/connect.html` | QR yoki 6 xonali kod bilan parent hisobiga bog'lash |
-| O'rnatish | `child-ui/installing.html` | Jarayonning aniq holatini ko'rish |
-| Tayyor | `child-ui/complete.html` | Agent fon rejimida ishlashini tasdiqlash |
+| Xush kelibsiz | `agent/webui/welcome.html` | O'rnatish maqsadini tushunish |
+| Shaffoflik va rozilik | `agent/webui/consent.html` | Nima ko'rilishi/ko'rilmasligini o'qish va tasdiqlash |
+| Oilaga bog'lash | `agent/webui/connect.html` | QR yoki 6 xonali kod bilan parent hisobiga bog'lash |
+| O'rnatish | `agent/webui/installing.html` | Jarayonning aniq holatini ko'rish |
+| Tayyor | `agent/webui/complete.html` | Agent fon rejimida ishlashini tasdiqlash |
 
 Installerda UAC nima uchun kerakligi oldindan tushuntiriladi. Rozilik qadami o'tkazib yuborilmaydi.
 
@@ -98,10 +98,10 @@ Installerda UAC nima uchun kerakligi oldindan tushuntiriladi. Rozilik qadami o't
 
 | Holat | Dizayn fayli | Qoidasi |
 |---|---|---|
-| Tray status | `child-ui/status.html` | Bugungi vaqt, qolgan limit va shaffoflik havolasi |
-| Shaffoflik | `child-ui/privacy.html` | Ota-ona ko'radigan va ko'rmaydigan ma'lumotlar |
-| Limit tugadi | `child-ui/limit-reached.html` | Tinch, ayblovsiz full-screen tushuntirish |
-| Ilova cheklangan | `child-ui/app-restricted.html` | “Hozircha mavjud emas” mazmunidagi block holati |
+| Tray status | `agent/webui/status.html` | Bugungi vaqt, qolgan limit va shaffoflik havolasi |
+| Shaffoflik | `agent/webui/privacy.html` | Ota-ona ko'radigan va ko'rmaydigan ma'lumotlar |
+| Limit tugadi | `agent/webui/limit-reached.html` | Tinch, ayblovsiz full-screen tushuntirish |
+| Ilova cheklangan | `agent/webui/app-restricted.html` | “Hozircha mavjud emas” mazmunidagi block holati |
 
 Tray holatlari: yashil — normal; amber — vaqt kamaymoqda; kulrang — limit tugagan yoki faol cheklov. Bola ilovasi ichida “o'chirish”, “to'xtatish” yoki qoida tahrirlash funksiyasi bo'lmaydi.
 

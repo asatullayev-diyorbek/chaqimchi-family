@@ -30,7 +30,7 @@ chaqimchi-family/
 ├── parent-mobile/
 ├── parent-web/
 ├── parent-ui/              # parent dashboard visual prototype
-└── child-ui/               # Child installer/status/block design pages
+└── agent/webui/               # Child installer/status/block design pages
 ```
 
 ## 2. `server/` — Django backend
@@ -53,7 +53,7 @@ Bosqich 0 uchun kerak: `screens/auth/`, `screens/enroll/QRScanScreen.tsx`, `api/
 oldin/yonma-yon ishlatiladigan HTML/CSS vizual prototip: u production API'ga
 ulanmaydi, ammo Liquid Glass design system va responsive layout manbasi.
 
-## 6. `child-ui/` — ChaqimchiAI Child dizayn manbasi
+## 6. `agent/webui/` — ChaqimchiAI Child dizayn manbasi
 
 Installerning 5 qadamli oqimi, tray status oynasi, privacy oynasi va ikkita
 block holati alohida HTML sahifalarda berilgan. Ular Windows Go agentining

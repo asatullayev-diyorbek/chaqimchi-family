@@ -22,6 +22,7 @@ import (
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/enroll"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/service"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui/webwin"
 )
 
 const installDir = `C:\Program Files\ChaqimchiAI`
@@ -57,7 +58,12 @@ func main() {
 		fatalInstaller("Backend manzili rad etildi: %v", err)
 	}
 
-	if !ui.ShowWelcome() {
+	proceed, werr := webwin.ShowWelcome()
+	if werr != nil {
+		log.Printf("WebView2 xush kelibsiz oynasi ochilmadi, walk'ga qaytamiz: %v", werr)
+		proceed = ui.ShowWelcome()
+	}
+	if !proceed {
 		log.Println("o'rnatish to'xtatildi: xush kelibsiz oynasida bekor qilindi")
 		return
 	}

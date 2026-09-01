@@ -12,6 +12,7 @@ import (
 
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui/webwin"
 )
 
 func main() {
@@ -21,6 +22,9 @@ func main() {
 	switch *screen {
 	case "welcome":
 		println("welcome:", ui.ShowWelcome())
+	case "webwelcome":
+		ok, err := webwin.ShowWelcome()
+		println("webwelcome:", ok, errString(err))
 	case "complete":
 		ui.ShowComplete()
 	case "info":

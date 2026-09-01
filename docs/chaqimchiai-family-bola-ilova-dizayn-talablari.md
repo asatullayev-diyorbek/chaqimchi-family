@@ -2,7 +2,7 @@
 
 > Bu hujjat bolaning **o'z kompyuterida** ko'rinadigan interfeys uchun talablarni belgilaydi — ya'ni Guard Agent fonda ishlaganda bola bilan qanday "muloqot qiladi". Bu ota-ona paneli (mobil/desktop) hujjatlaridan farqli — bu yerda foydalanuvchi **bola**, va maqsad boshqaruv emas, **shaffof va hurmatli bildirish**.
 >
-> **Amaldagi dizayn manbasi:** `child-ui/` ichidagi alohida HTML sahifalar
+> **Amaldagi dizayn manbasi:** `agent/webui/` ichidagi alohida HTML sahifalar
 > installer, tray status, privacy va block holatlarini ko'rsatadi. Ularning
 > umumiy Liquid Glass/Inter brend yo'nalishi
 > `chaqimchiai-family-loyiha-konsepsiyasi.md` bilan belgilanadi.

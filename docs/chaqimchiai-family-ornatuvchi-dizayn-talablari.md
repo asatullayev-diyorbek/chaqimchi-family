@@ -2,8 +2,8 @@
 
 > Bu hujjat Guard Agent'ni bolaning kompyuteriga **o'rnatish jarayoni** (installer wizard) va o'rnatilgandan keyin qurilmada qoladigan **lokal sozlamalar paneli** uchun talablarni belgilaydi. Bu — to'rtinchi va oxirgi interfeys qatlami: mobil panel, desktop panel, bola tomoni va endi shu — o'rnatuvchi.
 >
-> Installerning yangilangan sahifa dizaynlari `child-ui/welcome.html`dan
-> `child-ui/complete.html`gacha joylashgan. Ular
+> Installerning yangilangan sahifa dizaynlari `agent/webui/welcome.html`dan
+> `agent/webui/complete.html`gacha joylashgan. Ular
 > `chaqimchiai-family-loyiha-konsepsiyasi.md`dagi umumiy loyiha tizimiga mos
 > holda implementatsiya qilinadi.
 

@@ -1,9 +1,25 @@
 # Agent + Installer UI — WebView2 ko'chirish rejasi
 
 Sana: 2026-09-01
-Maqsad: agent va installer oynalarini WebView2'ga o'tkazib, `child-ui/` dagi
+Maqsad: agent va installer oynalarini WebView2'ga o'tkazib, `agent/webui/` dagi
 tayyor HTML/CSS dizaynni 1:1 render qilish. walk (native Win32) bilan yumaloq
 burchak, soya, gradient, rangli tugma — printsipial mumkin emas.
+
+## Holat
+
+- **A bosqich — DONE** (`GOOS=windows` build+vet PASS; Windows'da real render ko'rilmagan):
+  - `github.com/jchv/go-webview2` (pure Go) qo'shildi.
+  - `child-ui/` → **`agent/webui/`** ko'chirildi (yagona manba, embed qilinadi).
+  - `agent/webui/assets/`: `bridge.js` (Go↔JS: `ui.action()`, `__setState`,
+    `data-bind`), `icons.js` (19 solar ikonka inline, CDN yo'q), `fonts.css` +
+    `inter-latin/latinext.woff2` (offline Inter), `app.css` (oyna konteksti).
+  - `agent/webui/embed.go` — `//go:embed`.
+  - `agent/internal/ui/webwin/` — loopback fayl server (`127.0.0.1:0`) +
+    `Window` (New/OnAction/SetState/Eval/Close/Run), `ShowWelcome()`.
+  - `welcome.html` app-ready (Guard/ota-ona ohangi). `cmd/installer` uni
+    ishlatadi; xato bo'lsa walk `ui.ShowWelcome()` ga qaytadi.
+  - `cmd/uitest -screen webwelcome`.
+- **B–E bosqichlar** — quyida.
 
 ---
 
@@ -15,16 +31,16 @@ burchak, soya, gradient, rangli tugma — printsipial mumkin emas.
 - Faqat `//go:build windows`.
 
 ### 1.2. HTML manbasi
-- **`child-ui/` "haqiqiy UI" ga aylanadi** (mockup emas). Har sahifa app-ready
+- **`agent/webui/` "haqiqiy UI" ga aylanadi** (mockup emas). Har sahifa app-ready
   bo'ladi: CDN yo'q, offline ishlaydi, Go bilan ko'prik.
 - Agent binary ichiga `//go:embed` bilan kiritiladi (`agent/internal/ui/web/`
   ga symlink/copy yoki `embed.FS` to'g'ridan `../../child-ui`).
 
 ### 1.3. Offline qilish
-- **Shrift (Inter):** `@import url(fonts.googleapis…)` → `child-ui/assets/inter/*.woff2`
+- **Shrift (Inter):** `@import url(fonts.googleapis…)` → `agent/webui/assets/inter/*.woff2`
   + lokal `@font-face`. 4 vazn ≈ 60 KB.
 - **Ikonkalar:** `<iconify-icon icon="solar:*">` (CDN) → inline `<svg>`. Sahifalarda
-  ~16 xil `solar:*` ikonka ishlatilgan; ularni bir marta yuklab, `child-ui/assets/icons.js`
+  ~16 xil `solar:*` ikonka ishlatilgan; ularni bir marta yuklab, `agent/webui/assets/icons.js`
   (yoki to'g'ridan inline) ga qotiramiz. ≈ 16 KB.
 
 ### 1.4. Yetkazish
@@ -130,17 +146,17 @@ func Open(page string, opts Opts) *Window     // oyna yaratadi, page yuklaydi
 
 1. **Brend/ohang — aralash:**
    - **Installer (1-7 oynalar): "ChaqimchiAI Guard", ota-ona ohangi** — professional,
-     xotirjam. `child-ui/welcome…complete.html` matni shunga moslashtiriladi
+     xotirjam. `agent/webui/welcome…complete.html` matni shunga moslashtiriladi
      (sarlavhalar, "bola/bolangiz" → operator ohangi, `brand small` = "Guard").
    - **Tray (8-12 oynalar): "ChaqimchiAI Child", yumshoq ohang** — bola ko'radi,
-     `child-ui/status.html` / `privacy.html` deyarli o'zgarmaydi.
+     `agent/webui/status.html` / `privacy.html` deyarli o'zgarmaydi.
    - Ikki auditoriya, bitta rang palitrasi (teal/blue glass).
 2. **Block ekranlar (13-14): native Win32.** `block_screen.go` qayta bezaladi
    (`limit-reached.html` palitrasi: teal ground, glass card, katta sarlavha).
    WebView2 emas — anti-tamper uchun.
 3. **Installer oyna o'lchami: ~960 × 620, 2-ustunli** `install-layout` (chap "art"
    panel ko'rinadi).
-4. **`child-ui/` promote — yagona manba.** Mockup'dan haqiqiy UI'ga: CDN olib
+4. **`agent/webui/` promote — yagona manba.** Mockup'dan haqiqiy UI'ga: CDN olib
    tashlanadi, `bridge.js` + `assets/` qo'shiladi, dinamik joylar `data-bind`.
    Agent shu papkani `//go:embed` qiladi. `index.html` (dizayn ko'rsatkichi)
    qoladi, lekin embed'ga kirmaydi.

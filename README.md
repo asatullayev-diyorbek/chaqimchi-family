@@ -13,7 +13,7 @@ faylida jamlangan.
 - `parent-mobile/` — React Native (Expo) parent app
 - `parent-web/` — Next.js parent dashboard (real web implementation)
 - `parent-ui/` — parent dashboard static visual prototype
-- `child-ui/` — ChaqimchiAI Child installer va desktop holatlari static dizayni
+- `agent/webui/` — ChaqimchiAI Child installer va desktop holatlari static dizayni
 - `docs/` — architecture and phase specs
 
 ## Product principle

@@ -317,7 +317,7 @@ Login/signup’dan keyin linked device bo‘lsa Home’ga, aks holda QRScan’ga
 
 ## 6. Child UI va Parent UI
 
-### 6.1. `child-ui/`
+### 6.1. `agent/webui/`
 
 Bu papka static HTML/CSS visual flow hisoblanadi. Unda quyidagi ekranlar bor:
 

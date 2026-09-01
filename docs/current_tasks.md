@@ -41,6 +41,10 @@ Asosiy maqsad: GUI bilan ishlaydigan, production API’ga ulangan va Windows 10/
   - `cmd/uitest -screen block` (8s dan keyin avto-yopiladi).
   - **Hali ulanmagan:** enforcer `Block` callback'i Session 0 service'da UI chizolmaydi; block ekranini ko'rsatish uchun session helper'ga buyruq kanali kerak (kelajak ishi).
 - [ ] **Kelajak:** block ekranini session helper orqali ulash (helper hozir faqat foreground reports, buyruq qabul qilmaydi).
+- [~] **WebView2 UI ko'chirish — A bosqich DONE** (`docs/webview-ui-plan.md`; `GOOS=windows` build+vet PASS, Windows'da ko'rilmagan):
+  - `go-webview2` dep; `child-ui/` → `agent/webui/` (embed manbasi); `bridge.js`/`icons.js`/offline Inter/`app.css`; `internal/ui/webwin` helper.
+  - `welcome.html` app-ready (Guard ohangi), `cmd/installer` ishlatadi (walk fallback), `uitest -screen webwelcome`.
+  - Keyingi: B — installer oqimi (consent/connect/installing/complete/existing/error).
 - [ ] **Kelajak:** lokal paneldan qurilmani qayta bog'lash (relink kod API), diagnostika jurnalini serverga yuklash.
 
 ## Hozirgi holat — 2026-08-28 yangilanishi (real Windows)
