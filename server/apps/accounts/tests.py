@@ -86,3 +86,47 @@ class TelegramLinkTests(TestCase):
         self.parent.refresh_from_db()
         self.assertEqual(self.parent.telegram_id, 999)
         self.assertEqual(TelegramLoginToken.objects.filter(is_link=False).count(), 0)
+
+
+@override_settings(
+    TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
+    TELEGRAM_WEBHOOK_SECRET="test-secret",
+)
+@mock.patch("apps.accounts.telegram._telegram_api_call", return_value=None)
+class TelegramBotCommandTests(TestCase):
+    def setUp(self):
+        from apps.devices.models import Child, ChildDevice
+
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(
+            email="p@example.com", password="supersecret123", telegram_id=555999,
+        )
+        child = Child.objects.create(family=self.parent.family, name="Ali")
+        ChildDevice.objects.create(
+            family=self.parent.family, child=child, status=ChildDevice.STATUS_LINKED,
+        )
+
+    def _send(self, text, from_id=555999):
+        return self.client.post(
+            reverse("telegram-webhook"),
+            {"message": {"text": text, "chat": {"id": 1}, "from": {"id": from_id}}},
+            format="json", **WEBHOOK_HEADERS,
+        )
+
+    def test_commands_reply_for_a_linked_parent(self, api):
+        for cmd in ("/bugun", "/qurilmalar", "/ogohlantirishlar", "/help"):
+            api.reset_mock()
+            self.assertEqual(self._send(cmd).status_code, 200)
+            api.assert_called_once()
+            self.assertEqual(api.call_args[0][0], "sendMessage")
+
+    def test_unlinked_sender_is_told_to_link(self, api):
+        self._send("/bugun", from_id=111111)
+        text = api.call_args[0][1]["text"]
+        self.assertIn("ulanmagan", text)
+
+    def test_start_with_token_is_not_treated_as_a_command(self, api):
+        # "/start <uuid>" must still go to the pairing flow, not the bot menu
+        self._send("/start 00000000-0000-0000-0000-000000000000")
+        # pairing flow sends "havola muddati tugagan..." for an unknown token
+        self.assertIn("muddati", api.call_args[0][1]["text"].lower())

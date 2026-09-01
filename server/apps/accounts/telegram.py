@@ -34,6 +34,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .bot import handle_command
 from .models import ParentUser, TelegramLoginToken
 from .serializers import ParentUserSerializer
 
@@ -145,12 +146,20 @@ class TelegramWebhookView(APIView):
         return Response({"ok": True})
 
     def _handle_message(self, message):
-        text = message.get("text", "")
+        text = (message.get("text") or "").strip()
+        chat_id = (message.get("chat") or {}).get("id")
+        from_id = (message.get("from") or {}).get("id")
+
+        if text.startswith("/") and not text.startswith("/start "):
+            reply = handle_command(text, from_id)
+            if reply is not None and chat_id:
+                _telegram_api_call("sendMessage", {"chat_id": chat_id, "text": reply})
+            return
+
         if not text.startswith("/start "):
             return
 
         payload_token = text.removeprefix("/start ").strip()
-        chat_id = (message.get("chat") or {}).get("id")
 
         token = _resolve_login_token(payload_token) or _resolve_link_token(payload_token)
         if token is None:
