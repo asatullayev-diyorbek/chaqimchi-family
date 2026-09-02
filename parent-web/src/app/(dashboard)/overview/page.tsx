@@ -41,25 +41,62 @@ type FamilyCard = {
   name: string;
   online: boolean;
   todayMinutes: number;
+  weekMinutes: number;
   hasDevice: boolean;
   unseenAlerts: number;
 };
+
+// Each child gets a stable colour so the same person reads the same in the
+// cards, the comparison chart, and (later) anywhere else family-wide.
+const FAMILY_COLORS = ["#2563eb", "#7c3aed", "#0d9488", "#d97706", "#db2777", "#4f46e5"];
 
 async function buildFamily(devices: Device[], children: Child[]): Promise<FamilyCard[]> {
   return Promise.all(
     children.map(async (child) => {
       const own = devices.filter((d) => d.child_id === child.id && d.status === "linked");
       const summaries = await Promise.all(own.map((d) => getSummary(d.id).catch(() => null)));
+      const weekSummaries = await Promise.all(
+        own.map((d) => getSummary(d.id, { range: "week" }).catch(() => null)),
+      );
       const alertLists = await Promise.all(own.map((d) => getAlerts(d.id).catch(() => [] as Alert[])));
       return {
         childId: child.id,
         name: child.name,
         online: summaries.some((s) => s?.device_status === "online"),
         todayMinutes: summaries.reduce((t, s) => t + (s?.total_screen_minutes ?? 0), 0),
+        weekMinutes: weekSummaries.reduce(
+          (t, s) => t + (s?.breakdown ?? []).slice(-7).reduce((d, b) => d + (b.total_minutes || 0), 0),
+          0,
+        ),
         hasDevice: own.length > 0,
         unseenAlerts: alertLists.flat().filter((a) => !a.seen).length,
       };
     }),
+  );
+}
+
+function FamilyWeekChart({ cards }: { cards: FamilyCard[] }) {
+  const withDevice = cards.filter((c) => c.hasDevice);
+  if (withDevice.length < 2) return null;
+  const max = Math.max(60, ...withDevice.map((c) => c.weekMinutes));
+  return (
+    <div className="card" style={{ padding: 18, marginBottom: 20 }}>
+      <div className="card-header" style={{ marginBottom: 12 }}>
+        <h3>Haftalik solishtirma</h3>
+        <span className="muted-sm">Oxirgi 7 kun</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {withDevice.map((c, i) => (
+          <div key={c.childId} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ width: 90, fontSize: 13, fontWeight: 600, flexShrink: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</span>
+            <div style={{ flex: 1, background: "var(--border)", borderRadius: 999, height: 14, overflow: "hidden" }}>
+              <div style={{ width: `${Math.max(2, (c.weekMinutes / max) * 100)}%`, height: "100%", background: FAMILY_COLORS[i % FAMILY_COLORS.length], borderRadius: 999 }} />
+            </div>
+            <span className="muted-sm" style={{ width: 64, textAlign: "right", flexShrink: 0 }}>{formatMinutes(c.weekMinutes)}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -186,6 +223,7 @@ function OverviewContent() {
           onPick={(id) => router.push(`/overview?child=${id}`)}
         />
       )}
+      {family && family.length > 1 && <FamilyWeekChart cards={family} />}
       {showEmptyState && (
         <div className="card" style={{ marginBottom: 24, background: "var(--brand-blue)", color: "#fff", border: "none" }}>
           <div style={{ padding: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
