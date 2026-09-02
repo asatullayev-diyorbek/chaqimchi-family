@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter } from "next/font/google";
 import { SITE } from "@/lib/site";
 import "./globals.css";
@@ -39,7 +40,11 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="uz" className={inter.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Real icon set (Solar) — same source the dashboard uses. */}
+        <Script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js" strategy="afterInteractive" />
+      </body>
     </html>
   );
 }

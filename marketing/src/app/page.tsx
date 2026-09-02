@@ -9,21 +9,13 @@ export const metadata: Metadata = {
     "Kunlik ekran vaqti, dam olish soatlari, ilova cheklovlari, faoliyat hisoboti va Telegram xabarlar — bola ham qoidalarni ko'radi.",
 };
 
-function Ico({ d }: { d: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d={d} />
-    </svg>
-  );
+function Ico({ name }: { name: string }) {
+  return <iconify-icon icon={name} aria-hidden />;
 }
 function Check() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
+  return <iconify-icon icon="solar:check-circle-bold" aria-hidden />;
 }
-const DownloadIcon = <Ico d="M12 3v12m0 0 4-4m-4 4-4-4M4 21h16" />;
+const DownloadIcon = <iconify-icon icon="solar:download-minimalistic-linear" aria-hidden />;
 
 export default function Page() {
   return (
@@ -122,10 +114,10 @@ export default function Page() {
         {/* TRUST STRIP */}
         <div className="trust">
           <div className="wrap trust-inner">
-            <span className="trust-item"><Ico d="M12 2 4 5v6c0 5 3.4 9.4 8 10.6 4.6-1.2 8-5.6 8-10.6V5l-8-3Z" /> Shaffof rozilik</span>
-            <span className="trust-item"><Ico d="M5 13l4 4L19 7" /> Klaviatura/skrinshot yozilmaydi</span>
-            <span className="trust-item"><Ico d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /> Offline barqaror</span>
-            <span className="trust-item"><Ico d="m22 3-9.5 9.5M22 3l-6.5 18-3.5-8-8-3.5L22 3Z" /> Telegram xabarlar</span>
+            <span className="trust-item"><Ico name="solar:shield-check-linear" /> Shaffof rozilik</span>
+            <span className="trust-item"><Ico name="solar:lock-keyhole-minimalistic-linear" /> Klaviatura/skrinshot yozilmaydi</span>
+            <span className="trust-item"><Ico name="solar:wi-fi-router-minimalistic-linear" /> Offline barqaror</span>
+            <span className="trust-item"><Ico name="solar:plain-2-linear" /> Telegram xabarlar</span>
           </div>
         </div>
 
@@ -139,7 +131,7 @@ export default function Page() {
             <div className="grid grid-3">
               {PROMISES.map((p, i) => (
                 <Reveal as="article" className="glass card" key={p.title} delay={i * 80}>
-                  <span className={`ico ${i === 2 ? "teal" : ""}`}><Ico d={p.icon} /></span>
+                  <span className={`ico ${i === 2 ? "teal" : ""}`}><Ico name={p.icon} /></span>
                   <h3>{p.title}</h3>
                   <p>{p.body}</p>
                 </Reveal>
@@ -183,7 +175,7 @@ export default function Page() {
             <div className="grid grid-3">
               {FEATURES.map((f, i) => (
                 <Reveal as="article" className="glass card" key={f.title} delay={(i % 3) * 80}>
-                  <span className="ico"><Ico d={f.icon} /></span>
+                  <span className="ico"><Ico name={f.icon} /></span>
                   <span className="pill">{f.tag}</span>
                   <h3>{f.title}</h3>
                   <p>{f.body}</p>
@@ -290,7 +282,7 @@ export default function Page() {
             </Reveal>
             <div className="grid grid-2">
               <Reveal as="article" className="glass plat">
-                <span className="ico"><Ico d="M4 5h16v11H4zM2 20h20M9 20v-4M15 20v-4" /></span>
+                <span className="ico"><Ico name="solar:monitor-linear" /></span>
                 <div>
                   <small>Bola qurilmasi</small>
                   <h3 style={{ marginTop: 4 }}>Windows agent</h3>
@@ -298,7 +290,7 @@ export default function Page() {
                 </div>
               </Reveal>
               <Reveal as="article" className="glass plat" delay={100}>
-                <span className="ico teal"><Ico d="M7 3h10a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1ZM11 18h2" /></span>
+                <span className="ico teal"><Ico name="solar:smartphone-linear" /></span>
                 <div>
                   <small>Ota-ona</small>
                   <h3 style={{ marginTop: 4 }}>Web panel + mobil ilova</h3>

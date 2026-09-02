@@ -15,19 +15,19 @@ export const SITE = {
 
 export const PROMISES = [
   {
-    icon: "M12 2 3 6v6c0 5 4 9 9 10 5-1 9-5 9-10V6l-9-4Z",
+    icon: "solar:eye-linear",
     title: "Shaffoflik",
     body:
       "Bola agent borligini, qanday ma'lumot olinishini va qoidalar nima ekanini ko'radi. Yashirin rejim yo'q.",
   },
   {
-    icon: "M12 6v6l4 2M22 12a10 10 0 1 1-20 0 10 10 0 0 1 20 0Z",
+    icon: "solar:slider-vertical-linear",
     title: "Xotirjam boshqaruv",
     body:
       "Ota-ona holatni va qoidalarni oddiy tilda, bir necha bosishda boshqaradi. Jazo emas — kelishuv.",
   },
   {
-    icon: "M3 12h4l3 8 4-16 3 8h4",
+    icon: "solar:wi-fi-router-minimalistic-linear",
     title: "Offline barqarorlik",
     body:
       "Qoidalar va hisoblash lokal agentda ishlaydi. Internet uzilsa ham bola tajribasi buzilmaydi.",
@@ -40,42 +40,42 @@ export const FEATURES = [
     title: "Kunlik ekran vaqti",
     body:
       "Kuniga necha daqiqa. Ish kunlari va dam olish kunlari (Sh–Ya) uchun alohida qiymat qo'yish mumkin.",
-    icon: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+    icon: "solar:clock-circle-linear",
   },
   {
     tag: "Tinch soatlar",
     title: "Dam olish vaqti oynalari",
     body:
       "Masalan 22:00–07:00 — bu oraliqda ekran xushmuomala tarzda bloklanadi, ertaga o'zi ochiladi.",
-    icon: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z",
+    icon: "solar:moon-sleep-linear",
   },
   {
     tag: "Ilovalar",
     title: "Ayrim ilovalarni cheklash",
     body:
       "Nomi bo'yicha cheklang. Bola ilovasi buni «hozircha mavjud emas» holati sifatida ko'rsatadi.",
-    icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+    icon: "solar:forbidden-circle-linear",
   },
   {
     tag: "Faoliyat",
     title: "Nima, qancha vaqt",
     body:
       "Qaysi ilova qancha ishlatilgani — ikonkasi bilan. Kun / hafta / oy kesimida, CSV eksport bilan.",
-    icon: "M4 19V5M4 19h16M8 16v-5M13 16V8M18 16v-3",
+    icon: "solar:chart-2-linear",
   },
   {
     tag: "Alert",
     title: "Muhim ogohlantirishlar",
     body:
       "Limit tugadi, cheklangan ilova ochildi, qurilmada «Kattalar uchun» paneli ochildi — darhol xabar.",
-    icon: "M12 9v4M12 17h.01M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6A2 2 0 0 0 22 18L13.7 3.9a2 2 0 0 0-3.4 0Z",
+    icon: "solar:bell-linear",
   },
   {
     tag: "Telegram",
     title: "Telegram bot + kunlik hisobot",
     body:
       "Panelni ochmasdan @ChaqimchiGuardBot orqali bugungi holat, qurilmalar va har oqshom qisqa hisobot.",
-    icon: "m22 3-9.5 9.5M22 3l-6.5 18-3.5-8-8-3.5L22 3Z",
+    icon: "solar:plain-2-linear",
   },
 ];
 
