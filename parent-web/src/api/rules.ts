@@ -6,7 +6,7 @@ export type Rule = {
   id: string;
   device: string;
   rule_type: RuleType;
-  value: { minutes: number } | { app: string };
+  value: { minutes: number; weekend_minutes?: number } | { app: string };
   created_at: string;
 };
 
@@ -33,4 +33,10 @@ export function getDailyLimitMinutes(rules: Rule[]): number | null {
   const rule = rules.find((r) => r.rule_type === "daily_limit_minutes");
   if (!rule || !("minutes" in rule.value)) return null;
   return rule.value.minutes;
+}
+
+export function getWeekendLimitMinutes(rules: Rule[]): number | null {
+  const rule = rules.find((r) => r.rule_type === "daily_limit_minutes");
+  if (!rule || !("minutes" in rule.value)) return null;
+  return rule.value.weekend_minutes ?? null;
 }

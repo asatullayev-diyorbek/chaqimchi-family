@@ -41,6 +41,11 @@ type blockedAppValue struct {
 
 type dailyLimitValue struct {
 	Minutes float64 `json:"minutes"`
+	// WeekendMinutes, when set, replaces Minutes on Saturday and Sunday
+	// (child-app design §4.5: "Dushanba–Juma / Shanba–Yakshanba uchun
+	// alohida qiymat"). Pointer so "0 minutes on weekends" is distinct from
+	// "not configured".
+	WeekendMinutes *float64 `json:"weekend_minutes,omitempty"`
 }
 
 type Enforcer struct {
@@ -96,6 +101,13 @@ func (e *Enforcer) dailyLimitMinutes() (float64, bool) {
 		var v dailyLimitValue
 		if err := json.Unmarshal(r.Value, &v); err != nil {
 			continue
+		}
+		if v.WeekendMinutes != nil {
+			// Local weekday: the limit period is the child's calendar day,
+			// and near midnight a UTC weekday can be a day off.
+			if wd := time.Now().Weekday(); wd == time.Saturday || wd == time.Sunday {
+				return *v.WeekendMinutes, true
+			}
 		}
 		return v.Minutes, true
 	}

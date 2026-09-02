@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func newTestCache(t *testing.T) *Cache {
@@ -83,6 +84,43 @@ func TestCheckForegroundApp_AllowsNonBlockedApp(t *testing.T) {
 	}, nil)
 
 	enforcer.CheckForegroundApp(context.Background(), "notepad.exe")
+}
+
+func TestDailyLimitMinutes_WeekendOverride(t *testing.T) {
+	cache := newTestCache(t)
+	weekend := 30.0
+	value, _ := json.Marshal(dailyLimitValue{Minutes: 120, WeekendMinutes: &weekend})
+	cache.Replace([]Rule{{ID: "r1", RuleType: "daily_limit_minutes", Value: value}})
+
+	enforcer := NewEnforcer(cache, nil, nil, nil)
+	got, ok := enforcer.DailyLimitMinutes()
+	if !ok {
+		t.Fatal("expected a limit")
+	}
+
+	isWeekend := func() bool {
+		wd := time.Now().Weekday()
+		return wd == time.Saturday || wd == time.Sunday
+	}()
+	want := 120.0
+	if isWeekend {
+		want = 30.0
+	}
+	if got != want {
+		t.Fatalf("weekend=%v: got %v, want %v", isWeekend, got, want)
+	}
+}
+
+func TestDailyLimitMinutes_NoWeekendKeyFallsBackToMinutes(t *testing.T) {
+	cache := newTestCache(t)
+	value, _ := json.Marshal(dailyLimitValue{Minutes: 90})
+	cache.Replace([]Rule{{ID: "r1", RuleType: "daily_limit_minutes", Value: value}})
+
+	enforcer := NewEnforcer(cache, nil, nil, nil)
+	got, ok := enforcer.DailyLimitMinutes()
+	if !ok || got != 90 {
+		t.Fatalf("got %v, %v; want 90, true", got, ok)
+	}
 }
 
 func TestCheckDailyLimit_WarnsThenBlocksInStages(t *testing.T) {

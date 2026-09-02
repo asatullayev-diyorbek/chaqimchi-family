@@ -22,6 +22,11 @@ class RuleSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"value": "daily_limit_minutes uchun {'minutes': <int>} kerak"}
                 )
+            weekend = value.get("weekend_minutes")
+            if weekend is not None and (not isinstance(weekend, int) or isinstance(weekend, bool)):
+                raise serializers.ValidationError(
+                    {"value": "weekend_minutes butun son bo'lishi kerak"}
+                )
         elif rule_type == "blocked_app":
             if not isinstance(value, dict) or not value.get("app"):
                 raise serializers.ValidationError(

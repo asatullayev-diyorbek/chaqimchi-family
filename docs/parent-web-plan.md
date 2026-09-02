@@ -97,7 +97,12 @@ har farzand uchun karta (ism, onlayn nuqta, bugungi vaqt, alert belgisi) +
 - **P4 — qisman:** app-usage jadvali CSV eksport. Saralanadigan ustunlar +
   kategoriya-rangli grafik hali yo'q. `appDisplay.ts` kategoriya tizimi
   allaqachon bor.
-- **P3 — hali:** qoidalar hafta kuni + vaqt oynalari (agent enforcer ishi kerak).
+- **P3a — DONE:** kunlik limitga "Dam olish kunlari (Sh–Ya)" ixtiyoriy qiymati.
+  Rule value: `{"minutes": N, "weekend_minutes": M?}`. Agent enforcer
+  `dailyLimitMinutes()` Shanba/Yakshanba (local vaqt) da `weekend_minutes` ni
+  qaytaradi. Backend serializer optional int `weekend_minutes` ni tekshiradi.
+- **P3 — qolgani:** vaqt oynalari ("22:00–07:00 blok") — yangi `blocked_window`
+  turi + agent vaqt-bo'yicha enforcement (hali yo'q).
 - **P6 — hali:** Liquid Glass, responsive sidebar, skeleton'lar.
 
 **PA deploy kutayotgan migratsiyalar (CPU kvota 2026-09-01, ~14:30 UTC reset):**

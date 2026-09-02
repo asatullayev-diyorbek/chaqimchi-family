@@ -46,6 +46,25 @@ class RuleCRUDTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_create_rule_accepts_weekend_minutes(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.post(
+            self.collection_url,
+            {"rule_type": "daily_limit_minutes", "value": {"minutes": 120, "weekend_minutes": 240}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["value"], {"minutes": 120, "weekend_minutes": 240})
+
+    def test_create_rule_rejects_non_int_weekend_minutes(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.post(
+            self.collection_url,
+            {"rule_type": "daily_limit_minutes", "value": {"minutes": 120, "weekend_minutes": "lots"}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
+
     def test_delete_rule(self):
         self.client.force_authenticate(user=self.parent)
         rule = Rule.objects.create(

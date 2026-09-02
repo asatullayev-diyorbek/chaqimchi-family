@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { createRule, deleteRule, getDailyLimitMinutes, getRules, Rule } from "@/api/rules";
+import { createRule, deleteRule, getDailyLimitMinutes, getRules, getWeekendLimitMinutes, Rule } from "@/api/rules";
 import { useApiQuery } from "@/hooks/useApiQuery";
 import { useSelectedDevice } from "@/hooks/useSelectedDevice";
 import { toast } from "react-hot-toast";
@@ -27,6 +27,11 @@ function RulesContent() {
   const limit = limitEdit ?? String(getDailyLimitMinutes(rules) ?? "");
   const setLimit = (value: string) => setLimitEdit(value);
 
+  // Weekend (Sat–Sun) override. Empty means "same as weekday limit".
+  const [weekendEdit, setWeekendEdit] = useState<string | null>(null);
+  const weekend = weekendEdit ?? String(getWeekendLimitMinutes(rules) ?? "");
+  const setWeekend = (value: string) => setWeekendEdit(value);
+
   const [app, setApp] = useState("");
   const [savingLimit, setSavingLimit] = useState(false);
   const [addingApp, setAddingApp] = useState(false);
@@ -48,6 +53,13 @@ function RulesContent() {
       return;
     }
 
+    const weekendRaw = weekend.trim();
+    const weekendMinutes = Number(weekendRaw);
+    if (weekendRaw && (!Number.isInteger(weekendMinutes) || weekendMinutes < 0 || weekendMinutes > 24 * 60)) {
+      toast.error("Dam olish kunlari limiti 0–1440 oralig'idagi butun son bo'lishi kerak.");
+      return;
+    }
+
     const previous = rules;
     const oldLimit = rules.find((rule) => rule.rule_type === "daily_limit_minutes");
     setSavingLimit(true);
@@ -56,15 +68,23 @@ function RulesContent() {
         // Create first, delete second. The old order removed the rule before
         // knowing the replacement would be accepted, so a failed create left
         // the device with no limit at all.
-        const created = await createRule(deviceId, "daily_limit_minutes", { minutes });
+        const value: { minutes: number; weekend_minutes?: number } = { minutes };
+        if (weekendRaw) value.weekend_minutes = weekendMinutes;
+        const created = await createRule(deviceId, "daily_limit_minutes", value);
         if (oldLimit) await deleteRule(oldLimit.id).catch(() => undefined);
         setRules((current) => [...current.filter((rule) => rule.rule_type !== "daily_limit_minutes"), created]);
         setLimitEdit(null);
-        toast.success(`Kunlik limit ${minutes} daqiqa qilib saqlandi.`);
+        setWeekendEdit(null);
+        toast.success(
+          weekendRaw
+            ? `Ish kunlari ${minutes} daq, dam olish kunlari ${weekendMinutes} daq qilib saqlandi.`
+            : `Kunlik limit ${minutes} daqiqa qilib saqlandi.`,
+        );
       } else if (oldLimit) {
         await deleteRule(oldLimit.id);
         setRules((current) => current.filter((rule) => rule.rule_type !== "daily_limit_minutes"));
         setLimitEdit(null);
+        setWeekendEdit(null);
         toast.success("Kunlik limit o'chirildi.");
       } else {
         toast("Limit allaqachon belgilanmagan.");
@@ -72,6 +92,7 @@ function RulesContent() {
     } catch (cause) {
       setRules(previous);
       setLimitEdit(null);
+      setWeekendEdit(null);
       toast.error(cause instanceof Error ? cause.message : "Limit saqlanmadi");
     } finally {
       setSavingLimit(false);
@@ -145,6 +166,25 @@ function RulesContent() {
                     onChange={(event) => setLimit(event.target.value)}
                     inputMode="numeric"
                     placeholder="Masalan: 180"
+                    style={{padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 14, width: 140}}
+                  />
+                </div>
+              </div>
+
+              <div className="setting-item" style={{display: 'flex', gap: 10, alignItems: 'center'}}>
+                <div className="setting-left" style={{flex: 1}}>
+                  <iconify-icon icon="solar:calendar-linear" style={{fontSize: 24, color: 'var(--muted)'}}></iconify-icon>
+                  <div>
+                    <h4 style={{margin: '0 0 4px', fontSize: 15}}>Dam olish kunlari (Shanba–Yakshanba)</h4>
+                    <p style={{margin: 0, fontSize: 13, color: 'var(--muted)'}}>Bo'sh qoldirsangiz, dam olish kunlari ham yuqoridagi limit qo'llanadi.</p>
+                  </div>
+                </div>
+                <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+                  <input
+                    value={weekend}
+                    onChange={(event) => setWeekend(event.target.value)}
+                    inputMode="numeric"
+                    placeholder="Masalan: 240"
                     style={{padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 14, width: 140}}
                   />
                   <button onClick={saveLimit} disabled={savingLimit} className="btn btn-outline" style={{padding: '10px 16px', borderRadius: 10}}>
