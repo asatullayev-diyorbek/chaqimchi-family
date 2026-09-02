@@ -75,6 +75,7 @@ function ActivityContent() {
   const [summaryRetry, setSummaryRetry] = useState(0);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [appsPage, setAppsPage] = useState(0);
+  const [appSort, setAppSort] = useState<"minutes" | "name" | "recent">("minutes");
   const [sitesPage, setSitesPage] = useState(0);
   const [tab, setTab] = useState<"screen" | "history" | "sites">("screen");
   const [historyOffset, setHistoryOffset] = useState(0);
@@ -137,7 +138,13 @@ function ActivityContent() {
     if (summaryQuery.error) toast.error(summaryQuery.error.message);
   }, [summaryQuery.error]);
 
-  const sortedApps = summary ? [...summary.top_apps].sort((a, b) => b.minutes - a.minutes) : [];
+  const sortedApps = summary
+    ? [...summary.top_apps].sort((a, b) => {
+        if (appSort === "name") return appDisplay(a.app).label.localeCompare(appDisplay(b.app).label);
+        if (appSort === "recent") return (b.last_used_at ?? "").localeCompare(a.last_used_at ?? "");
+        return b.minutes - a.minutes;
+      })
+    : [];
   const appsPageC = Math.min(appsPage, Math.max(0, Math.ceil(sortedApps.length / PAGE_SIZE) - 1));
   // Clamp rather than reset on change: switching range shortens the list,
   // and a stale page index would otherwise render an empty table.
@@ -347,6 +354,18 @@ function ActivityContent() {
                   <h3>Ilovalar bo'yicha foydalanish</h3>
                   <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span className="muted-sm">{RANGE_LABELS[range]} · {sortedApps.length} ta</span>
+                    {sortedApps.length > 1 && (
+                      <select
+                        value={appSort}
+                        onChange={(e) => { setAppSort(e.target.value as typeof appSort); setAppsPage(0); }}
+                        className="btn-view"
+                        style={{ fontSize: 12 }}
+                      >
+                        <option value="minutes">Vaqt bo&apos;yicha</option>
+                        <option value="name">Nomi bo&apos;yicha</option>
+                        <option value="recent">Oxirgi ishlatilgan</option>
+                      </select>
+                    )}
                     {sortedApps.length > 0 && (
                       <button
                         className="btn-view"
