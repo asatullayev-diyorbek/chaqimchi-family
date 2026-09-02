@@ -266,6 +266,8 @@ p.lead { font-size: clamp(1.05rem, 1.6vw, 1.22rem); color: var(--body); max-widt
 .row:last-child { border-bottom: 0; }
 .row .app { display: flex; align-items: center; gap: 11px; font-weight: 600; }
 .chip-ico { width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center; font-size: 13px; }
+.chip-ico.brand { background: var(--surface-2); border: 1px solid var(--border); }
+.chip-ico.brand iconify-icon { font-size: 17px; }
 .strip iconify-icon { font-size: 18px; color: var(--accent-ink); flex: 0 0 auto; }
 .strip {
   background: color-mix(in srgb, var(--accent) 12%, var(--surface));

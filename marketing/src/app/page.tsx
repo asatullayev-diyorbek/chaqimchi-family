@@ -83,15 +83,15 @@ export default function Page() {
                 </div>
                 <div className="rows">
                   <div className="row">
-                    <span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--brand) 15%, transparent)", color: "var(--brand)" }}>▲</span>Chrome</span>
+                    <span className="app"><span className="chip-ico brand"><iconify-icon icon="logos:chrome" /></span>Chrome</span>
                     <b>58 daq</b>
                   </div>
                   <div className="row">
-                    <span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--accent) 16%, transparent)", color: "var(--accent-ink)" }}>◆</span>Minecraft</span>
+                    <span className="app"><span className="chip-ico brand"><iconify-icon icon="simple-icons:minecraft" style={{ color: "#68b247" }} /></span>Minecraft</span>
                     <b>44 daq</b>
                   </div>
                   <div className="row">
-                    <span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--warning) 18%, transparent)", color: "var(--warning)" }}>●</span>YouTube</span>
+                    <span className="app"><span className="chip-ico brand"><iconify-icon icon="logos:youtube-icon" /></span>YouTube</span>
                     <b>31 daq</b>
                   </div>
                 </div>
