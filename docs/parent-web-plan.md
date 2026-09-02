@@ -94,9 +94,9 @@ har farzand uchun karta (ism, onlayn nuqta, bugungi vaqt, alert belgisi) +
   bugungi vaqt, alert belgisi) + "Qurilma qo'shish". Haftalik solishtirma bar
   chart — hali yo'q.
 - **P5 — DONE:** Alert sahifasida filtr chiplari (klient-side).
-- **P4 — qisman:** app-usage jadvali CSV eksport. Saralanadigan ustunlar +
-  kategoriya-rangli grafik hali yo'q. `appDisplay.ts` kategoriya tizimi
-  allaqachon bor.
+- **P4 — qisman:** app-usage jadvali CSV eksport + saralash (vaqt / nomi /
+  oxirgi ishlatilgan). Kategoriya-rangli grafik + maxsus sana oralig'i hali
+  yo'q. `appDisplay.ts` kategoriya tizimi allaqachon bor.
 - **P3a — DONE:** kunlik limitga "Dam olish kunlari (Sh–Ya)" ixtiyoriy qiymati.
   Rule value: `{"minutes": N, "weekend_minutes": M?}`. Agent enforcer
   `dailyLimitMinutes()` Shanba/Yakshanba (local vaqt) da `weekend_minutes` ni
