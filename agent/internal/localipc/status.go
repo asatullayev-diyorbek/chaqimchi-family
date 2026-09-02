@@ -34,6 +34,21 @@ type Status struct {
 	Online            bool `json:"online"`
 	TodayMinutes      int  `json:"today_minutes"`
 	DailyLimitMinutes int  `json:"daily_limit_minutes,omitempty"`
+
+	// Block is non-nil while the child should be seeing the full-screen
+	// block overlay. The Session 0 service can't draw it, so it publishes
+	// the directive here and the user-session Desktop app raises/dismisses
+	// ui.BlockScreen as this appears and clears. Level-triggered: it stays
+	// set for as long as the rule condition holds.
+	Block *BlockDirective `json:"block,omitempty"`
+}
+
+// BlockDirective is the block-overlay instruction carried on Status.Block.
+// Reason is "daily_limit" | "blocked_window" | "blocked_app" (only selects
+// the overlay's accent); Message is the exact, already-gentle text to show.
+type BlockDirective struct {
+	Reason  string `json:"reason"`
+	Message string `json:"message"`
 }
 
 // ForegroundReport is the POST /v1/foreground body. App is an executable

@@ -117,12 +117,14 @@ Backend PA'ga deploy qilingan (2026-09-02), quyidagilar tekshirilsin:
 2. **Dam olish vaqti oynasi (`blocked_window`)**
    Dashboard → Qoidalar → "Dam olish vaqti" → hozirgi vaqtni qamrab oladigan
    oyna qo'sh (masalan hozir 14:00 bo'lsa `13:00–15:00`). ~5 daqiqada agent
-   ekranни bloklashi + dashboard'da `limit_reached` (quiet_hours) alert paydo
+   ekranni bloklashi + dashboard'da `limit_reached` (quiet_hours) alert paydo
    bo'lishi kerak.
-   **Eslatma:** Windows service Session 0 da ishlaydi va hozircha blok ekranini
-   **chizmaydi** (faqat log qiladi — `%ProgramData%` yoki service log). To'liq
-   blok ekrani `cmd/desktop` helper orqali keladi — bu hali ulanmagan (pastdagi
-   "Ochiq ishlar").
+   **Blok ekrani endi chizadi (2026-09-02):** service Session 0 da qoladi, lekin
+   `enforcer.ActiveBlock()` holatini `localipc` status'ga qo'yadi va `cmd/desktop`
+   (tray, user seansi) `ui.BlockScreen` ni ko'rsatadi. Rule tugaganda ~5 s ichida
+   ochilishi, shart tugaganda (yangi kun / oynadan chiqish) yopilishi kerak.
+   Bola tray ilovasini yopsa blok ko'rinmaydi — service guardian bo'lib qoladi,
+   bu MVP uchun kutilgan (shaffoflik tamoyili).
 
 ---
 
@@ -169,9 +171,11 @@ dagi "PA deploy how-to" bo'limida (token, console id, Files API).
 
 `docs/parent-web-plan.md` va `docs/current_tasks.md` da to'liq. Qisqacha:
 
-- **Blok ekranini `blocked_window` / `daily_limit` ga ulash** — Session 0
-  service UI chizolmaydi; `cmd/desktop` helper'ga localipc buyruq kanali kerak
-  (hozir enforcer faqat log qiladi). Bu eng muhim ochiq ish.
+- ~~**Blok ekranini `blocked_window` / `daily_limit` ga ulash**~~ — BAJARILDI
+  (2026-09-02). `enforcer.ActiveBlock()` level-triggered holatni beradi →
+  `localipc.Status.Block` orqali e'lon qilinadi → `cmd/desktop` (user seansi)
+  `ui.BlockScreen` ni ko'rsatadi/yopadi (poll 30s→5s). uitest: `-screen blockcycle`.
+  Real installed service bilan hali sinalmagan (§5 test'ga qo'shildi).
 - **P3 vizual timeline** — qoidalar sahifasida vaqt oynalari uchun grafik ko'rinish
 - **P4** — faoliyat: kategoriya-rangli grafik, maxsus sana oralig'i
 - **P6** — Liquid Glass dizayn, responsive sidebar (<1024px), skeleton'lar

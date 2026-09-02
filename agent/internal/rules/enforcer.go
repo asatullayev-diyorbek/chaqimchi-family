@@ -96,6 +96,35 @@ func (e *Enforcer) blockedApps() []string {
 // the status UI can show remaining time alongside enforcement.
 func (e *Enforcer) DailyLimitMinutes() (float64, bool) { return e.dailyLimitMinutes() }
 
+// ActiveBlock reports whether the child should currently be seeing a block
+// screen, and with what text. Unlike the BlockFunc callback — which fires
+// once on the edge (entering a quiet-hours window, crossing the daily limit,
+// focusing a blocked app) — this is level-triggered: it stays true for as
+// long as the condition holds, so a user-session helper can poll it and
+// raise/dismiss the overlay accordingly. It derives purely from state the
+// Check* methods already maintain, so it is only accurate once those have
+// run at least once for the current poll tick.
+//
+// Precedence when several apply: quiet hours, then daily limit, then blocked
+// app — the broadest restriction wins the screen.
+func (e *Enforcer) ActiveBlock() (reason, message string, ok bool) {
+	today := time.Now().UTC().Format("2006-01-02")
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	switch {
+	case e.inQuietHours:
+		return "blocked_window", MessageQuietHours, true
+	case e.limitStage >= 3 && e.limitStageDate == today:
+		return "daily_limit", MessageLimitReached, true
+	case e.alertedApp != "":
+		return "blocked_app", MessageAppUnavailable, true
+	default:
+		return "", "", false
+	}
+}
+
 func (e *Enforcer) dailyLimitMinutes() (float64, bool) {
 	rules, err := e.Cache.All()
 	if err != nil {

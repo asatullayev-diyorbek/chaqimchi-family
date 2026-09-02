@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"runtime"
 	"time"
 
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
@@ -16,7 +17,7 @@ import (
 )
 
 func main() {
-	screen := flag.String("screen", "enroll", "enroll|consent|welcome|complete|info|childstatus|adult|existing|block|webinstaller")
+	screen := flag.String("screen", "enroll", "enroll|consent|welcome|complete|info|childstatus|adult|existing|block|blockapp|blockcycle|webinstaller")
 	flag.Parse()
 
 	switch *screen {
@@ -74,6 +75,25 @@ func main() {
 			ui.Close()
 		}()
 		ui.BlockScreen("blocked_app", "Bu ilova hozircha mavjud emas\n\nSavoling bo‘lsa, ota-onangga murojaat qil")
+	case "blockcycle":
+		// Mimics cmd/desktop's blockController: overlay raised on a spawned,
+		// OS-thread-locked goroutine, dismissed via ui.Close(), then raised
+		// again — the show/hide path the service's ActiveBlock directive drives.
+		show := func(reason, msg string) {
+			go func() {
+				runtime.LockOSThread()
+				defer runtime.UnlockOSThread()
+				ui.BlockScreen(reason, msg)
+			}()
+		}
+		show("daily_limit", "Bugungi ekran vaqting tugadi. Ertaga davom etasan!\n\nSavoling bo‘lsa, ota-onangga murojaat qil")
+		time.Sleep(5 * time.Second)
+		ui.Close()
+		time.Sleep(2 * time.Second)
+		show("blocked_window", "Hozir dam olish vaqti. Ertaga davom etasan!\n\nSavoling bo‘lsa, ota-onangga murojaat qil")
+		time.Sleep(5 * time.Second)
+		ui.Close()
+		time.Sleep(1 * time.Second)
 	case "adult":
 		if ui.ShowAdultAccessGate() {
 			ui.ShowAdultPanel(localipc.Status{Online: true, Version: "0.4.0-rc.2", LastSyncAt: "2026-09-01T10:20:00Z", TodayMinutes: 135}, "https://guard.chaqimchi-ai.uz", `C:\ProgramData\ChaqimchiFamily\agent.log`)

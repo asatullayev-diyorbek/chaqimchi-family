@@ -132,22 +132,6 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 		}()
 	}
 
-	go func() {
-		if err := localipc.Serve(ctx, func() localipc.Status {
-			statusMu.Lock()
-			today, limit, lastSync, online := int(statusToday), statusLimit, statusLastSync, statusOnline
-			statusMu.Unlock()
-			return localipc.Status{
-				Service: "running", Version: version, StartedAt: startedAt,
-				LastSyncAt: lastSync, Online: online,
-				TodayMinutes: today, DailyLimitMinutes: limit,
-				Monitoring: []string{"Ekran vaqti", "Ilova nomlari", "Qurilma holati"},
-				RecentLogs: []string{"Service Started: " + startedAt, "Automatic updates: disabled until signed-update support"},
-			}
-		}, foregroundCh, iconCh, onAdultAccess); err != nil && ctx.Err() == nil {
-			log.Printf("local desktop IPC: %v", err)
-		}
-	}()
 	if err := os.MkdirAll(dataDir, 0o755); err != nil {
 		return fmt.Errorf("creating data dir: %w", err)
 	}
@@ -199,15 +183,40 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	enforcer := rules.NewEnforcer(rulesCache, alertReporter,
 		func(reason, message string) {
 			// The Windows service is Session 0 and must never draw a user
-			// interface. The future desktop helper receives these visible
-			// notices through a documented local IPC channel. Until it is
-			// shipped, retain the audit/reporting path without a hidden UI.
+			// interface. The block overlay itself is raised in the user
+			// session by cmd/desktop, off the level-triggered
+			// enforcer.ActiveBlock() state published on the local IPC
+			// status below; this edge callback keeps the audit trail.
 			log.Printf("rule triggered (%s): %s", reason, message)
 		},
 		func(message string) {
 			log.Printf("rule notification: %s", message)
 		},
 	)
+
+	// The local IPC status endpoint is what the user-session Desktop app
+	// reads — for the tray status window and, now, the block overlay. Served
+	// only once the enforcer exists so status() can report ActiveBlock().
+	go func() {
+		if err := localipc.Serve(ctx, func() localipc.Status {
+			statusMu.Lock()
+			today, limit, lastSync, online := int(statusToday), statusLimit, statusLastSync, statusOnline
+			statusMu.Unlock()
+			s := localipc.Status{
+				Service: "running", Version: version, StartedAt: startedAt,
+				LastSyncAt: lastSync, Online: online,
+				TodayMinutes: today, DailyLimitMinutes: limit,
+				Monitoring: []string{"Ekran vaqti", "Ilova nomlari", "Qurilma holati"},
+				RecentLogs: []string{"Service Started: " + startedAt, "Automatic updates: disabled until signed-update support"},
+			}
+			if reason, message, blocked := enforcer.ActiveBlock(); blocked {
+				s.Block = &localipc.BlockDirective{Reason: reason, Message: message}
+			}
+			return s
+		}, foregroundCh, iconCh, onAdultAccess); err != nil && ctx.Err() == nil {
+			log.Printf("local desktop IPC: %v", err)
+		}
+	}()
 
 	fetcher := rules.NewFetcher(baseURL, deviceID, deviceSecret, rulesCache)
 	go fetcher.Run(ctx, 5*time.Minute)

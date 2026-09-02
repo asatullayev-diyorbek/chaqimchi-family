@@ -1,6 +1,7 @@
 package localipc
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -119,6 +120,43 @@ func TestForegroundReportNeverBlocks(t *testing.T) {
 	case <-done:
 	case <-time.After(3 * time.Second):
 		t.Fatal("a full channel blocked the reporter endpoint")
+	}
+}
+
+func TestStatusCarriesBlockDirective(t *testing.T) {
+	want := &BlockDirective{Reason: "daily_limit", Message: "Bugungi ekran vaqting tugadi"}
+	srv := httptest.NewServer(Handler(
+		func() Status { return Status{Service: "running", Block: want} }, nil, nil, nil))
+	t.Cleanup(srv.Close)
+
+	resp, err := http.Get(srv.URL + "/v1/status")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	defer resp.Body.Close()
+
+	var got Status
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if got.Block == nil || got.Block.Reason != want.Reason || got.Block.Message != want.Message {
+		t.Fatalf("block directive did not round-trip: %+v", got.Block)
+	}
+}
+
+func TestStatusOmitsBlockWhenNil(t *testing.T) {
+	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, nil, nil, nil))
+	t.Cleanup(srv.Close)
+
+	resp, err := http.Get(srv.URL + "/v1/status")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	defer resp.Body.Close()
+	body := make([]byte, 4096)
+	n, _ := resp.Body.Read(body)
+	if strings.Contains(string(body[:n]), "\"block\"") {
+		t.Fatalf("nil block should be omitted from the payload: %s", body[:n])
 	}
 }
 

@@ -18,6 +18,7 @@ import (
 	"log"
 	"net/http"
 	"os/exec"
+	"runtime"
 	"sync"
 	"time"
 
@@ -25,6 +26,45 @@ import (
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui/webwin"
 )
+
+// blockController raises and dismisses the full-screen block overlay in step
+// with the service's level-triggered directive (localipc.Status.Block). The
+// overlay's own message loop (ui.BlockScreen) blocks its goroutine until
+// ui.Close(), so it runs on a dedicated locked OS thread.
+type blockController struct {
+	mu      sync.Mutex
+	showing bool
+}
+
+func (b *blockController) apply(d *localipc.BlockDirective) {
+	if d == nil {
+		b.mu.Lock()
+		showing := b.showing
+		b.mu.Unlock()
+		if showing {
+			ui.Close()
+		}
+		return
+	}
+	b.mu.Lock()
+	if b.showing {
+		b.mu.Unlock()
+		return
+	}
+	b.showing = true
+	b.mu.Unlock()
+
+	go func() {
+		runtime.LockOSThread()
+		defer runtime.UnlockOSThread()
+		defer func() {
+			b.mu.Lock()
+			b.showing = false
+			b.mu.Unlock()
+		}()
+		ui.BlockScreen(d.Reason, d.Message) // returns when ui.Close() is called
+	}()
+}
 
 const (
 	supportURL     = "https://guard.chaqimchi-ai.uz"
@@ -90,6 +130,7 @@ func main() {
 		}
 	}
 
+	var blocker blockController
 	go func() {
 		client := &http.Client{Timeout: 3 * time.Second}
 		for {
@@ -110,8 +151,12 @@ func main() {
 				latest = status
 				mu.Unlock()
 				tray.SetStatus(ui.StatusOK)
+				// Raise or dismiss the block overlay to match the service.
+				blocker.apply(status.Block)
 			}
-			time.Sleep(30 * time.Second)
+			// Short interval: this is loopback and the overlay must appear
+			// promptly once a rule (daily limit, quiet hours) trips.
+			time.Sleep(5 * time.Second)
 		}
 	}()
 	tray.Run()

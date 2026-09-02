@@ -238,3 +238,79 @@ func TestCheckDailyLimit_WarnsThenBlocksInStages(t *testing.T) {
 		t.Fatal("expected block once limit is reached")
 	}
 }
+
+func TestActiveBlock(t *testing.T) {
+	ctx := context.Background()
+	noop := func(string, string) {}
+	reporter := newTestReporter(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) })
+
+	t.Run("clear when nothing applies", func(t *testing.T) {
+		cache := newTestCache(t)
+		cache.Replace(nil)
+		e := NewEnforcer(cache, reporter, noop, nil)
+		e.CheckForegroundApp(ctx, "chrome.exe")
+		e.CheckDailyLimit(ctx, 10)
+		e.CheckBlockedWindow(ctx)
+		if _, _, ok := e.ActiveBlock(); ok {
+			t.Fatal("ActiveBlock should be false with no rules in effect")
+		}
+	})
+
+	t.Run("blocked app while foregrounded", func(t *testing.T) {
+		cache := newTestCache(t)
+		v, _ := json.Marshal(blockedAppValue{App: "steam.exe"})
+		cache.Replace([]Rule{{ID: "a1", RuleType: "blocked_app", Value: v}})
+		e := NewEnforcer(cache, reporter, noop, nil)
+
+		e.CheckForegroundApp(ctx, "steam.exe")
+		reason, msg, ok := e.ActiveBlock()
+		if !ok || reason != "blocked_app" || msg != MessageAppUnavailable {
+			t.Fatalf("got %q %q %v", reason, msg, ok)
+		}
+		// Foreground moves away -> the block clears.
+		e.CheckForegroundApp(ctx, "notepad.exe")
+		if _, _, ok := e.ActiveBlock(); ok {
+			t.Fatal("ActiveBlock should clear once the blocked app is no longer foreground")
+		}
+	})
+
+	t.Run("daily limit reached stays blocked", func(t *testing.T) {
+		cache := newTestCache(t)
+		v, _ := json.Marshal(dailyLimitValue{Minutes: 60})
+		cache.Replace([]Rule{{ID: "r1", RuleType: "daily_limit_minutes", Value: v}})
+		e := NewEnforcer(cache, reporter, noop, nil)
+
+		e.CheckDailyLimit(ctx, 30)
+		if _, _, ok := e.ActiveBlock(); ok {
+			t.Fatal("not blocked below the limit")
+		}
+		e.CheckDailyLimit(ctx, 65)
+		reason, msg, ok := e.ActiveBlock()
+		if !ok || reason != "daily_limit" || msg != MessageLimitReached {
+			t.Fatalf("got %q %q %v", reason, msg, ok)
+		}
+		// A later poll with the count still over keeps it blocked.
+		e.CheckDailyLimit(ctx, 70)
+		if _, _, ok := e.ActiveBlock(); !ok {
+			t.Fatal("should remain blocked for the rest of the day")
+		}
+	})
+
+	t.Run("quiet hours outrank the daily limit", func(t *testing.T) {
+		cache := newTestCache(t)
+		limit, _ := json.Marshal(dailyLimitValue{Minutes: 60})
+		win, _ := json.Marshal(blockedWindowValue{Start: "00:01", End: "00:00"}) // ~always active
+		cache.Replace([]Rule{
+			{ID: "r1", RuleType: "daily_limit_minutes", Value: limit},
+			{ID: "w1", RuleType: "blocked_window", Value: win},
+		})
+		e := NewEnforcer(cache, reporter, noop, nil)
+
+		e.CheckDailyLimit(ctx, 65)
+		e.CheckBlockedWindow(ctx)
+		reason, msg, ok := e.ActiveBlock()
+		if !ok || reason != "blocked_window" || msg != MessageQuietHours {
+			t.Fatalf("expected quiet-hours to win, got %q %q %v", reason, msg, ok)
+		}
+	})
+}
