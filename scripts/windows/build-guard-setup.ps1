@@ -1,4 +1,4 @@
-<#
+﻿<#
 Builds the only public Windows artifact: ChaqimchiAI Guard Setup.exe.
 
 Prerequisites on a Windows release machine:
@@ -179,7 +179,12 @@ $release = [ordered]@{
   publisher = "ChaqimchiAI (imzolanmagan — MVP/Beta)"
 }
 $releaseJson = Join-Path $repoRoot "parent-web\src\app\download\release.json"
-$release | ConvertTo-Json | Set-Content -Encoding UTF8 $releaseJson
+# Write UTF-8 without a BOM: Windows PowerShell 5.1's `Set-Content -Encoding UTF8`
+# prepends a BOM, which the Next.js `import release.json` then has to tolerate and
+# which shows up as spurious diff churn. .NET's UTF8Encoding($false) is BOM-free on
+# both PowerShell 5.1 and 7.
+$releaseText = (($release | ConvertTo-Json) -replace "`r`n", "`n") + "`n"
+[System.IO.File]::WriteAllText($releaseJson, $releaseText, (New-Object System.Text.UTF8Encoding($false)))
 
 # Sidecar next to the artifact, in the format sign-release.ps1 expects.
 "$hash  $publicName" | Set-Content -Encoding ASCII "$finalInstaller.sha256"

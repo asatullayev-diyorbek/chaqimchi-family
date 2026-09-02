@@ -1,8 +1,8 @@
 {
-  "version": "0.4.0-rc.1",
+  "version": "0.4.0-rc.4",
   "file": "ChaqimchiAI-Guard-Setup.exe",
-  "bytes": 23589642,
-  "sha256": "9D5743764B8A8B027FCFD293712F3145277057F08487911ADB477B45E6E8BD35",
-  "date": "2026-08-28",
+  "bytes": 29092096,
+  "sha256": "AC9BD9D29D2A174A95277D131D8035EB4C86B6BF4ACE6C4E06F2A9B6F7A9D929",
+  "date": "2026-09-02",
   "publisher": "ChaqimchiAI (imzolanmagan — MVP/Beta)"
 }
