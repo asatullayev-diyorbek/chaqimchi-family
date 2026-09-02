@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
+import { WeekBars, CategoryDonut } from "@/components/Charts";
 import { SITE, PROMISES, FEATURES, STEPS, FAQ } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -207,6 +208,27 @@ export default function Page() {
                   <p>{s.body}</p>
                 </Reveal>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* PANEL PREVIEW */}
+        <section id="panel">
+          <div className="wrap">
+            <Reveal>
+              <span className="eyebrow">Panel ko&apos;rinishi</span>
+              <h2>Bir qarashda — bugun, hafta, kategoriyalar</h2>
+              <p className="section-lead">Ota-ona paneli har ochilganda asosiy savollarga tez javob beradi: qancha vaqt, qaysi ilova, muhim alert bormi.</p>
+            </Reveal>
+            <div className="preview">
+              <Reveal as="div" className="glass">
+                <div className="ch-head"><h3>7 kunlik statistika</h3><span>o&apos;rtacha 3s 24d</span></div>
+                <WeekBars />
+              </Reveal>
+              <Reveal as="div" className="glass" delay={100}>
+                <div className="ch-head"><h3>Faoliyat kategoriyalari</h3><span>bugun</span></div>
+                <CategoryDonut />
+              </Reveal>
             </div>
           </div>
         </section>

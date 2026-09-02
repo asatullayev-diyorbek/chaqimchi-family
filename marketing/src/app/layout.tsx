@@ -22,6 +22,11 @@ export const metadata: Metadata = {
     title: `${SITE.name} — oila uchun ochiq ekran-vaqt qoidalari`,
     description: `${SITE.tagline} Kunlik limit, dam olish vaqti, faoliyat, Telegram xabarlar.`,
   },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE.name} — oila uchun ochiq ekran-vaqt qoidalari`,
+    description: "Kunlik limit, dam olish vaqti, ilova cheklovlari, faoliyat va Telegram xabarlar.",
+  },
   alternates: { canonical: SITE.domain },
 };
 
