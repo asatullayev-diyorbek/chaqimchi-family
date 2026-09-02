@@ -570,6 +570,43 @@ yozilgan edi; haqiqiy artifact 23 589 642 bayt (`release.json` bilan bir xil).
 SHA-256 aynan mos kelgani uchun fayl o'sha faylning o'zi — hajm raqami
 xato yozilgan bo'lган.
 
+### CT-09 REGRESSIYA — 2026-09-02 (rc.5): `BLOCKED`
+
+rc.1'dagi toza natija **rc.4/rc.5'ga ko'chmadi**. Yangi build'ni real Windows 11'da
+Windows Defender **cloud ML** darhol `Trojan:Win32/Wacatac.C!ml` (Severity: Severe)
+deb aniqladi va faylni **o'chirib tashladi**:
+
+- `releases/windows/ChaqimchiAI Guard Setup.exe` (rc.5, `BE542742…`) — o'chirildi.
+- `parent-web/public/downloads/ChaqimchiAI-Guard-Setup.exe` (push qilingan) —
+  lokal bloklangan; **Vercel serve qilganda** ham foydalanuvchida karantin
+  (`webfile:` resource, `https://guard.chaqimchi-ai.uz/downloads/…`).
+
+Sabab: Defender **signature versiyasi o'sha-o'sha** (`1.457.286.0`) — farq faylда.
+rc.4/rc.5 ancha ko'proq/boshqacha kod: `go-webview2` (winloader), OTA updater
+binary-swap, `CreateProcessAsUser` session helper, `killStrayReporters`. `!ml`
+= cloud evristik false-positive (aynan CT-09'da bashorat qilingan).
+
+Ichki 3 EXE (`agent/build/*.exe`) **toza** — faqat Inno-o'rami flaglanadi.
+
+**CT-09 holati: `BLOCKED`** (Defender). Ochiq yo'llar (foydalanuvchi keyinga
+qoldirdi 2026-09-02): CT-08 code signing / Microsoft WDSI FP submission +
+VirusTotal / WebView2-bootstrapper-siz build sinash. Batafsil:
+`docs/windows-test-checklist.md` "Natijalar — 2026-09-02".
+
+### CT-06 progress — 2026-09-02 (rc.5, toza Windows 11)
+
+`Setup.exe` Defender'da bo'lgani uchun **standalone bootstrap** (`ChaqimchiAI
+Guard Installer.exe`, test-zip) bilan sinaldi:
+
+- WebView2 oqimi (Xush kelibsiz → Rozilik → Bog'lash) — **muammosiz** (real
+  foydalanuvchi tasdiqi).
+- QR-kod + 6 xonali kod — **ikkalasi ham ishladi**, qurilma ulandi.
+- Xizmat `19:01:00` o'rnatildi: `ChaqimchiFamilyAgent` Running/Auto/LocalSystem.
+- Tracking E2E — production ingest `saved=3/1/3`, ikonkalar bilan.
+
+Qolgan (Inno `Setup.exe`ga bog'liq / bajarilmagan): reboot autostart (Bug #6),
+re-install, tray + parent alert, **blok ekrani real xizmat bilan**, uninstall.
+
 ---
 
 ## CT-10 — Download sahifasi va foydalanuvchi hujjatlari

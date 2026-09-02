@@ -4,8 +4,78 @@ Bu sessiyada juda katta hajmda kod yozildi va **hech biri real Windows'da
 ishga tushirilmagan**. Quyida xavf darajasi bo'yicha tartiblangan tekshiruv.
 Har bandni bajarib, natijani shu faylga yozib boring.
 
-Windows mashina muhiti (memory'dan): Go `C:\Users\Robbit\gosdk`,
-`goversioninfo.exe` `C:\Users\Robbit\go\bin`, ISCC `C:\Users\Robbit\InnoSetup6\ISCC.exe`.
+Windows mashina muhiti (2026-09-02, tekshirilgan): Go `C:\Program Files\Go`
+(1.27.0), `goversioninfo.exe` `C:\Users\Robbit\go\bin`, ISCC
+`C:\Users\Robbit\InnoSetup6\ISCC.exe`, WebView2 runtime bor. `pwsh` (PS7) yo'q —
+build script'ni Windows PowerShell 5.1 uchun tuzatish kerak edi (BOM).
+
+---
+
+## Natijalar — 2026-09-02 (rc.5, real Windows 11)
+
+**PASS:**
+
+- **§0 build:** `build-guard-setup.ps1 -Version 0.4.0-rc.5` real Windows'da
+  xatosiz. 3 EXE + Inno `Setup.exe` (27.8 MB, GUI subsystem, packer yo'q).
+  Script PS 5.1 uchun tuzatildi (commit `e5b5199`): UTF-8 BOM + BOM'siz
+  `release.json` yozuvi. SHA-256 `BE542742…` (Inno chiqishi reproducible emas —
+  har build yangi hash).
+- **§1 uitest oynalari:** `welcome/consent/existing/childstatus/complete/adult/
+  block/blockapp` (walk) + `webinstaller` (WebView2) + yangi `blockcycle` —
+  hammasi to'g'ri render bo'ldi. WebView2 v151 ishlaydi. UI bug topilmadi
+  (dastlabki "blok sarlavhasi kesilgan" signal — DPI-unaware screenshot xatosi).
+- **§2 (qisman) — toza o'rnatish:** Defender `Setup.exe`ni karantin qilgani
+  uchun (pastga qarang) Inno wizard **o'rniga** test-zip'dagi standalone
+  `ChaqimchiAI Guard Installer.exe` (bootstrap) ishlatildi:
+  - WebView2 oqimi (Xush kelibsiz → Rozilik → Bog'lash) — **muammosiz** (real
+    foydalanuvchi tasdiqi).
+  - QR-kod + 6 xonali kod — **ikkalasi ham ishladi**, qurilma ulandi
+    (`2ab0ea28-…`, `avval ulangan=false`).
+  - `existing: installed=false` (mashina haqiqatan toza edi).
+  - `19:01:00` xizmat o'rnatildi va ishga tushdi: `ChaqimchiFamilyAgent`
+    **Running · Automatic · LocalSystem**, to'g'ri arglar, production API.
+  - Session helper (PID Session 1) barqaror, yetim jarayon yo'q.
+- **Tracking E2E (real):** helper foreground app'lar + ikonkalarni yubordi
+  (`WindowsTerminal.exe`, `explorer.exe`, …) → `POST /api/tracking/ingest/`
+  `saved=3/1/3`, `synced`, ikonkalar backend'da. `buffer.db`/`rules.db` yozildi.
+
+**HALI SINALMAGAN:**
+
+- **§2 Inno-ga xos:** `PrepareToInstall` (WebView2 gate), Start Menu yorlig'i
+  (Bug #6), Settings → Apps yozuvi, `{commonstartup}` yorlig'i — bularning
+  hammasi Inno `Setup.exe`da, u esa hozir Defender'da (pastga qarang).
+- **§3 reboot autostart (Bug #6)** — bajarilmadi.
+- **§4 re-install (Yangilash / Qayta bog'lash)** — bajarilmadi.
+- **§5 tray + parent alert + BLOK EKRANI** — bajarilmadi. `ChaqimchiAI Guard
+  Desktop.exe` (tray) ishga tushirilmagan; blok overlay (rc.5 yangi kodi,
+  commit `18e4198`) real xizmat bilan hali sinalmagan. Faqat `uitest
+  -screen blockcycle` bilan tasdiqlangan.
+- **§6 uninstall** — test-zip'da Inno uninstaller yo'q; qo'lda tozalash ishladi
+  (`sc delete` + papkalar + registry — `chaqimchi-cleanup-admin.ps1`).
+
+### ⚠️ CT-09 BLOKER — Windows Defender false-positive
+
+`releases/windows/ChaqimchiAI Guard Setup.exe` (rc.4 va rc.5, Inno bilan
+yig'ilgan) Windows Defender cloud ML tomonidan **`Trojan:Win32/Wacatac.C!ml`**
+(Severity: Severe) deb aniqlanadi va **ko'rish bilan o'chiriladi**:
+
+- `releases/windows/…Setup.exe` — build'dan ~48 daq keyin o'chirildi.
+- `parent-web/public/downloads/ChaqimchiAI-Guard-Setup.exe` (push qilingan,
+  Vercel serve qiladi) — lokal bloklangan; saytdan yuklab olgan foydalanuvchi
+  ham (`webfile:` resource, `https://guard.chaqimchi-ai.uz/downloads/…`).
+
+Muhim: Defender **signature versiyasi rc.1 toza o'tган versiya bilan bir xil**
+(`1.457.286.0`). Farq — faylning o'zi: rc.4/rc.5 ancha ko'proq kod
+(`go-webview2` winloader, OTA updater binary-swap, `CreateProcessAsUser` session
+helper, `killStrayReporters`). `!ml` = cloud evristik false-positive, aynan
+CT-09'da bashorat qilingan ("Go-specific: Wacatac").
+
+Ichki 3 EXE (`agent/build/*.exe`) Defender'da **toza** — faqat Inno-o'rami
+flaglanadi. Shu sabab test-zip (`ChaqimchiAI-Guard-test-rc5.zip`) yasaldi.
+
+**Ochiq qaror (foydalanuvchi keyinga qoldirdi):** code signing (CT-08) / Microsoft
+WDSI false-positive submission + VirusTotal / triggerni kamaytirish (WebView2
+bootstrapper embed'siz build sinash). CT-09 holati: **BLOCKED**.
 
 ---
 
