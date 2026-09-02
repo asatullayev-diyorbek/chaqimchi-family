@@ -110,10 +110,11 @@ har farzand uchun karta (ism, onlayn nuqta, bugungi vaqt, alert belgisi) +
 - **P3 — qolgani:** vizual timeline ko'rinishi (hozir oddiy ro'yxat).
 - **P6 — hali:** Liquid Glass, responsive sidebar, skeleton'lar.
 
-**PA deploy kutayotgan migratsiyalar (CPU kvota 2026-09-01, ~14:30 UTC reset):**
-`accounts/0005_passwordresetcode`, `tracking/0004_dailydigestrun`. Bittada:
-`cd ~/server && python manage.py migrate`. Shungача: Telegram parol-tiklash va
-`digest/run/` 500 qaytaradi (qolgan hammasi ishlaydi).
+**PA deploy — DONE 2026-09-02:** barcha Telegram P1-P5 + parol o'zgartirish/tiklash
++ P3b `blocked_window` kodi yuklandi, migratsiyalar (`accounts/0005`, `rules/0002`,
+`tracking/0004`) qo'llandi, webapp reload qilindi. Smoke: `digest/run/`→403,
+`password/reset/start/`→200. **Qolgan (user ishi):** cron-job.org →
+`POST /api/tracking/digest/run/` (`X-Digest-Secret`) har kuni ~15:00 UTC.
 
 ## Keyingi
 
