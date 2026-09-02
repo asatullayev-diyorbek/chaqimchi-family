@@ -36,6 +36,10 @@ function RulesContent() {
   const [savingLimit, setSavingLimit] = useState(false);
   const [addingApp, setAddingApp] = useState(false);
 
+  const [winStart, setWinStart] = useState("22:00");
+  const [winEnd, setWinEnd] = useState("07:00");
+  const [addingWindow, setAddingWindow] = useState(false);
+
   useEffect(() => {
     if (rulesQuery.error) toast.error(rulesQuery.error.message);
   }, [rulesQuery.error]);
@@ -123,6 +127,37 @@ function RulesContent() {
     }
   }
 
+  async function addBlockedWindow() {
+    if (!deviceId || addingWindow) return;
+    const hhmm = /^([01]\d|2[0-3]):[0-5]\d$/;
+    if (!hhmm.test(winStart) || !hhmm.test(winEnd)) {
+      toast.error("Vaqtni HH:MM ko'rinishida kiriting.");
+      return;
+    }
+    if (winStart === winEnd) {
+      toast.error("Boshlanish va tugash vaqti bir xil bo'lmasligi kerak.");
+      return;
+    }
+    const clash = rules.some(
+      (rule) => rule.rule_type === "blocked_window" && "start" in rule.value &&
+        rule.value.start === winStart && rule.value.end === winEnd,
+    );
+    if (clash) {
+      toast.error("Bu oyna allaqachon qo'shilgan.");
+      return;
+    }
+    setAddingWindow(true);
+    try {
+      const created = await createRule(deviceId, "blocked_window", { start: winStart, end: winEnd });
+      setRules((current) => [...current, created]);
+      toast.success(`${winStart}–${winEnd} oynasi qo'shildi.`);
+    } catch (cause) {
+      toast.error(cause instanceof Error ? cause.message : "Oyna qo'shilmadi");
+    } finally {
+      setAddingWindow(false);
+    }
+  }
+
   async function removeRule(rule: Rule) {
     try {
       await deleteRule(rule.id);
@@ -135,6 +170,7 @@ function RulesContent() {
 
   const loading = devicesLoading || rulesQuery.isInitialLoad;
   const blockedApps = rules.filter((rule) => rule.rule_type === "blocked_app");
+  const blockedWindows = rules.filter((rule) => rule.rule_type === "blocked_window");
   
   return (
     <>
@@ -241,7 +277,55 @@ function RulesContent() {
                 ) : null}
               </div>
             </div>
-            
+
+            <div className="settings-section">
+              <h3>Dam olish vaqti (tinch soatlar)</h3>
+              <p className="muted-sm" style={{ marginBottom: 16 }}>Belgilangan oraliqda ekran bloklanadi. Tunni qamrab olsa (masalan 22:00–07:00) yarim tundan oshib ketishi mumkin.</p>
+
+              <div className="setting-item" style={{display: 'flex', gap: 10, alignItems: 'center', borderBottom: 'none'}}>
+                <div className="setting-left" style={{flex: 1}}>
+                  <iconify-icon icon="solar:moon-sleep-linear" style={{fontSize: 24, color: 'var(--muted)'}}></iconify-icon>
+                  <div>
+                    <h4 style={{margin: '0 0 4px', fontSize: 15}}>Yangi oyna qo'shish</h4>
+                    <p style={{margin: 0, fontSize: 13, color: 'var(--muted)'}}>Bola vaqti bo'yicha</p>
+                  </div>
+                </div>
+                <div style={{display: 'flex', gap: 8, alignItems: 'center'}}>
+                  <input type="time" value={winStart} onChange={(e) => setWinStart(e.target.value)}
+                    style={{padding: '9px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 14}} />
+                  <span style={{color: 'var(--muted)'}}>—</span>
+                  <input type="time" value={winEnd} onChange={(e) => setWinEnd(e.target.value)}
+                    style={{padding: '9px 12px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--surface)', fontSize: 14}} />
+                  <button onClick={addBlockedWindow} disabled={addingWindow} className="btn btn-primary" style={{padding: '10px 16px', borderRadius: 10}}>
+                    {addingWindow ? "Qo'shilmoqda..." : "Qo'shish"}
+                  </button>
+                </div>
+              </div>
+
+              <div style={{marginTop: 8}}>
+                {blockedWindows.map((rule) => (
+                  <div key={rule.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "14px 16px", border: "1px solid var(--border)", borderRadius: 12, marginBottom: 10, background: 'var(--surface)' }}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: 12}}>
+                      <span style={{width: 36, height: 36, display: 'grid', placeItems: 'center', background: 'var(--cat-purple-bg, var(--cat-amber-bg))', color: 'var(--cat-purple, #7c3aed)', borderRadius: 10}}>
+                        <iconify-icon icon="solar:moon-sleep-linear" style={{fontSize: 20}}></iconify-icon>
+                      </span>
+                      <span style={{ fontSize: 14, fontWeight: 600 }}>
+                        {"start" in rule.value ? `${rule.value.start} – ${rule.value.end}` : "Oyna"}
+                      </span>
+                    </div>
+                    <button onClick={() => void removeRule(rule)} className="btn btn-outline" style={{padding: '8px 12px', fontSize: 13, color: 'var(--danger)', borderColor: 'transparent', background: 'var(--cat-amber-bg)'}}>
+                      O'chirish
+                    </button>
+                  </div>
+                ))}
+                {!loading && blockedWindows.length === 0 ? (
+                  <div style={{padding: '24px', textAlign: 'center', color: 'var(--muted)', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 12}}>
+                    Hali dam olish oynasi yo'q.
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
                       </div>
         )}
       </section>

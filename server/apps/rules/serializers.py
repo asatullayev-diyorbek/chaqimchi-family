@@ -32,4 +32,23 @@ class RuleSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"value": "blocked_app uchun {'app': '<name>'} kerak"}
                 )
+        elif rule_type == "blocked_window":
+            if not isinstance(value, dict) or not _is_hhmm(value.get("start")) or not _is_hhmm(value.get("end")):
+                raise serializers.ValidationError(
+                    {"value": "blocked_window uchun {'start': 'HH:MM', 'end': 'HH:MM'} kerak"}
+                )
+            if value["start"] == value["end"]:
+                raise serializers.ValidationError(
+                    {"value": "blocked_window: boshlanish va tugash vaqti bir xil bo'lmasligi kerak"}
+                )
         return attrs
+
+
+def _is_hhmm(value):
+    if not isinstance(value, str):
+        return False
+    parts = value.split(":")
+    if len(parts) != 2 or not all(p.isdigit() for p in parts):
+        return False
+    hh, mm = int(parts[0]), int(parts[1])
+    return 0 <= hh <= 23 and 0 <= mm <= 59

@@ -17,6 +17,9 @@ function describeAlert(alert: Alert) {
   if (alert.alert_type === "settings_panel_access") {
     return "Qurilmada «Kattalar uchun» paneli ochildi";
   }
+  if (alert.payload.reason === "quiet_hours") {
+    return "Dam olish vaqti — ekran bloklandi";
+  }
   return "Bugungi ekran vaqti limiti to'ldi";
 }
 

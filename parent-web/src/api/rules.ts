@@ -1,12 +1,15 @@
 import { apiFetch } from "./client";
 
-export type RuleType = "daily_limit_minutes" | "blocked_app";
+export type RuleType = "daily_limit_minutes" | "blocked_app" | "blocked_window";
 
 export type Rule = {
   id: string;
   device: string;
   rule_type: RuleType;
-  value: { minutes: number; weekend_minutes?: number } | { app: string };
+  value:
+    | { minutes: number; weekend_minutes?: number }
+    | { app: string }
+    | { start: string; end: string };
   created_at: string;
 };
 

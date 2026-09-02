@@ -3,6 +3,7 @@ package rules
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -33,6 +34,7 @@ const (
 	MessageBlockedAppToast = "Bu ilova/sayt ota-onang tomonidan cheklangan"
 	MessageWarn15Min       = "15 daqiqadan keyin bugungi ekran vaqting tugaydi"
 	MessageWarn5Min        = "5 daqiqadan keyin bugungi ekran vaqting tugaydi"
+	MessageQuietHours      = "Hozir dam olish vaqti. Ertaga davom etasan!\n\nSavoling bo'lsa, ota-onangga murojaat qil"
 )
 
 type blockedAppValue struct {
@@ -48,6 +50,11 @@ type dailyLimitValue struct {
 	WeekendMinutes *float64 `json:"weekend_minutes,omitempty"`
 }
 
+type blockedWindowValue struct {
+	Start string `json:"start"` // "HH:MM", child's local time
+	End   string `json:"end"`   // "HH:MM"; End <= Start means the window wraps past midnight
+}
+
 type Enforcer struct {
 	Cache    *Cache
 	Reporter *AlertReporter
@@ -58,6 +65,7 @@ type Enforcer struct {
 	alertedApp     string // blocked app we've already alerted on, cleared when foreground moves away
 	limitStage     int    // 0=none, 1=15min warned, 2=5min warned, 3=limit reached handled
 	limitStageDate string // date the stage counters apply to; resets them at midnight
+	inQuietHours   bool   // currently inside a blocked_window; blocks once per entry, not every poll
 }
 
 func NewEnforcer(cache *Cache, reporter *AlertReporter, block BlockFunc, notify NotifyFunc) *Enforcer {
@@ -202,6 +210,85 @@ func (e *Enforcer) CheckDailyLimit(ctx context.Context, todayScreenMinutes float
 		e.setStage(1)
 		if e.Notify != nil {
 			e.Notify(MessageWarn15Min)
+		}
+	}
+}
+
+// parseHHMM converts "HH:MM" to minutes past midnight; ok is false on any
+// malformed value so a bad rule fails open rather than blocking all day.
+func parseHHMM(s string) (int, bool) {
+	var h, m int
+	if n, err := fmt.Sscanf(strings.TrimSpace(s), "%d:%d", &h, &m); err != nil || n != 2 {
+		return 0, false
+	}
+	if h < 0 || h > 23 || m < 0 || m > 59 {
+		return 0, false
+	}
+	return h*60 + m, true
+}
+
+// withinWindow reports whether nowMin (minutes past local midnight) falls in
+// [start, end). An end at or before start is read as wrapping past midnight
+// (e.g. 22:00–07:00).
+func withinWindow(nowMin, start, end int) bool {
+	if start == end {
+		return false
+	}
+	if start < end {
+		return nowMin >= start && nowMin < end
+	}
+	return nowMin >= start || nowMin < end
+}
+
+func (e *Enforcer) blockedWindowActive() bool {
+	rules, err := e.Cache.All()
+	if err != nil {
+		log.Printf("rules enforcer: reading cache: %v", err)
+		return false
+	}
+	now := time.Now()
+	nowMin := now.Hour()*60 + now.Minute()
+	for _, r := range rules {
+		if r.RuleType != "blocked_window" {
+			continue
+		}
+		var v blockedWindowValue
+		if err := json.Unmarshal(r.Value, &v); err != nil {
+			continue
+		}
+		start, ok1 := parseHHMM(v.Start)
+		end, ok2 := parseHHMM(v.End)
+		if !ok1 || !ok2 {
+			continue
+		}
+		if withinWindow(nowMin, start, end) {
+			return true
+		}
+	}
+	return false
+}
+
+// CheckBlockedWindow blocks the screen while the child's local time is inside
+// any blocked_window rule ("quiet hours"). It fires the block once per entry
+// into a window, not on every poll, and reports a limit_reached alert so the
+// parent sees why.
+func (e *Enforcer) CheckBlockedWindow(ctx context.Context) {
+	active := e.blockedWindowActive()
+
+	e.mu.Lock()
+	firstEntry := active && !e.inQuietHours
+	e.inQuietHours = active
+	e.mu.Unlock()
+
+	if !firstEntry {
+		return
+	}
+	if e.Block != nil {
+		e.Block("blocked_window", MessageQuietHours)
+	}
+	if e.Reporter != nil {
+		if err := e.Reporter.Report(ctx, "limit_reached", map[string]any{"reason": "quiet_hours"}); err != nil {
+			log.Printf("rules enforcer: reporting quiet_hours: %v", err)
 		}
 	}
 }

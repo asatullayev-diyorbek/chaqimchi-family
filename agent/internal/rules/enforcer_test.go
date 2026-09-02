@@ -123,6 +123,70 @@ func TestDailyLimitMinutes_NoWeekendKeyFallsBackToMinutes(t *testing.T) {
 	}
 }
 
+func TestWithinWindow(t *testing.T) {
+	cases := []struct {
+		now, start, end int
+		want            bool
+	}{
+		{now: 23 * 60, start: 22 * 60, end: 7 * 60, want: true},   // wrap, late night
+		{now: 3 * 60, start: 22 * 60, end: 7 * 60, want: true},    // wrap, early morning
+		{now: 12 * 60, start: 22 * 60, end: 7 * 60, want: false},  // wrap, midday — allowed
+		{now: 13 * 60, start: 12 * 60, end: 14 * 60, want: true},  // same-day window
+		{now: 15 * 60, start: 12 * 60, end: 14 * 60, want: false}, // same-day, after
+		{now: 8 * 60, start: 7 * 60, end: 7 * 60, want: false},    // zero-width
+	}
+	for _, c := range cases {
+		if got := withinWindow(c.now, c.start, c.end); got != c.want {
+			t.Errorf("withinWindow(%d,%d,%d)=%v want %v", c.now, c.start, c.end, got, c.want)
+		}
+	}
+}
+
+func TestParseHHMM(t *testing.T) {
+	if m, ok := parseHHMM("22:30"); !ok || m != 22*60+30 {
+		t.Errorf("22:30 -> %d,%v", m, ok)
+	}
+	for _, bad := range []string{"24:00", "9:99", "abc", "", "22"} {
+		if _, ok := parseHHMM(bad); ok {
+			t.Errorf("%q parsed but should not", bad)
+		}
+	}
+}
+
+func TestCheckBlockedWindow_BlocksOncePerEntry(t *testing.T) {
+	cache := newTestCache(t)
+	// A window covering every minute of the day: [00:00, 00:00) is zero-width,
+	// so use 00:01 wrapping to 00:00 which is active virtually always.
+	value, _ := json.Marshal(blockedWindowValue{Start: "00:01", End: "00:00"})
+	cache.Replace([]Rule{{ID: "w1", RuleType: "blocked_window", Value: value}})
+
+	reporter := newTestReporter(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) })
+	var blocks int
+	enforcer := NewEnforcer(cache, reporter, func(reason, message string) {
+		blocks++
+		if reason != "blocked_window" || message != MessageQuietHours {
+			t.Errorf("unexpected block %q %q", reason, message)
+		}
+	}, nil)
+
+	ctx := context.Background()
+	enforcer.CheckBlockedWindow(ctx)
+	enforcer.CheckBlockedWindow(ctx)
+	enforcer.CheckBlockedWindow(ctx)
+	if blocks != 1 {
+		t.Fatalf("expected 1 block on entry, got %d", blocks)
+	}
+}
+
+func TestCheckBlockedWindow_NoRuleNoBlock(t *testing.T) {
+	cache := newTestCache(t)
+	cache.Replace(nil)
+	enforcer := NewEnforcer(cache, nil, func(reason, message string) {
+		t.Error("should not block without a blocked_window rule")
+	}, nil)
+	enforcer.CheckBlockedWindow(context.Background())
+}
+
 func TestCheckDailyLimit_WarnsThenBlocksInStages(t *testing.T) {
 	cache := newTestCache(t)
 	value, _ := json.Marshal(dailyLimitValue{Minutes: 120})

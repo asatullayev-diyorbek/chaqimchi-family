@@ -2,7 +2,7 @@ import uuid
 
 from django.db import models
 
-RULE_TYPES = ["daily_limit_minutes", "blocked_app"]
+RULE_TYPES = ["daily_limit_minutes", "blocked_app", "blocked_window"]
 
 
 class Rule(models.Model):

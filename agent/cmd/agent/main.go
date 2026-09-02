@@ -262,6 +262,7 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 
 		enforcer.CheckForegroundApp(ctx, app)
 		enforcer.CheckDailyLimit(ctx, todayMinutes)
+		enforcer.CheckBlockedWindow(ctx)
 
 		limit := 0
 		if m, ok := enforcer.DailyLimitMinutes(); ok {

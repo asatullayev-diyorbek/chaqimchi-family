@@ -101,8 +101,13 @@ har farzand uchun karta (ism, onlayn nuqta, bugungi vaqt, alert belgisi) +
   Rule value: `{"minutes": N, "weekend_minutes": M?}`. Agent enforcer
   `dailyLimitMinutes()` Shanba/Yakshanba (local vaqt) da `weekend_minutes` ni
   qaytaradi. Backend serializer optional int `weekend_minutes` ni tekshiradi.
-- **P3 — qolgani:** vaqt oynalari ("22:00–07:00 blok") — yangi `blocked_window`
-  turi + agent vaqt-bo'yicha enforcement (hali yo'q).
+- **P3b — DONE:** vaqt oynalari (`blocked_window`, value `{"start":"HH:MM",
+  "end":"HH:MM"}`, End<=Start = yarim tundan oshadi). Backend: RULE_TYPES +
+  serializer + migration `rules/0002`. Agent: `CheckBlockedWindow` har pollda,
+  oynaga kirganda bir marta bloklaydi + `limit_reached` alert `reason:quiet_hours`.
+  Web: Qoidalar sahifasida "Dam olish vaqti" time-input bo'limi; alertlar
+  sahifasi quiet_hours ni alohida yozadi.
+- **P3 — qolgani:** vizual timeline ko'rinishi (hozir oddiy ro'yxat).
 - **P6 — hali:** Liquid Glass, responsive sidebar, skeleton'lar.
 
 **PA deploy kutayotgan migratsiyalar (CPU kvota 2026-09-01, ~14:30 UTC reset):**

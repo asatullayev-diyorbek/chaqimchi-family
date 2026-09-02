@@ -65,6 +65,26 @@ class RuleCRUDTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_create_blocked_window_rule(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.post(
+            self.collection_url,
+            {"rule_type": "blocked_window", "value": {"start": "22:00", "end": "07:00"}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["value"], {"start": "22:00", "end": "07:00"})
+
+    def test_blocked_window_rejects_bad_time(self):
+        self.client.force_authenticate(user=self.parent)
+        for value in ({"start": "25:00", "end": "07:00"}, {"start": "22:00"}, {"start": "07:00", "end": "07:00"}):
+            response = self.client.post(
+                self.collection_url,
+                {"rule_type": "blocked_window", "value": value},
+                format="json",
+            )
+            self.assertEqual(response.status_code, 400, value)
+
     def test_delete_rule(self):
         self.client.force_authenticate(user=self.parent)
         rule = Rule.objects.create(
