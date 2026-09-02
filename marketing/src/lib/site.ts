@@ -40,36 +40,42 @@ export const FEATURES = [
     title: "Kunlik ekran vaqti",
     body:
       "Kuniga necha daqiqa. Ish kunlari va dam olish kunlari (Sh–Ya) uchun alohida qiymat qo'yish mumkin.",
+    icon: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
   },
   {
     tag: "Tinch soatlar",
     title: "Dam olish vaqti oynalari",
     body:
-      "Masalan 22:00–07:00 — bu oraliqda ekran xushmuomala ekran bilan bloklanadi, ertaga o'zi ochiladi.",
+      "Masalan 22:00–07:00 — bu oraliqda ekran xushmuomala tarzda bloklanadi, ertaga o'zi ochiladi.",
+    icon: "M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z",
   },
   {
     tag: "Ilovalar",
     title: "Ayrim ilovalarni cheklash",
     body:
       "Nomi bo'yicha cheklang. Bola ilovasi buni «hozircha mavjud emas» holati sifatida ko'rsatadi.",
+    icon: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
   },
   {
     tag: "Faoliyat",
     title: "Nima, qancha vaqt",
     body:
       "Qaysi ilova qancha ishlatilgani — ikonkasi bilan. Kun / hafta / oy kesimida, CSV eksport bilan.",
+    icon: "M4 19V5M4 19h16M8 16v-5M13 16V8M18 16v-3",
   },
   {
     tag: "Alert",
     title: "Muhim ogohlantirishlar",
     body:
       "Limit tugadi, cheklangan ilova ochildi, qurilmada «Kattalar uchun» paneli ochildi — darhol xabar.",
+    icon: "M12 9v4M12 17h.01M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6A2 2 0 0 0 22 18L13.7 3.9a2 2 0 0 0-3.4 0Z",
   },
   {
     tag: "Telegram",
     title: "Telegram bot + kunlik hisobot",
     body:
       "Panelni ochmasdan @ChaqimchiGuardBot orqali bugungi holat, qurilmalar va har oqshom qisqa hisobot.",
+    icon: "m22 3-9.5 9.5M22 3l-6.5 18-3.5-8-8-3.5L22 3Z",
   },
 ];
 
