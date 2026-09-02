@@ -90,9 +90,9 @@ har farzand uchun karta (ism, onlayn nuqta, bugungi vaqt, alert belgisi) +
   `/forgot-password` — Telegram'ga 6 xonali kod → yangi parol. Backend
   `password/{change,reset/start,reset/verify}`, `PATCH /me/`. **Migration
   `accounts/0005` PA'da kutmoqda** (CPU kvota, quyida).
-- **P2 — DONE (qisman):** Overview'da farzand kartochkalari qatori (ism, onlayn,
-  bugungi vaqt, alert belgisi) + "Qurilma qo'shish". Haftalik solishtirma bar
-  chart — hali yo'q.
+- **P2 — DONE:** Overview'da farzand kartochkalari qatori (ism, onlayn,
+  bugungi vaqt, alert belgisi) + "Qurilma qo'shish" + haftalik solishtirma
+  bar chart (har farzand alohida rang, oxirgi 7 kun).
 - **P5 — DONE:** Alert sahifasida filtr chiplari (klient-side).
 - **P4 — qisman:** app-usage jadvali CSV eksport + saralash (vaqt / nomi /
   oxirgi ishlatilgan). Kategoriya-rangli grafik + maxsus sana oralig'i hali
