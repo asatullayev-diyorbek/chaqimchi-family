@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ["latin", "latin-ext"], display: "swap", variable
 export const metadata: Metadata = {
   metadataBase: new URL(SITE.domain),
   title: {
-    default: `${SITE.name} — ${SITE.tagline}`,
+    default: `${SITE.name} — oila uchun ochiq ekran-vaqt qoidalari`,
     template: `%s — ${SITE.name}`,
   },
   description:
@@ -19,8 +19,8 @@ export const metadata: Metadata = {
     locale: "uz_UZ",
     url: SITE.domain,
     siteName: SITE.name,
-    title: `${SITE.name} — ${SITE.tagline}`,
-    description: "Oila uchun ochiq ekran-vaqt qoidalari. Kunlik limit, dam olish vaqti, faoliyat, Telegram xabarlar.",
+    title: `${SITE.name} — oila uchun ochiq ekran-vaqt qoidalari`,
+    description: `${SITE.tagline} Kunlik limit, dam olish vaqti, faoliyat, Telegram xabarlar.`,
   },
   alternates: { canonical: SITE.domain },
 };
