@@ -23,6 +23,34 @@ export const NAV_LINKS = [
   { href: "#faq", label: "FAQ" },
 ];
 
+// Demo app list for the previews. Parent-facing UI shows human names, never
+// process names — matches how the real dashboard renders them.
+export const DEMO_APPS = [
+  { name: "Google Chrome", minutes: 58, icon: "logos:chrome", color: undefined },
+  { name: "Minecraft", minutes: 44, icon: "simple-icons:minecraft", color: "#68b247" },
+  { name: "YouTube", minutes: 31, icon: "logos:youtube-icon", color: undefined },
+  { name: "Steam", minutes: 26, icon: "logos:steam", color: undefined },
+];
+
+// 7-day sample, mins per day (Mon→Sun). Kept internally consistent with the
+// "o'rtacha" figures shown elsewhere.
+export const DEMO_WEEK = [
+  { d: "Du", m: 160 },
+  { d: "Se", m: 200 },
+  { d: "Ch", m: 185 },
+  { d: "Pa", m: 250 },
+  { d: "Ju", m: 210 },
+  { d: "Sh", m: 285 },
+  { d: "Ya", m: 245 },
+];
+
+export const DEMO_CATEGORIES = [
+  { label: "Ta'lim", pct: 34, color: "var(--cat-teal)" },
+  { label: "O'yin", pct: 28, color: "var(--cat-blue)" },
+  { label: "Ijtimoiy", pct: 22, color: "var(--cat-amber)" },
+  { label: "Boshqa", pct: 16, color: "var(--cat-slate)" },
+];
+
 export const PROMISES = [
   {
     icon: "solar:eye-linear",
@@ -105,19 +133,19 @@ export const FEATURE_CARDS = [
 export const STEPS = [
   {
     n: "01",
-    title: "O'rnat va bog'la",
+    title: "O'rnatib bog'laysiz",
     body:
       "Windows dasturini yuklab oling. Rozilik oynasidan so'ng ekrandagi QR kodni mobil ilova bilan skanerlang yoki 6 xonali kodni kiriting.",
   },
   {
     n: "02",
-    title: "Qoidalarni belgila",
+    title: "Qoidalarni belgilaysiz",
     body:
-      "Web panelda kunlik limit, dam olish vaqti va cheklangan ilovalarni sozlang. O'zgarishlar qurilmaga o'zi yetadi.",
+      "Web panelda kunlik limit, dam olish vaqti va cheklangan ilovalarni sozlaysiz. O'zgarishlar qurilmaga o'zi yetadi.",
   },
   {
     n: "03",
-    title: "Xotirjam kuzat",
+    title: "Xotirjam kuzatasiz",
     body:
       "Kundalik holat, faoliyat va xabarlar bir joyda. Bola ham o'z ekranida qoidalar va qolgan vaqtni ko'rib turadi.",
   },

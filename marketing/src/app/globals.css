@@ -803,3 +803,74 @@ footer { margin-top: 90px; padding: 60px 0 40px; }
 /* generic chip icon sizing (non-brand chips in activity/alert rows) */
 .chip-ico iconify-icon { font-size: 16px; }
 .chip-ico.brand iconify-icon { font-size: 17px; }
+
+/* ==================== v3 polish: richer previews ==================== */
+
+/* hero panel: mini 7-day chart tile */
+.panel-chart { display: grid; gap: 8px; }
+.mini-week { display: flex; align-items: flex-end; gap: 6px; height: 46px; }
+.mini-week-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.mini-week-track { width: 100%; height: 38px; display: flex; align-items: flex-end; }
+.mini-week-bar { width: 100%; border-radius: 4px 4px 2px 2px; min-height: 3px; }
+.mini-week-col span { font-size: 8.5px; font-weight: 700; color: var(--chart-axis); }
+@media (prefers-reduced-motion: reduce) { .mini-week-bar { transition: none !important; } }
+
+/* browser frame: sidebar + main */
+.browser-body { grid-template-columns: 172px 1fr; align-items: stretch; }
+.bside {
+  display: flex; flex-direction: column; gap: 3px; padding: 14px 10px;
+  background: var(--surface); border-right: 1px solid var(--border);
+}
+.bside-brand { padding: 2px 8px 12px; }
+.bside-brand .brand-mark { width: 26px; height: 26px; font-size: 13px; border-radius: 8px; }
+.bside-item {
+  display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 10px;
+  font-size: 0.82rem; font-weight: 600; color: var(--muted);
+}
+.bside-item iconify-icon { font-size: 16px; }
+.bside-item.active { background: color-mix(in srgb, var(--brand) 10%, transparent); color: var(--brand-ink); }
+.bmain { display: grid; grid-template-columns: 1.3fr 1fr; gap: 14px; padding: 16px; background: var(--bg); }
+@media (max-width: 940px) {
+  .browser-body { grid-template-columns: 1fr; }
+  .bside {
+    flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--border);
+    gap: 4px; padding: 10px;
+  }
+  .bside-brand { display: none; }
+  .bside-item { white-space: nowrap; flex: 0 0 auto; }
+  .bmain { grid-template-columns: 1fr; }
+}
+
+/* hero card inside the browser */
+.bcard-hero { background: linear-gradient(150deg, color-mix(in srgb, var(--brand) 8%, var(--surface)), var(--surface)); }
+.bhero-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 8px 0 12px; }
+.bhero-big { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.02em; }
+.bhero-big small { font-size: 0.85rem; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.bhero-left { font-size: 0.82rem; font-weight: 700; color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 14%, transparent); border-radius: 999px; padding: 5px 11px; white-space: nowrap; }
+
+/* value cards: a compact visual strip under the bullets */
+.value-viz { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 14px; }
+.value-viz .vv-line { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; font-weight: 700; color: var(--body); }
+.value-viz .vv-line iconify-icon { font-size: 15px; }
+.value-viz .vv-dot { width: 7px; height: 7px; border-radius: 50%; }
+.value-viz .meter { margin-top: 8px; }
+.value-viz-sync { display: flex; align-items: center; gap: 6px; font-size: 0.76rem; font-weight: 700; color: var(--muted); }
+.value-viz-sync iconify-icon { font-size: 14px; }
+.value-viz-sync b { color: var(--accent-ink); }
+
+/* privacy: left-side security visual */
+.band .cols { grid-template-columns: .85fr 1.15fr; }
+.pviz { display: grid; gap: 14px; }
+.pviz-shield {
+  width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center;
+  background: linear-gradient(150deg, var(--brand-2), var(--brand));
+  color: #fff; font-size: 30px; box-shadow: 0 14px 30px -10px rgba(37,99,235,.5);
+}
+.pviz-list { display: grid; gap: 8px; }
+.pviz-item { display: flex; align-items: center; gap: 9px; font-size: 0.86rem; font-weight: 600; }
+.pviz-item.no { color: var(--muted); }
+.pviz-item.yes { color: var(--body); }
+.pviz-item iconify-icon { font-size: 16px; flex: 0 0 auto; }
+.pviz-item.no iconify-icon { color: var(--danger); }
+.pviz-item.yes iconify-icon { color: var(--accent-ink); }
+@media (max-width: 820px) { .band .cols { grid-template-columns: 1fr; } .pviz-shield { width: 54px; height: 54px; font-size: 26px; } }

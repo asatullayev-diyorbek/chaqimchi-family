@@ -3,7 +3,7 @@ import Link from "next/link";
 import Reveal from "@/components/Reveal";
 import SiteNav from "@/components/SiteNav";
 import CountUp from "@/components/CountUp";
-import { WeekBars, CategoryDonut } from "@/components/Charts";
+import { WeekBars, CategoryDonut, MiniWeek } from "@/components/Charts";
 import {
   SITE,
   PROMISES,
@@ -14,6 +14,7 @@ import {
   PRICING,
   PLATFORMS,
   FAQ,
+  DEMO_APPS,
 } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -28,6 +29,19 @@ function Check() {
   return <iconify-icon icon="solar:check-circle-bold" aria-hidden />;
 }
 const DownloadIcon = <iconify-icon icon="solar:download-minimalistic-linear" aria-hidden />;
+
+function AppChip({ icon, color }: { icon: string; color?: string }) {
+  return (
+    <span className="chip-ico brand">
+      <iconify-icon icon={icon} style={color ? { color } : undefined} />
+    </span>
+  );
+}
+function fmt(mins: number) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h ? `${h}s ${m}d` : `${m}d`;
+}
 
 /* ---- small live-looking previews for the three feature blocks ---- */
 
@@ -59,8 +73,8 @@ function BlockPreview({ kind }: { kind: string }) {
   return (
     <div className="fp">
       <div className="fp-head"><span>Cheklangan</span><b>2 ta ilova</b></div>
-      <div className="fp-row"><span className="chip-ico brand"><iconify-icon icon="logos:steam-icon" /></span>steam.exe<em>bloklangan</em></div>
-      <div className="fp-row"><span className="chip-ico brand"><iconify-icon icon="logos:discord-icon" /></span>discord.exe<em>bloklangan</em></div>
+      <div className="fp-row"><AppChip icon="logos:steam" />Steam<em>bloklangan</em></div>
+      <div className="fp-row"><AppChip icon="logos:discord-icon" />Discord<em>bloklangan</em></div>
     </div>
   );
 }
@@ -111,21 +125,19 @@ export default function Page() {
                     <div className="meter warn"><i style={{ "--w": "66%" } as React.CSSProperties} /></div>
                   </div>
                 </div>
-                <div className="rows">
-                  <div className="row hp" style={{ "--d": "340ms" } as React.CSSProperties}>
-                    <span className="app"><span className="chip-ico brand"><iconify-icon icon="logos:chrome" /></span>Chrome</span>
-                    <b>58 daq</b>
-                  </div>
-                  <div className="row hp" style={{ "--d": "430ms" } as React.CSSProperties}>
-                    <span className="app"><span className="chip-ico brand"><iconify-icon icon="simple-icons:minecraft" style={{ color: "#68b247" }} /></span>Minecraft</span>
-                    <b>44 daq</b>
-                  </div>
-                  <div className="row hp" style={{ "--d": "520ms" } as React.CSSProperties}>
-                    <span className="app"><span className="chip-ico brand"><iconify-icon icon="logos:youtube-icon" /></span>YouTube</span>
-                    <b>31 daq</b>
-                  </div>
+                <div className="tile hp panel-chart" style={{ "--d": "320ms" } as React.CSSProperties}>
+                  <div className="k">Oxirgi 7 kun</div>
+                  <MiniWeek />
                 </div>
-                <div className="strip hp" style={{ "--d": "620ms" } as React.CSSProperties}>
+                <div className="rows">
+                  {DEMO_APPS.slice(0, 3).map((a, i) => (
+                    <div className="row hp" key={a.name} style={{ "--d": `${420 + i * 90}ms` } as React.CSSProperties}>
+                      <span className="app"><AppChip icon={a.icon} color={a.color} />{a.name}</span>
+                      <b>{fmt(a.minutes)}</b>
+                    </div>
+                  ))}
+                </div>
+                <div className="strip hp" style={{ "--d": "720ms" } as React.CSSProperties}>
                   <Check />
                   Dam olish vaqti 22:00–07:00 — faol
                 </div>
@@ -168,6 +180,27 @@ export default function Page() {
                       <li key={pt}><Check />{pt}</li>
                     ))}
                   </ul>
+                  <div className="value-viz">
+                    {i === 0 && (
+                      <div className="vv-line">
+                        <span className="vv-dot" style={{ background: "var(--accent)" }} />
+                        <Ico name="solar:shield-check-bold" /> Agent faol · ko&apos;rinadi
+                      </div>
+                    )}
+                    {i === 1 && (
+                      <>
+                        <div className="vv-line">Kunlik limit <span style={{ marginLeft: "auto" }}>3s 24d / 4s</span></div>
+                        <div className="meter"><i style={{ "--w": "85%" } as React.CSSProperties} /></div>
+                      </>
+                    )}
+                    {i === 2 && (
+                      <div className="value-viz-sync">
+                        <Ico name="solar:cloud-linear" /> Server
+                        <Ico name="solar:arrow-right-linear" /> Lokal agent
+                        <Ico name="solar:arrow-right-linear" /> <b>Sinxron</b>
+                      </div>
+                    )}
+                  </div>
                 </Reveal>
               ))}
             </div>
@@ -186,6 +219,17 @@ export default function Page() {
                     ChaqimchiAI oilalarga bola kompyuteridan foydalanish bo&apos;yicha
                     <b> ochiq kelishilgan </b> raqamli tartibni boshqarishga yordam beradi.
                   </p>
+                  <div className="pviz">
+                    <span className="pviz-shield"><Ico name="solar:shield-keyhole-bold" /></span>
+                    <div className="pviz-list">
+                      <div className="pviz-item yes"><Ico name="solar:check-circle-bold" /> Faoliyat vaqti va ilova nomi</div>
+                      <div className="pviz-item yes"><Ico name="solar:check-circle-bold" /> Qurilma holati</div>
+                      <div className="pviz-item no"><Ico name="solar:close-circle-bold" /> Skrinshot</div>
+                      <div className="pviz-item no"><Ico name="solar:close-circle-bold" /> Klaviatura yozuvi</div>
+                      <div className="pviz-item no"><Ico name="solar:close-circle-bold" /> Mikrofon</div>
+                      <div className="pviz-item no"><Ico name="solar:close-circle-bold" /> Shaxsiy xabarlar</div>
+                    </div>
+                  </div>
                 </div>
                 <ul className="checks">
                   {CHECKS.map((c, i) => (
@@ -265,33 +309,60 @@ export default function Page() {
             <Reveal as="div" className="browser">
               <div className="browser-bar">
                 <i /><i /><i />
-                <span className="url">guard.chaqimchi-ai.uz</span>
+                <span className="url"><Ico name="solar:lock-keyhole-minimalistic-bold" /> guard.chaqimchi-ai.uz</span>
               </div>
               <div className="browser-body">
-                <div className="bcol bcol-a">
-                  <div className="bcard">
-                    <div className="ch-head"><h3>7 kunlik statistika</h3><span>o&apos;rtacha 3s 24d</span></div>
-                    <WeekBars />
-                  </div>
-                  <div className="bcard">
-                    <div className="ch-head"><h3>So&apos;nggi faoliyat</h3><span>bugun</span></div>
-                    <div className="rows plain">
-                      <div className="row"><span className="app"><span className="chip-ico brand"><iconify-icon icon="logos:chrome" /></span>Chrome</span><b>58 daq</b></div>
-                      <div className="row"><span className="app"><span className="chip-ico brand"><iconify-icon icon="simple-icons:minecraft" style={{ color: "#68b247" }} /></span>Minecraft</span><b>44 daq</b></div>
-                      <div className="row"><span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--warning) 18%, transparent)", color: "var(--warning)" }}><iconify-icon icon="solar:danger-triangle-bold" /></span>Limit tugadi</span><b>19:40</b></div>
+                <aside className="bside" aria-hidden>
+                  <div className="bside-brand"><span className="brand-mark">C</span></div>
+                  <a className="bside-item active"><Ico name="solar:home-2-linear" /> Bosh sahifa</a>
+                  <a className="bside-item"><Ico name="solar:chart-2-linear" /> Faoliyat</a>
+                  <a className="bside-item"><Ico name="solar:devices-linear" /> Qurilmalar</a>
+                  <a className="bside-item"><Ico name="solar:shield-check-linear" /> Qoidalar</a>
+                  <a className="bside-item"><Ico name="solar:bell-linear" /> Xabarlar</a>
+                </aside>
+                <div className="bmain">
+                  <div className="bcol bcol-a">
+                    <div className="bcard bcard-hero">
+                      <div className="ch-head"><h3>Bugungi ekran vaqti — Aziz</h3><span className="ok">onlayn</span></div>
+                      <div className="bhero-row">
+                        <div className="bhero-big">2s 40d <small>/ 4 soat</small></div>
+                        <div className="bhero-left">1s 20d qoldi</div>
+                      </div>
+                      <div className="meter"><i style={{ "--w": "66%" } as React.CSSProperties} /></div>
+                    </div>
+                    <div className="bcard">
+                      <div className="ch-head"><h3>7 kunlik statistika</h3><span>o&apos;rtacha 3s 24d</span></div>
+                      <WeekBars />
+                    </div>
+                    <div className="bcard">
+                      <div className="ch-head"><h3>So&apos;nggi faoliyat</h3><span>bugun</span></div>
+                      <div className="rows plain">
+                        {DEMO_APPS.map((a) => (
+                          <div className="row" key={a.name}>
+                            <span className="app"><AppChip icon={a.icon} color={a.color} />{a.name}</span>
+                            <b>{fmt(a.minutes)}</b>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className="bcol">
-                  <div className="bcard">
-                    <div className="ch-head"><h3>Faoliyat kategoriyalari</h3><span>bugun</span></div>
-                    <CategoryDonut />
-                  </div>
-                  <div className="bcard bcard-status">
-                    <div className="ch-head"><h3>Qurilma</h3><span className="ok">onlayn</span></div>
-                    <div className="statline"><Ico name="solar:battery-half-linear" /> Batareya 62%</div>
-                    <div className="statline"><Ico name="solar:refresh-linear" /> Oxirgi sinx: 2 daq oldin</div>
-                    <div className="statline"><Ico name="solar:shield-check-linear" /> 3 ta faol qoida</div>
+                  <div className="bcol">
+                    <div className="bcard">
+                      <div className="ch-head"><h3>Faoliyat kategoriyalari</h3><span>bugun</span></div>
+                      <CategoryDonut />
+                    </div>
+                    <div className="bcard">
+                      <div className="ch-head"><h3>Faol qoidalar</h3><span>3 ta</span></div>
+                      <div className="statline"><Ico name="solar:clock-circle-linear" /> Kunlik limit — 4 soat</div>
+                      <div className="statline"><Ico name="solar:moon-sleep-linear" /> Dam olish — 22:00–07:00</div>
+                      <div className="statline"><Ico name="solar:forbidden-circle-linear" /> Cheklangan — 2 ilova</div>
+                    </div>
+                    <div className="bcard bcard-status">
+                      <div className="ch-head"><h3>Qurilma</h3></div>
+                      <div className="statline"><Ico name="solar:battery-half-linear" /> Batareya 62%</div>
+                      <div className="statline"><Ico name="solar:refresh-linear" /> Oxirgi sinx: 2 daq oldin</div>
+                      <div className="statline"><Ico name="solar:cpu-linear" /> Agent 0.4.0</div>
+                    </div>
                   </div>
                 </div>
               </div>

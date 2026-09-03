@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DEMO_WEEK, DEMO_CATEGORIES } from "@/lib/site";
 
-// Static SVG charts styled to match the parent-web dashboard (same viewBox,
-// grid, axis and bar tokens). Sample data — a representative marketing
-// preview. Both animate in the first time they scroll into view.
+// SVG charts styled to match the parent-web dashboard (same viewBox, grid,
+// axis and bar tokens). Sample data lives in site.ts. Both animate the first
+// time they scroll into view and expose native tooltips + a hover highlight.
 
 function useInView<T extends Element>() {
   const ref = useRef<T>(null);
@@ -13,7 +14,7 @@ function useInView<T extends Element>() {
     const el = ref.current;
     if (!el || seen) return;
     if (typeof IntersectionObserver === "undefined") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- defensive fallback for environments without IO
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- fallback for environments without IO
       setSeen(true);
       return;
     }
@@ -32,26 +33,23 @@ function useInView<T extends Element>() {
   return { ref, seen };
 }
 
-const WEEK = [
-  { d: "Du", h: 2.1 },
-  { d: "Se", h: 3.4 },
-  { d: "Ch", h: 2.8 },
-  { d: "Pa", h: 3.9 },
-  { d: "Ju", h: 3.1 },
-  { d: "Sh", h: 4.6 },
-  { d: "Ya", h: 4.0 },
-];
+function hm(mins: number) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h ? `${h}s ${m}d` : `${m}d`;
+}
 
 export function WeekBars() {
   const { ref, seen } = useInView<SVGSVGElement>();
-  const maxH = 5;
+  const [hover, setHover] = useState<number | null>(null);
+  const maxM = Math.max(300, ...DEMO_WEEK.map((v) => v.m));
   const x0 = 40;
   const x1 = 540;
   const top = 10;
   const bottom = 154;
-  const band = (x1 - x0) / WEEK.length;
+  const band = (x1 - x0) / DEMO_WEEK.length;
   const barW = 26;
-  const peak = Math.max(...WEEK.map((v) => v.h));
+  const peak = Math.max(...DEMO_WEEK.map((v) => v.m));
 
   return (
     <svg
@@ -60,7 +58,8 @@ export function WeekBars() {
       viewBox="0 0 560 190"
       preserveAspectRatio="xMidYMid meet"
       role="img"
-      aria-label="7 kunlik ekran vaqti — namunaviy grafik"
+      aria-label="7 kunlik ekran vaqti"
+      onMouseLeave={() => setHover(null)}
     >
       <g stroke="var(--chart-grid)" strokeWidth="1">
         {[10, 46, 82, 118, 154].map((y) => (
@@ -75,26 +74,35 @@ export function WeekBars() {
         <text x="8" y="158">0</text>
       </g>
       <g>
-        {WEEK.map((w, i) => {
+        {DEMO_WEEK.map((w, i) => {
           const cx = x0 + band * i + band / 2;
-          const barH = ((bottom - top) * w.h) / maxH;
-          const active = w.h === peak;
+          const barH = ((bottom - top) * w.m) / maxM;
+          const active = w.m === peak;
+          const on = hover === i;
           return (
-            <g key={w.d}>
+            <g key={w.d} onMouseEnter={() => setHover(i)}>
+              <rect x={cx - band / 2} y={top} width={band} height={bottom - top} fill="transparent" />
               <rect
                 x={cx - barW / 2}
                 y={bottom - barH}
                 width={barW}
                 height={barH}
                 rx="6"
-                fill={active ? "var(--chart-bar-active)" : "var(--chart-bar)"}
+                fill={active || on ? "var(--chart-bar-active)" : "var(--chart-bar)"}
                 style={{
                   transformBox: "fill-box",
                   transformOrigin: "bottom",
                   transform: seen ? "scaleY(1)" : "scaleY(0)",
-                  transition: `transform .7s cubic-bezier(.2,.7,.2,1) ${i * 70}ms`,
+                  transition: `transform .7s cubic-bezier(.2,.7,.2,1) ${i * 70}ms, fill .15s`,
                 }}
-              />
+              >
+                <title>{`${w.d}: ${hm(w.m)}`}</title>
+              </rect>
+              {on && (
+                <text x={cx} y={bottom - barH - 8} fontFamily="Inter, sans-serif" fontSize="10" fontWeight="700" fill="var(--fg)" textAnchor="middle">
+                  {hm(w.m)}
+                </text>
+              )}
               <text x={cx} y="174" fontFamily="Inter, sans-serif" fontSize="10" fill="var(--chart-axis)" textAnchor="middle">
                 {w.d}
               </text>
@@ -106,45 +114,42 @@ export function WeekBars() {
   );
 }
 
-const SLICES = [
-  { label: "Ta’lim", pct: 34, color: "var(--cat-teal)" },
-  { label: "O’yin", pct: 28, color: "var(--cat-blue)" },
-  { label: "Ijtimoiy", pct: 22, color: "var(--cat-amber)" },
-  { label: "Boshqa", pct: 16, color: "var(--cat-slate)" },
-];
-
 export function CategoryDonut() {
   const { ref, seen } = useInView<HTMLDivElement>();
+  const [hover, setHover] = useState<number | null>(null);
   const C = 326.73; // r = 52
-  const arcs = SLICES.map((s, i) => {
+  const arcs = DEMO_CATEGORIES.map((s, i) => {
     const len = (C * s.pct) / 100;
-    const offset = -SLICES.slice(0, i).reduce((sum, p) => sum + (C * p.pct) / 100, 0);
+    const offset = -DEMO_CATEGORIES.slice(0, i).reduce((sum, p) => sum + (C * p.pct) / 100, 0);
     return { ...s, len, offset };
   });
   return (
-    <div className="donut-wrap" ref={ref}>
+    <div className="donut-wrap" ref={ref} onMouseLeave={() => setHover(null)}>
       <div className="donut">
-        <svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Faoliyat kategoriyalari — namunaviy">
+        <svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Faoliyat kategoriyalari">
           <g transform="rotate(-90 60 60)" fill="none">
             <circle cx="60" cy="60" r="52" stroke="var(--chart-track)" strokeWidth="16" />
-            {arcs.map((a) => (
+            {arcs.map((a, i) => (
               <circle
                 key={a.label}
                 cx="60"
                 cy="60"
                 r="52"
                 stroke={a.color}
-                strokeWidth="16"
+                strokeWidth={hover === i ? 19 : 16}
                 strokeDasharray={`${Math.max(a.len - 1.5, 0)} ${C - a.len + 1.5}`}
                 strokeDashoffset={a.offset}
                 strokeLinecap="round"
+                onMouseEnter={() => setHover(i)}
                 style={{
-                  opacity: seen ? 1 : 0,
+                  opacity: seen ? (hover !== null && hover !== i ? 0.45 : 1) : 0,
                   transform: seen ? "none" : "scale(.9)",
                   transformOrigin: "center",
-                  transition: "opacity .5s ease, transform .6s cubic-bezier(.2,.7,.2,1)",
+                  transition: "opacity .3s ease, transform .6s cubic-bezier(.2,.7,.2,1), stroke-width .15s",
                 }}
-              />
+              >
+                <title>{`${a.label}: ${a.pct}%`}</title>
+              </circle>
             ))}
           </g>
         </svg>
@@ -154,14 +159,45 @@ export function CategoryDonut() {
         </div>
       </div>
       <ul className="legend">
-        {SLICES.map((s, i) => (
-          <li key={s.label} style={{ opacity: seen ? 1 : 0, transition: `opacity .4s ease ${200 + i * 90}ms` }}>
+        {DEMO_CATEGORIES.map((s, i) => (
+          <li
+            key={s.label}
+            onMouseEnter={() => setHover(i)}
+            onMouseLeave={() => setHover(null)}
+            style={{ opacity: seen ? 1 : 0, transition: `opacity .4s ease ${200 + i * 90}ms` }}
+          >
             <i style={{ background: s.color }} />
             {s.label}
             <span>{s.pct}%</span>
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** Compact 7-bar sparkline for the hero panel. */
+export function MiniWeek() {
+  const { ref, seen } = useInView<HTMLDivElement>();
+  const maxM = Math.max(...DEMO_WEEK.map((v) => v.m));
+  const peak = maxM;
+  return (
+    <div className="mini-week" ref={ref}>
+      {DEMO_WEEK.map((w, i) => (
+        <div key={w.d} className="mini-week-col" title={`${w.d}: ${hm(w.m)}`}>
+          <div className="mini-week-track">
+            <div
+              className="mini-week-bar"
+              style={{
+                height: seen ? `${Math.max(8, (w.m / maxM) * 100)}%` : "0%",
+                background: w.m === peak ? "var(--chart-bar-active)" : "var(--chart-bar)",
+                transition: `height .6s cubic-bezier(.2,.7,.2,1) ${i * 60}ms`,
+              }}
+            />
+          </div>
+          <span>{w.d}</span>
+        </div>
+      ))}
     </div>
   );
 }
