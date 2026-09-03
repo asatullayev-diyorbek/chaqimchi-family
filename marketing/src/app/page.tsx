@@ -322,7 +322,10 @@ export default function Page() {
 
               <div className="duo-link" aria-hidden>
                 <span className="duo-link-line" />
-                <span className="duo-link-pill">Kelishilgan qoida</span>
+                <span className="duo-link-pill">
+                  <iconify-icon icon="solar:link-bold" />
+                  Kelishilgan qoida
+                </span>
                 <span className="duo-link-line" />
               </div>
 
@@ -341,20 +344,20 @@ export default function Page() {
         {/* ================= STATS ================= */}
         <section>
           <div className="wrap">
-            <div className="stats">
-              <Reveal as="div" className="glass stat">
+            <Reveal as="div" className="glass stats">
+              <div className="stat">
                 <div className="big grad"><CountUp to={5} /> daqiqa</div>
                 <div className="lbl">O&apos;rnatishdan birinchi qoidagacha</div>
-              </Reveal>
-              <Reveal as="div" className="glass stat" delay={90}>
+              </div>
+              <div className="stat">
                 <div className="big grad"><CountUp to={0} /></div>
                 <div className="lbl">Skrinshot, klaviatura yoki mikrofon yozuvi</div>
-              </Reveal>
-              <Reveal as="div" className="glass stat" delay={180}>
+              </div>
+              <div className="stat">
                 <div className="big grad">24/7</div>
                 <div className="lbl">Offline ham qoidalar ishlaydi</div>
-              </Reveal>
-            </div>
+              </div>
+            </Reveal>
           </div>
         </section>
 
@@ -415,7 +418,7 @@ export default function Page() {
             </Reveal>
             <Reveal as="div" className="faq">
               {FAQ.map((item, i) => (
-                <details key={item.q} open={i === 0}>
+                <details key={item.q} name="faq" open={i === 0}>
                   <summary>{item.q}</summary>
                   <p>{item.a}</p>
                 </details>

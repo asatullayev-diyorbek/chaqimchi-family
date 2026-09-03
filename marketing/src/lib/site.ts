@@ -18,7 +18,7 @@ export const SITE = {
 export const NAV_LINKS = [
   { href: "#imkoniyatlar", label: "Imkoniyatlar" },
   { href: "#qanday", label: "Qanday ishlaydi" },
-  { href: "#bola", label: "Bola nima ko’radi" },
+  { href: "#bola", label: "Bola nima ko'radi" },
   { href: "#narx", label: "Narx" },
   { href: "#faq", label: "FAQ" },
 ];
@@ -29,8 +29,8 @@ export const PROMISES = [
     title: "Shaffoflik",
     points: [
       "Bola agent borligini biladi",
-      "Nima kuzatilishi ochiq ko’rsatiladi",
-      "Yashirin monitoring yo’q",
+      "Nima kuzatilishi ochiq ko'rsatiladi",
+      "Yashirin monitoring yo'q",
     ],
   },
   {
@@ -46,8 +46,8 @@ export const PROMISES = [
     icon: "solar:wi-fi-router-minimalistic-linear",
     title: "Offline barqarorlik",
     points: [
-      "Internet bo’lmasa ham qoidalar ishlaydi",
-      "Ulanish qaytganda ma’lumot sinxronlanadi",
+      "Internet bo'lmasa ham qoidalar ishlaydi",
+      "Ulanish qaytganda ma'lumot sinxronlanadi",
     ],
   },
 ];
@@ -58,21 +58,21 @@ export const FEATURE_BLOCKS = [
     tag: "Ekran vaqti",
     title: "Kunlik ekran vaqti limiti",
     body:
-      "Kuniga necha daqiqa. Ish kunlari va dam olish kunlari (Sh–Ya) uchun alohida qiymat qo’yiladi. Limit tugashiga 15 va 5 daqiqa qolganda bola ogohlantiriladi.",
+      "Kuniga necha daqiqa. Ish kunlari va dam olish kunlari (Sh–Ya) uchun alohida qiymat qo'yiladi. Limit tugashiga 15 va 5 daqiqa qolganda bola ogohlantiriladi.",
     preview: "limit",
   },
   {
     tag: "Tinch soatlar",
     title: "Dam olish vaqti oynalari",
     body:
-      "Masalan 22:00–07:00 — bu oraliqda ekran xushmuomala tarzda bloklanadi va ertaga o’zi ochiladi. Bir nechta oyna qo’yish mumkin.",
+      "Masalan 22:00–07:00 — bu oraliqda ekran xushmuomala tarzda bloklanadi va ertaga o'zi ochiladi. Bir nechta oyna qo'yish mumkin.",
     preview: "quiet",
   },
   {
     tag: "Ilovalar",
     title: "Ayrim ilovalarni cheklash",
     body:
-      "Ilovani nomi bo’yicha cheklang. Bola ilovasi buni «hozircha mavjud emas» holati sifatida ko’rsatadi, ochilganda esa ota-onaga xabar boradi.",
+      "Ilovani nomi bo'yicha cheklang. Bola ilovasi buni «hozircha mavjud emas» holati sifatida ko'rsatadi, ochilganda esa ota-onaga xabar boradi.",
     preview: "app",
   },
 ];
@@ -105,32 +105,32 @@ export const FEATURE_CARDS = [
 export const STEPS = [
   {
     n: "01",
-    title: "O’rnat va bog’la",
+    title: "O'rnat va bog'la",
     body:
-      "Windows dasturini yuklab oling. Rozilik oynasidan so’ng ekrandagi QR kodni mobil ilova bilan skanerlang yoki 6 xonali kodni kiriting.",
+      "Windows dasturini yuklab oling. Rozilik oynasidan so'ng ekrandagi QR kodni mobil ilova bilan skanerlang yoki 6 xonali kodni kiriting.",
   },
   {
     n: "02",
     title: "Qoidalarni belgila",
     body:
-      "Web panelda kunlik limit, dam olish vaqti va cheklangan ilovalarni sozlang. O’zgarishlar qurilmaga o’zi yetadi.",
+      "Web panelda kunlik limit, dam olish vaqti va cheklangan ilovalarni sozlang. O'zgarishlar qurilmaga o'zi yetadi.",
   },
   {
     n: "03",
     title: "Xotirjam kuzat",
     body:
-      "Kundalik holat, faoliyat va xabarlar bir joyda. Bola ham o’z ekranida qoidalar va qolgan vaqtni ko’rib turadi.",
+      "Kundalik holat, faoliyat va xabarlar bir joyda. Bola ham o'z ekranida qoidalar va qolgan vaqtni ko'rib turadi.",
   },
 ];
 
 export const CHECKS = [
-  "Bola tray belgisi va status oynasi orqali agent borligini ko’radi",
+  "Bola tray belgisi va status oynasi orqali agent borligini ko'radi",
   "Bloklash oynasi tushunarli: «bugungi vaqting tugadi, ertaga davom etasan»",
   "Skrinshot olinmaydi",
   "Klaviatura bosilishi yozilmaydi",
   "Mikrofon yozilmaydi",
-  "Shaxsiy xabarlar o’qilmaydi",
-  "Faqat kerakli faoliyat ma’lumotlari: ilova nomi + vaqti, qurilma holati, qoida hodisalari",
+  "Shaxsiy xabarlar o'qilmaydi",
+  "Faqat kerakli faoliyat ma'lumotlari: ilova nomi + vaqti, qurilma holati, qoida hodisalari",
 ];
 
 export const PRICING = [
@@ -150,11 +150,11 @@ export const PLATFORMS = [
     tag: "Bola qurilmasi",
     title: "Windows agent",
     body:
-      "Windows xizmati sifatida ishlaydi, qoidalarni lokal qo’llaydi. Tray status oynasi, xushmuomala bloklash ekrani, OTA orqali avto-yangilanish.",
+      "Windows xizmati sifatida ishlaydi, qoidalarni lokal qo'llaydi. Tray status oynasi, xushmuomala bloklash ekrani, OTA orqali avto-yangilanish.",
     status: "Mavjud",
   },
   {
-    icon: "solar:widget-5-linear",
+    icon: "solar:window-frame-linear",
     tag: "Ota-ona",
     title: "Web panel",
     body:
@@ -173,33 +173,33 @@ export const PLATFORMS = [
 
 export const FAQ = [
   {
-    q: "Windows «Noma’lum noshir» deb ogohlantirsa nima qilaman?",
+    q: "Windows «Noma'lum noshir» deb ogohlantirsa nima qilaman?",
     a:
-      "Dastur hozircha kod bilan imzolanmagan (MVP/Beta). SmartScreen oynasida «More info» → «Run anyway». Defender, SmartScreen yoki UAC’ni o’chirish shart emas va tavsiya qilinmaydi.",
+      "Dastur hozircha kod bilan imzolanmagan (MVP/Beta). SmartScreen oynasida «More info» → «Run anyway». Defender, SmartScreen yoki UAC'ni o'chirish shart emas va tavsiya qilinmaydi.",
   },
   {
     q: "Aynan nima yoziladi?",
     a:
-      "Faol ilova nomi va undan foydalanish vaqti, qurilma holati (batareya, oxirgi ulanish), qoida hodisalari. Klaviatura bosilishi, skrinshot, mikrofon yoki shaxsiy xabarlar — yo’q.",
+      "Faol ilova nomi va undan foydalanish vaqti, qurilma holati (batareya, oxirgi ulanish), qoida hodisalari. Klaviatura bosilishi, skrinshot, mikrofon yoki shaxsiy xabarlar — yo'q.",
   },
   {
-    q: "Bola dasturni o’chira oladimi?",
+    q: "Bola dasturni o'chira oladimi?",
     a:
-      "Agent Windows xizmati sifatida ishlaydi va oddiy foydalanuvchi uni to’xtata olmaydi. Lekin u yashirin emas — bola tray belgisini va status oynasini ko’radi. O’chirishni ota-ona qiladi.",
+      "Agent Windows xizmati sifatida ishlaydi va oddiy foydalanuvchi uni to'xtata olmaydi. Lekin u yashirin emas — bola tray belgisini va status oynasini ko'radi. O'chirishni ota-ona qiladi.",
   },
   {
-    q: "Internet bo’lmasa ishlaydimi?",
+    q: "Internet bo'lmasa ishlaydimi?",
     a:
-      "Ha. Qoidalar lokal agentda saqlanadi va offline ham qo’llanadi. Ma’lumot internet qaytganda sinxronlanadi.",
+      "Ha. Qoidalar lokal agentda saqlanadi va offline ham qo'llanadi. Ma'lumot internet qaytganda sinxronlanadi.",
   },
   {
-    q: "Bir nechta bola yoki qurilma bo’lsa-chi?",
+    q: "Bir nechta bola yoki qurilma bo'lsa-chi?",
     a:
-      "Bitta oila hisobiga bir nechta bola va qurilma bog’lanadi. Panelda har bola alohida ko’rinadi, haftalik solishtirma bilan.",
+      "Bitta oila hisobiga bir nechta bola va qurilma bog'lanadi. Panelda har bola alohida ko'rinadi, haftalik solishtirma bilan.",
   },
   {
     q: "Narxi qancha?",
     a:
-      "MVP/Beta davrida bepul. Keyinchalik oilaviy obuna bo’ladi — mavjud sinov foydalanuvchilari oldindan xabardor qilinadi.",
+      "MVP/Beta davrida bepul. Keyinchalik oilaviy obuna bo'ladi — mavjud sinov foydalanuvchilari oldindan xabardor qilinadi.",
   },
 ];
