@@ -5,6 +5,11 @@ export type TopApp = {
   minutes: number;
 };
 
+export type DayBreakdown = {
+  date: string;
+  total_minutes: number;
+};
+
 export type DeviceSummary = {
   device_id: string;
   date: string;
@@ -12,6 +17,7 @@ export type DeviceSummary = {
   top_apps: TopApp[];
   device_status: "online" | "offline";
   last_sync: string | null;
+  breakdown?: DayBreakdown[];
 };
 
 export type Device = {
@@ -32,7 +38,13 @@ export async function resolvePostLoginRoute(): Promise<"Home" | "QRScan"> {
   return devices.some((d) => d.status === "linked") ? "Home" : "QRScan";
 }
 
-export async function getSummary(deviceId: string, date?: string): Promise<DeviceSummary> {
-  const query = date ? `?date=${date}` : "";
+export async function getSummary(
+  deviceId: string,
+  opts: { date?: string; range?: "day" | "week" | "month" } = {},
+): Promise<DeviceSummary> {
+  const params = new URLSearchParams();
+  if (opts.date) params.set("date", opts.date);
+  if (opts.range) params.set("range", opts.range);
+  const query = params.toString() ? `?${params}` : "";
   return apiFetch(`/api/tracking/summary/${deviceId}/${query}`);
 }
