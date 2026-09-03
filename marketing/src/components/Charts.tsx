@@ -1,6 +1,36 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
 // Static SVG charts styled to match the parent-web dashboard (same viewBox,
-// grid, axis and bar tokens). Presentational only — the numbers are a
-// representative sample for the marketing preview.
+// grid, axis and bar tokens). Sample data — a representative marketing
+// preview. Both animate in the first time they scroll into view.
+
+function useInView<T extends Element>() {
+  const ref = useRef<T>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || seen) return;
+    if (typeof IntersectionObserver === "undefined") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- defensive fallback for environments without IO
+      setSeen(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -15% 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [seen]);
+  return { ref, seen };
+}
 
 const WEEK = [
   { d: "Du", h: 2.1 },
@@ -13,16 +43,25 @@ const WEEK = [
 ];
 
 export function WeekBars() {
-  const maxH = 5; // hours, matches the "5s" top gridline
+  const { ref, seen } = useInView<SVGSVGElement>();
+  const maxH = 5;
   const x0 = 40;
   const x1 = 540;
   const top = 10;
   const bottom = 154;
   const band = (x1 - x0) / WEEK.length;
   const barW = 26;
+  const peak = Math.max(...WEEK.map((v) => v.h));
 
   return (
-    <svg className="graph" viewBox="0 0 560 190" preserveAspectRatio="xMidYMid meet" role="img" aria-label="7 kunlik ekran vaqti — namunaviy grafik">
+    <svg
+      ref={ref}
+      className="graph"
+      viewBox="0 0 560 190"
+      preserveAspectRatio="xMidYMid meet"
+      role="img"
+      aria-label="7 kunlik ekran vaqti — namunaviy grafik"
+    >
       <g stroke="var(--chart-grid)" strokeWidth="1">
         {[10, 46, 82, 118, 154].map((y) => (
           <line key={y} x1={x0} y1={y} x2={x1} y2={y} />
@@ -39,7 +78,7 @@ export function WeekBars() {
         {WEEK.map((w, i) => {
           const cx = x0 + band * i + band / 2;
           const barH = ((bottom - top) * w.h) / maxH;
-          const active = w.h === Math.max(...WEEK.map((v) => v.h));
+          const active = w.h === peak;
           return (
             <g key={w.d}>
               <rect
@@ -49,6 +88,12 @@ export function WeekBars() {
                 height={barH}
                 rx="6"
                 fill={active ? "var(--chart-bar-active)" : "var(--chart-bar)"}
+                style={{
+                  transformBox: "fill-box",
+                  transformOrigin: "bottom",
+                  transform: seen ? "scaleY(1)" : "scaleY(0)",
+                  transition: `transform .7s cubic-bezier(.2,.7,.2,1) ${i * 70}ms`,
+                }}
               />
               <text x={cx} y="174" fontFamily="Inter, sans-serif" fontSize="10" fill="var(--chart-axis)" textAnchor="middle">
                 {w.d}
@@ -62,13 +107,14 @@ export function WeekBars() {
 }
 
 const SLICES = [
-  { label: "Ta'lim", pct: 34, color: "var(--cat-teal)" },
-  { label: "O'yin", pct: 28, color: "var(--cat-blue)" },
+  { label: "Ta’lim", pct: 34, color: "var(--cat-teal)" },
+  { label: "O’yin", pct: 28, color: "var(--cat-blue)" },
   { label: "Ijtimoiy", pct: 22, color: "var(--cat-amber)" },
   { label: "Boshqa", pct: 16, color: "var(--cat-slate)" },
 ];
 
 export function CategoryDonut() {
+  const { ref, seen } = useInView<HTMLDivElement>();
   const C = 326.73; // r = 52
   const arcs = SLICES.map((s, i) => {
     const len = (C * s.pct) / 100;
@@ -76,7 +122,7 @@ export function CategoryDonut() {
     return { ...s, len, offset };
   });
   return (
-    <div className="donut-wrap">
+    <div className="donut-wrap" ref={ref}>
       <div className="donut">
         <svg viewBox="0 0 120 120" width="150" height="150" role="img" aria-label="Faoliyat kategoriyalari — namunaviy">
           <g transform="rotate(-90 60 60)" fill="none">
@@ -92,6 +138,12 @@ export function CategoryDonut() {
                 strokeDasharray={`${Math.max(a.len - 1.5, 0)} ${C - a.len + 1.5}`}
                 strokeDashoffset={a.offset}
                 strokeLinecap="round"
+                style={{
+                  opacity: seen ? 1 : 0,
+                  transform: seen ? "none" : "scale(.9)",
+                  transformOrigin: "center",
+                  transition: "opacity .5s ease, transform .6s cubic-bezier(.2,.7,.2,1)",
+                }}
               />
             ))}
           </g>
@@ -102,8 +154,8 @@ export function CategoryDonut() {
         </div>
       </div>
       <ul className="legend">
-        {SLICES.map((s) => (
-          <li key={s.label}>
+        {SLICES.map((s, i) => (
+          <li key={s.label} style={{ opacity: seen ? 1 : 0, transition: `opacity .4s ease ${200 + i * 90}ms` }}>
             <i style={{ background: s.color }} />
             {s.label}
             <span>{s.pct}%</span>

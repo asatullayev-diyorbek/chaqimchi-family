@@ -41,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="uz" className={inter.variable}>
       <body>
+        <div className="bg-glow-3" aria-hidden />
         {children}
         {/* Real icon set (Solar) — same source the dashboard uses. */}
         <Script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js" strategy="afterInteractive" />

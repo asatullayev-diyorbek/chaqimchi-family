@@ -1,8 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Reveal from "@/components/Reveal";
+import SiteNav from "@/components/SiteNav";
+import CountUp from "@/components/CountUp";
 import { WeekBars, CategoryDonut } from "@/components/Charts";
-import { SITE, PROMISES, FEATURES, STEPS, FAQ } from "@/lib/site";
+import {
+  SITE,
+  PROMISES,
+  FEATURE_BLOCKS,
+  FEATURE_CARDS,
+  STEPS,
+  CHECKS,
+  PRICING,
+  PLATFORMS,
+  FAQ,
+} from "@/lib/site";
 
 export const metadata: Metadata = {
   description:
@@ -17,44 +29,62 @@ function Check() {
 }
 const DownloadIcon = <iconify-icon icon="solar:download-minimalistic-linear" aria-hidden />;
 
+/* ---- small live-looking previews for the three feature blocks ---- */
+
+function BlockPreview({ kind }: { kind: string }) {
+  if (kind === "limit") {
+    return (
+      <div className="fp">
+        <div className="fp-head"><span>Kunlik limit</span><b>3s 24d / 4s</b></div>
+        <div className="meter"><i style={{ "--w": "85%" } as React.CSSProperties} /></div>
+        <div className="fp-tags">
+          <span>Ish kuni · 4s</span>
+          <span>Dam olish · 6s</span>
+        </div>
+      </div>
+    );
+  }
+  if (kind === "quiet") {
+    return (
+      <div className="fp">
+        <div className="fp-head"><span>Dam olish vaqti</span><b>22:00 → 07:00</b></div>
+        <div className="fp-clock">
+          <Ico name="solar:moon-sleep-bold" />
+          <div className="fp-track"><i style={{ "--w": "100%" } as React.CSSProperties} /></div>
+        </div>
+        <div className="fp-note">Ekran xushmuomala tarzda bloklangan</div>
+      </div>
+    );
+  }
+  return (
+    <div className="fp">
+      <div className="fp-head"><span>Cheklangan</span><b>2 ta ilova</b></div>
+      <div className="fp-row"><span className="chip-ico brand"><iconify-icon icon="logos:steam-icon" /></span>steam.exe<em>bloklangan</em></div>
+      <div className="fp-row"><span className="chip-ico brand"><iconify-icon icon="logos:discord-icon" /></span>discord.exe<em>bloklangan</em></div>
+    </div>
+  );
+}
+
 export default function Page() {
   return (
     <>
-      <header className="nav">
-        <div className="wrap nav-inner">
-          <Link className="brand" href="/">
-            <span className="brand-mark">C</span>
-            ChaqimchiAI Family
-          </Link>
-          <nav className="nav-links">
-            <a href="#imkoniyatlar">Imkoniyatlar</a>
-            <a href="#qanday">Qanday ishlaydi</a>
-            <a href="#bola">Bola nima ko&apos;radi</a>
-            <a href="#narx">Narx</a>
-            <a href="#faq">FAQ</a>
-          </nav>
-          <div className="nav-cta">
-            <a className="btn btn-ghost" href={SITE.loginUrl}>Kirish</a>
-            <a className="btn btn-primary" href={SITE.downloadUrl}>{DownloadIcon}Yuklab olish</a>
-          </div>
-        </div>
-      </header>
+      <SiteNav />
 
       <main>
-        {/* HERO */}
+        {/* ================= HERO ================= */}
         <section className="hero">
           <div className="wrap hero-grid">
-            <div>
+            <div className="hero-copy">
               <span className="badge"><span className="dot" /> Windows 10/11 · MVP/Beta davrida bepul</span>
               <h1>
                 Oila uchun <span className="grad">ochiq</span> ekran-vaqt qoidalari
               </h1>
-              <p className="lead" style={{ maxWidth: "46ch" }}>
+              <p className="lead">
                 Kunlik limit, dam olish soatlari va ilova cheklovlarini oddiy tilda boshqaring.
-                Bola ham qoidalarni va qolgan vaqtни ko&apos;rib turadi — <b>yashirin kuzatuv emas</b>.
+                Bola ham qoidalarni va qolgan vaqtini o&apos;z ekranida ko&apos;radi.
               </p>
               <div className="hero-cta">
-                <a className="btn btn-primary btn-lg" href={SITE.downloadUrl}>{DownloadIcon}Windows uchun yuklab olish</a>
+                <a className="btn btn-primary btn-lg btn-glow" href={SITE.downloadUrl}>{DownloadIcon}Windows uchun yuklab olish</a>
                 <a className="btn btn-ghost btn-lg" href={SITE.signupUrl}>Bepul boshlash</a>
               </div>
               <p className="hero-note">
@@ -65,37 +95,37 @@ export default function Page() {
             </div>
 
             <div className="showcase">
-              <div className="glass panel">
+              <div className="glass panel hero-anim">
                 <div className="panel-bar">
                   <i /><i /><i /><span>Bugun · Aziz</span>
                 </div>
                 <div className="tiles">
-                  <div className="tile">
+                  <div className="tile hp" style={{ "--d": "120ms" } as React.CSSProperties}>
                     <div className="k">Bugungi ekran vaqti</div>
                     <div className="v">2s 40d</div>
-                    <div className="meter"><i style={{ width: "66%" }} /></div>
+                    <div className="meter"><i style={{ "--w": "66%" } as React.CSSProperties} /></div>
                   </div>
-                  <div className="tile">
+                  <div className="tile hp" style={{ "--d": "220ms" } as React.CSSProperties}>
                     <div className="k">Kunlik limit</div>
                     <div className="v">4 soat</div>
-                    <div className="meter warn"><i style={{ width: "66%" }} /></div>
+                    <div className="meter warn"><i style={{ "--w": "66%" } as React.CSSProperties} /></div>
                   </div>
                 </div>
                 <div className="rows">
-                  <div className="row">
+                  <div className="row hp" style={{ "--d": "340ms" } as React.CSSProperties}>
                     <span className="app"><span className="chip-ico brand"><iconify-icon icon="logos:chrome" /></span>Chrome</span>
                     <b>58 daq</b>
                   </div>
-                  <div className="row">
+                  <div className="row hp" style={{ "--d": "430ms" } as React.CSSProperties}>
                     <span className="app"><span className="chip-ico brand"><iconify-icon icon="simple-icons:minecraft" style={{ color: "#68b247" }} /></span>Minecraft</span>
                     <b>44 daq</b>
                   </div>
-                  <div className="row">
+                  <div className="row hp" style={{ "--d": "520ms" } as React.CSSProperties}>
                     <span className="app"><span className="chip-ico brand"><iconify-icon icon="logos:youtube-icon" /></span>YouTube</span>
                     <b>31 daq</b>
                   </div>
                 </div>
-                <div className="strip">
+                <div className="strip hp" style={{ "--d": "620ms" } as React.CSSProperties}>
                   <Check />
                   Dam olish vaqti 22:00–07:00 — faol
                 </div>
@@ -111,36 +141,40 @@ export default function Page() {
           </div>
         </section>
 
-        {/* TRUST STRIP */}
+        {/* ================= TRUST STRIP ================= */}
         <div className="trust">
-          <div className="wrap trust-inner">
+          <Reveal as="div" className="wrap trust-inner">
             <span className="trust-item"><Ico name="solar:shield-check-linear" /> Shaffof rozilik</span>
             <span className="trust-item"><Ico name="solar:lock-keyhole-minimalistic-linear" /> Klaviatura/skrinshot yozilmaydi</span>
             <span className="trust-item"><Ico name="solar:wi-fi-router-minimalistic-linear" /> Offline barqaror</span>
             <span className="trust-item"><Ico name="solar:plain-2-linear" /> Telegram xabarlar</span>
-          </div>
+          </Reveal>
         </div>
 
-        {/* PROMISES */}
+        {/* ================= PROMISES ================= */}
         <section>
           <div className="wrap">
             <Reveal>
               <span className="eyebrow">Nega ChaqimchiAI</span>
-              <h2>Uchta teng va&apos;da</h2>
+              <h2>Ota-ona uchun xotirjamlik, bola uchun ochiq qoidalar</h2>
             </Reveal>
             <div className="grid grid-3">
               {PROMISES.map((p, i) => (
-                <Reveal as="article" className="glass card" key={p.title} delay={i * 80}>
+                <Reveal as="article" className="glass card value-card" key={p.title} delay={i * 90}>
                   <span className={`ico ${i === 2 ? "teal" : ""}`}><Ico name={p.icon} /></span>
                   <h3>{p.title}</h3>
-                  <p>{p.body}</p>
+                  <ul>
+                    {p.points.map((pt) => (
+                      <li key={pt}><Check />{pt}</li>
+                    ))}
+                  </ul>
                 </Reveal>
               ))}
             </div>
           </div>
         </section>
 
-        {/* TRANSPARENCY */}
+        {/* ================= PRIVACY / MUHIM ================= */}
         <section>
           <div className="wrap">
             <Reveal as="div" className="glass band">
@@ -150,31 +184,46 @@ export default function Page() {
                   <h2>Bu yashirin kuzatuv yoki jazolash vositasi emas</h2>
                   <p className="section-lead">
                     ChaqimchiAI oilalarga bola kompyuteridan foydalanish bo&apos;yicha
-                    <b> ochiq kelishilgan </b> qoidalarni boshqarishga yordam beradi.
+                    <b> ochiq kelishilgan </b> raqamli tartibni boshqarishga yordam beradi.
                   </p>
                 </div>
                 <ul className="checks">
-                  <li><span className="tick"><Check /></span>Bola tray belgisi va status oynasi orqali agent borligini ko&apos;radi.</li>
-                  <li><span className="tick"><Check /></span>Bloklash oynasi xushmuomala: «Bugungi vaqting tugadi, ertaga davom etasan».</li>
-                  <li><span className="tick"><Check /></span>Klaviatura bosilishi, skrinshot, mikrofon, shaxsiy xabarlar — hech qachon yozilmaydi.</li>
-                  <li><span className="tick"><Check /></span>Yig&apos;iladigan narsa: ilova nomi + foydalanish vaqti, qurilma holati, qoida hodisalari.</li>
+                  {CHECKS.map((c, i) => (
+                    <li key={c} style={{ "--d": `${i * 90}ms` } as React.CSSProperties}>
+                      <span className="tick"><Check /></span>{c}
+                    </li>
+                  ))}
                 </ul>
               </div>
             </Reveal>
           </div>
         </section>
 
-        {/* FEATURES */}
+        {/* ================= FEATURES ================= */}
         <section id="imkoniyatlar">
           <div className="wrap">
             <Reveal>
               <span className="eyebrow">Imkoniyatlar</span>
               <h2>Bir panelda — hammasi sokin</h2>
-              <p className="section-lead">Ota-ona web panelida yoki mobil ilovada. O&apos;zgarishlar qurilmaga o&apos;zi yetadi, offline ham ishlaydi.</p>
+              <p className="section-lead">O&apos;zgarishlar qurilmaga o&apos;zi yetadi, offline ham ishlaydi.</p>
             </Reveal>
-            <div className="grid grid-3">
-              {FEATURES.map((f, i) => (
-                <Reveal as="article" className="glass card" key={f.title} delay={(i % 3) * 80}>
+
+            <div className="fblocks">
+              {FEATURE_BLOCKS.map((f, i) => (
+                <Reveal as="article" className={`glass fblock ${i % 2 ? "rev" : ""}`} key={f.title} delay={40}>
+                  <div className="fblock-text">
+                    <span className="pill">{f.tag}</span>
+                    <h3>{f.title}</h3>
+                    <p>{f.body}</p>
+                  </div>
+                  <div className="fblock-preview"><BlockPreview kind={f.preview} /></div>
+                </Reveal>
+              ))}
+            </div>
+
+            <div className="grid grid-3 fcards">
+              {FEATURE_CARDS.map((f, i) => (
+                <Reveal as="article" className="glass card" key={f.title} delay={i * 80}>
                   <span className="ico"><Ico name={f.icon} /></span>
                   <span className="pill">{f.tag}</span>
                   <h3>{f.title}</h3>
@@ -185,7 +234,7 @@ export default function Page() {
           </div>
         </section>
 
-        {/* STEPS */}
+        {/* ================= HOW IT WORKS ================= */}
         <section id="qanday">
           <div className="wrap">
             <Reveal>
@@ -194,61 +243,93 @@ export default function Page() {
             </Reveal>
             <div className="steps">
               {STEPS.map((s, i) => (
-                <Reveal as="article" className="glass step" key={s.n} delay={i * 90}>
+                <Reveal as="article" className="glass step" key={s.n} delay={i * 110}>
                   <span className="n">{s.n}</span>
                   <h3>{s.title}</h3>
                   <p>{s.body}</p>
+                  {i < STEPS.length - 1 && <span className="step-link" aria-hidden><Ico name="solar:arrow-right-linear" /></span>}
                 </Reveal>
               ))}
             </div>
           </div>
         </section>
 
-        {/* PANEL PREVIEW */}
+        {/* ================= PRODUCT DEMO ================= */}
         <section id="panel">
           <div className="wrap">
             <Reveal>
-              <span className="eyebrow">Panel ko&apos;rinishi</span>
+              <span className="eyebrow">Panel</span>
               <h2>Bir qarashda — bugun, hafta, kategoriyalar</h2>
-              <p className="section-lead">Ota-ona paneli har ochilganda asosiy savollarga tez javob beradi: qancha vaqt, qaysi ilova, muhim alert bormi.</p>
+              <p className="section-lead">Ota-ona paneli har ochilganda asosiy savollarga javob beradi: qancha vaqt, qaysi ilova, muhim xabar bormi.</p>
             </Reveal>
-            <div className="preview">
-              <Reveal as="div" className="glass">
-                <div className="ch-head"><h3>7 kunlik statistika</h3><span>o&apos;rtacha 3s 24d</span></div>
-                <WeekBars />
-              </Reveal>
-              <Reveal as="div" className="glass" delay={100}>
-                <div className="ch-head"><h3>Faoliyat kategoriyalari</h3><span>bugun</span></div>
-                <CategoryDonut />
-              </Reveal>
-            </div>
+            <Reveal as="div" className="browser">
+              <div className="browser-bar">
+                <i /><i /><i />
+                <span className="url">guard.chaqimchi-ai.uz</span>
+              </div>
+              <div className="browser-body">
+                <div className="bcol bcol-a">
+                  <div className="bcard">
+                    <div className="ch-head"><h3>7 kunlik statistika</h3><span>o&apos;rtacha 3s 24d</span></div>
+                    <WeekBars />
+                  </div>
+                  <div className="bcard">
+                    <div className="ch-head"><h3>So&apos;nggi faoliyat</h3><span>bugun</span></div>
+                    <div className="rows plain">
+                      <div className="row"><span className="app"><span className="chip-ico brand"><iconify-icon icon="logos:chrome" /></span>Chrome</span><b>58 daq</b></div>
+                      <div className="row"><span className="app"><span className="chip-ico brand"><iconify-icon icon="simple-icons:minecraft" style={{ color: "#68b247" }} /></span>Minecraft</span><b>44 daq</b></div>
+                      <div className="row"><span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--warning) 18%, transparent)", color: "var(--warning)" }}><iconify-icon icon="solar:danger-triangle-bold" /></span>Limit tugadi</span><b>19:40</b></div>
+                    </div>
+                  </div>
+                </div>
+                <div className="bcol">
+                  <div className="bcard">
+                    <div className="ch-head"><h3>Faoliyat kategoriyalari</h3><span>bugun</span></div>
+                    <CategoryDonut />
+                  </div>
+                  <div className="bcard bcard-status">
+                    <div className="ch-head"><h3>Qurilma</h3><span className="ok">onlayn</span></div>
+                    <div className="statline"><Ico name="solar:battery-half-linear" /> Batareya 62%</div>
+                    <div className="statline"><Ico name="solar:refresh-linear" /> Oxirgi sinx: 2 daq oldin</div>
+                    <div className="statline"><Ico name="solar:shield-check-linear" /> 3 ta faol qoida</div>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
           </div>
         </section>
 
-        {/* CHILD SIDE */}
+        {/* ================= CHILD SIDE ================= */}
         <section id="bola">
           <div className="wrap">
             <Reveal>
               <span className="eyebrow">Bola tomoni</span>
               <h2>Bola ham xuddi shu qoidalarni ko&apos;radi</h2>
-              <p className="section-lead">Ota-ona qoidani belgilaydi — bola qolgan vaqtни, cheklovlarni va nima kuzatilishini o&apos;z ekranida ko&apos;radi.</p>
+              <p className="section-lead">Ota-ona nima belgilasa, bola ham nimaga amal qilayotganini ko&apos;radi. Bu — kelishuv, kuzatuv emas.</p>
             </Reveal>
             <div className="duo">
-              <Reveal as="div" className="glass">
+              <Reveal as="div" className="glass duo-card">
                 <div className="cap"><span className="tag">Ota-ona</span> Web panel</div>
                 <div className="tiles">
-                  <div className="tile"><div className="k">Haftalik o&apos;rtacha</div><div className="v">3s 10d</div><div className="meter"><i style={{ width: "52%" }} /></div></div>
+                  <div className="tile"><div className="k">Haftalik o&apos;rtacha</div><div className="v">3s 10d</div><div className="meter"><i style={{ "--w": "52%" } as React.CSSProperties} /></div></div>
                   <div className="tile"><div className="k">Cheklangan ilova</div><div className="v">2 ta</div></div>
                 </div>
                 <div className="rows" style={{ marginTop: 13 }}>
-                  <div className="row"><span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--warning) 18%, transparent)", color: "var(--warning)" }}>!</span>Limit tugadi — Aziz</span><b>19:40</b></div>
-                  <div className="row"><span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--brand) 15%, transparent)", color: "var(--brand)" }}>◷</span>Dam olish vaqti boshlandi</span><b>22:00</b></div>
+                  <div className="row"><span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--warning) 18%, transparent)", color: "var(--warning)" }}><iconify-icon icon="solar:danger-triangle-bold" /></span>Limit tugadi — Aziz</span><b>19:40</b></div>
+                  <div className="row"><span className="app"><span className="chip-ico" style={{ background: "color-mix(in srgb, var(--brand) 15%, transparent)", color: "var(--brand)" }}><iconify-icon icon="solar:moon-sleep-bold" /></span>Dam olish vaqti boshlandi</span><b>22:00</b></div>
                 </div>
               </Reveal>
-              <Reveal as="div" className="glass" delay={100}>
+
+              <div className="duo-link" aria-hidden>
+                <span className="duo-link-line" />
+                <span className="duo-link-pill">Kelishilgan qoida</span>
+                <span className="duo-link-line" />
+              </div>
+
+              <Reveal as="div" className="glass duo-card" delay={120}>
                 <div className="cap"><span className="tag">Bola</span> Windows ekrani</div>
                 <div className="block-mock">
-                  <span className="em">🌙</span>
+                  <span className="em"><Ico name="solar:moon-sleep-bold" /></span>
                   <strong>Bugungi ekran vaqting tugadi</strong>
                   <span>Ertaga davom etasan! Savoling bo&apos;lsa, ota-onangga murojaat qil.</span>
                 </div>
@@ -257,51 +338,50 @@ export default function Page() {
           </div>
         </section>
 
-        {/* STATS + QUOTE */}
+        {/* ================= STATS ================= */}
         <section>
           <div className="wrap">
             <div className="stats">
-              <Reveal as="div" className="glass stat"><div className="big grad">5&nbsp;daq</div><div className="lbl">o&apos;rnatishdan birinchi qoidagacha</div></Reveal>
-              <Reveal as="div" className="glass stat" delay={80}><div className="big grad">0</div><div className="lbl">skrinshot, klaviatura yoki mikrofon</div></Reveal>
-              <Reveal as="div" className="glass stat" delay={160}><div className="big grad">24/7</div><div className="lbl">offline ham qoidalar qo&apos;llanadi</div></Reveal>
+              <Reveal as="div" className="glass stat">
+                <div className="big grad"><CountUp to={5} /> daqiqa</div>
+                <div className="lbl">O&apos;rnatishdan birinchi qoidagacha</div>
+              </Reveal>
+              <Reveal as="div" className="glass stat" delay={90}>
+                <div className="big grad"><CountUp to={0} /></div>
+                <div className="lbl">Skrinshot, klaviatura yoki mikrofon yozuvi</div>
+              </Reveal>
+              <Reveal as="div" className="glass stat" delay={180}>
+                <div className="big grad">24/7</div>
+                <div className="lbl">Offline ham qoidalar ishlaydi</div>
+              </Reveal>
             </div>
-            <Reveal as="div" className="glass quote">
-              <div className="mark">&ldquo;</div>
-              <p>Farzandim bilan &laquo;dastur seni kuzatyapti&raquo; deb janjallashmaymiz — u ham ekranida qoidani ko&apos;rib turadi. Bu kelishuvni osonlashtirdi.</p>
-              <div className="by">— Beta sinovidagi ota-ona</div>
-            </Reveal>
           </div>
         </section>
 
-        {/* PLATFORMS */}
+        {/* ================= PLATFORMS ================= */}
         <section id="platformalar">
           <div className="wrap">
             <Reveal>
               <span className="eyebrow">Platformalar</span>
               <h2>Bola qurilmasida yengil agent, ota-onada to&apos;liq panel</h2>
             </Reveal>
-            <div className="grid grid-2">
-              <Reveal as="article" className="glass plat">
-                <span className="ico"><Ico name="solar:monitor-linear" /></span>
-                <div>
-                  <small>Bola qurilmasi</small>
-                  <h3 style={{ marginTop: 4 }}>Windows agent</h3>
-                  <p>Windows xizmati sifatida ishlaydi, qoidalarni lokal qo&apos;llaydi. Tray status oynasi, xushmuomala bloklash ekrani, OTA orqali avto-yangilanish.</p>
-                </div>
-              </Reveal>
-              <Reveal as="article" className="glass plat" delay={100}>
-                <span className="ico teal"><Ico name="solar:smartphone-linear" /></span>
-                <div>
-                  <small>Ota-ona</small>
-                  <h3 style={{ marginTop: 4 }}>Web panel + mobil ilova</h3>
-                  <p>Kundalik holat, faoliyat, qoidalar va alertlar. Telegram bot orqali panelni ochmasdan nazorat. Bir nechta bola va qurilma.</p>
-                </div>
-              </Reveal>
+            <div className="grid grid-3">
+              {PLATFORMS.map((p, i) => (
+                <Reveal as="article" className="glass card plat-card" key={p.title} delay={i * 90}>
+                  <span className={`ico ${i === 2 ? "teal" : ""}`}><Ico name={p.icon} /></span>
+                  <div className="plat-row">
+                    <small>{p.tag}</small>
+                    <span className={`plat-status ${p.status === "Mavjud" ? "live" : "soon"}`}>{p.status}</span>
+                  </div>
+                  <h3>{p.title}</h3>
+                  <p>{p.body}</p>
+                </Reveal>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* PRICING */}
+        {/* ================= PRICING ================= */}
         <section id="narx">
           <div className="wrap center">
             <Reveal>
@@ -310,31 +390,32 @@ export default function Page() {
             </Reveal>
             <Reveal as="div" className="price">
               <div className="price-inner">
-                <div className="amt">0 <span>so&apos;m / oy</span></div>
-                <p>Sinov davri. Keyinchalik oilaviy obuna bo&apos;ladi — mavjud foydalanuvchilarni oldindan xabardor qilamiz.</p>
+                <div className="price-top">
+                  <span className="pill">MVP / Beta</span>
+                  <div className="amt">0 <span>so&apos;m / oy</span></div>
+                  <p>Sinov davri. Keyingi narx aniqlanganda oldindan xabar beramiz.</p>
+                </div>
                 <ul>
-                  <li><Check /> Cheksiz qoidalar: limit, dam olish vaqti, ilova cheklovlari</li>
-                  <li><Check /> Bir nechta bola va qurilma</li>
-                  <li><Check /> Faoliyat tarixi + CSV eksport</li>
-                  <li><Check /> Telegram bot va kunlik hisobot</li>
-                  <li><Check /> Avtomatik yangilanishlar</li>
+                  {PRICING.map((item) => (
+                    <li key={item}><Check /> {item}</li>
+                  ))}
                 </ul>
-                <a className="btn btn-primary btn-lg" href={SITE.signupUrl} style={{ width: "100%", justifyContent: "center" }}>Bepul boshlash</a>
+                <a className="btn btn-primary btn-lg" href={SITE.signupUrl}>Bepul boshlash</a>
               </div>
             </Reveal>
           </div>
         </section>
 
-        {/* FAQ */}
+        {/* ================= FAQ ================= */}
         <section id="faq">
-          <div className="wrap" style={{ maxWidth: 800 }}>
+          <div className="wrap faq-wrap">
             <Reveal>
               <span className="eyebrow">FAQ</span>
               <h2>Ko&apos;p beriladigan savollar</h2>
             </Reveal>
             <Reveal as="div" className="faq">
-              {FAQ.map((item) => (
-                <details key={item.q}>
+              {FAQ.map((item, i) => (
+                <details key={item.q} open={i === 0}>
                   <summary>{item.q}</summary>
                   <p>{item.a}</p>
                 </details>
@@ -343,37 +424,55 @@ export default function Page() {
           </div>
         </section>
 
-        {/* FINAL CTA */}
-        <section>
+        {/* ================= FINAL CTA ================= */}
+        <section className="cta-section">
           <div className="wrap">
-            <Reveal as="div" className="glass cta">
-              <h2>Bugundanoq ochiq qoidalar bilan boshlang</h2>
-              <p className="section-lead" style={{ marginInline: "auto" }}>
-                Windows dasturini yuklab oling, qurilmani QR bilan bog&apos;lang va birinchi qoidani belgilang.
-              </p>
+            <Reveal as="div" className="cta">
+              <h2>Farzandingizning ekran vaqtini bugundan tartibga soling</h2>
+              <p>Ochiq qoidalar. Xotirjam nazorat. Kerakli ma&apos;lumotlar — bir joyda.</p>
               <div className="hero-cta">
-                <a className="btn btn-primary btn-lg" href={SITE.downloadUrl}>{DownloadIcon}Windows uchun yuklab olish</a>
-                <a className="btn btn-ghost btn-lg" href={SITE.botUrl}>Telegram bot</a>
+                <a className="btn btn-primary btn-lg" href={SITE.signupUrl}>Bepul boshlash</a>
+                <a className="btn btn-ghost btn-lg" href={SITE.downloadUrl}>{DownloadIcon}Windows uchun yuklab olish</a>
               </div>
             </Reveal>
           </div>
         </section>
       </main>
 
+      {/* ================= FOOTER ================= */}
       <footer>
-        <div className="wrap foot-grid">
-          <div>
-            <div className="brand" style={{ marginBottom: 10 }}>
+        <div className="wrap foot-main">
+          <div className="foot-brand">
+            <div className="brand">
               <span className="brand-mark">C</span> ChaqimchiAI Family
             </div>
-            © {new Date().getFullYear()} ChaqimchiAI · Toshkent
+            <p>Ota-ona va bola o&apos;rtasidagi ekran-vaqt qoidalarini ochiq boshqarish vositasi.</p>
           </div>
-          <div className="foot-links">
-            <a href={SITE.loginUrl}>Panelga kirish</a>
-            <a href={SITE.downloadUrl}>Yuklab olish</a>
-            <a href={SITE.botUrl}>Telegram bot</a>
-            <a href={`mailto:${SITE.supportEmail}`}>Aloqa</a>
+          <div className="foot-cols">
+            <div>
+              <h4>Mahsulot</h4>
+              <a href="#imkoniyatlar">Imkoniyatlar</a>
+              <a href="#qanday">Qanday ishlaydi</a>
+              <a href="#narx">Narx</a>
+              <a href="#faq">FAQ</a>
+            </div>
+            <div>
+              <h4>Boshlash</h4>
+              <a href={SITE.signupUrl}>Bepul boshlash</a>
+              <a href={SITE.downloadUrl}>Yuklab olish</a>
+              <a href={SITE.loginUrl}>Kirish</a>
+              <a href={SITE.botUrl}>Telegram bot</a>
+            </div>
+            <div>
+              <h4>Huquqiy</h4>
+              <Link href={SITE.privacyUrl}>Maxfiylik siyosati</Link>
+              <Link href={SITE.termsUrl}>Foydalanish shartlari</Link>
+              <a href={`mailto:${SITE.supportEmail}`}>Aloqa</a>
+            </div>
           </div>
+        </div>
+        <div className="wrap foot-bottom">
+          © {new Date().getFullYear()} ChaqimchiAI · Toshkent
         </div>
       </footer>
     </>
