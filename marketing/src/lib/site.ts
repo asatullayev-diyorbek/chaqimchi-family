@@ -169,7 +169,6 @@ export const DATA_NOT_COLLECTED = [
   "Klaviatura yozuvi",
   "Mikrofon",
   "Shaxsiy xabarlar",
-  "Brauzer tarixi mazmuni",
 ];
 
 export const PRICING = [
