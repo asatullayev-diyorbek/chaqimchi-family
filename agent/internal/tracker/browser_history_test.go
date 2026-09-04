@@ -64,6 +64,17 @@ func TestEmitBrowserVisit_DomainOnly(t *testing.T) {
 	}
 }
 
+func TestVisitKey_ScopedToUser(t *testing.T) {
+	a := visitKey(browserVisit{User: "Robbit", Browser: "chrome", Profile: "Default"})
+	b := visitKey(browserVisit{User: "Aziz", Browser: "chrome", Profile: "Default"})
+	if a == b {
+		t.Fatalf("two users' chrome/Default must not share a checkpoint key: %q", a)
+	}
+	if a != "Robbit/chrome/Default" {
+		t.Fatalf("unexpected key format: %q", a)
+	}
+}
+
 func TestCheckpointsRoundTrip(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "cp.json")
 	c := checkpoints{"chrome/Default": time.Date(2026, 9, 1, 12, 0, 0, 0, time.UTC)}

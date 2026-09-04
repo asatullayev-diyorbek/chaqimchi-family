@@ -26,6 +26,7 @@ import (
 
 // browserVisit is one page load observed in a browser's history DB.
 type browserVisit struct {
+	User      string        // Windows account the profile belongs to — for the checkpoint key
 	Browser   string        // "chrome", "edge", "brave", "firefox" — for the checkpoint key
 	Profile   string        // e.g. "Default", "Profile 1"
 	URL       string        // full URL, used only to derive the host; never sent
@@ -33,8 +34,15 @@ type browserVisit struct {
 	Duration  time.Duration // 0 when the browser doesn't record it
 }
 
-// checkpoints maps "<browser>/<profile>" to the newest visit time already
-// emitted, so a restart neither re-sends nor skips visits.
+// visitKey is the checkpoint map key for a visit: the browser profile scoped
+// to the Windows account it belongs to, since the SYSTEM service reads every
+// user's profile and two children could both have a "chrome/Default".
+func visitKey(v browserVisit) string {
+	return v.User + "/" + v.Browser + "/" + v.Profile
+}
+
+// checkpoints maps visitKey() to the newest visit time already emitted, so a
+// restart neither re-sends nor skips visits.
 type checkpoints map[string]time.Time
 
 // initialBackfill bounds the very first read of a browser we've never seen:
@@ -48,7 +56,7 @@ func RunBrowserHistory(ctx context.Context, store *buffer.Store, dataDir string,
 	ckptPath := filepath.Join(dataDir, "browser_history.json")
 	ckpts := loadCheckpoints(ckptPath)
 
-	poll := func() {
+	poll := func(first bool) {
 		visits, err := collectBrowserVisits(ckpts)
 		if err != nil {
 			log.Printf("browser history: %v", err)
@@ -58,7 +66,7 @@ func RunBrowserHistory(ctx context.Context, store *buffer.Store, dataDir string,
 			if emitBrowserVisit(store, v) {
 				emitted++
 			}
-			key := v.Browser + "/" + v.Profile
+			key := visitKey(v)
 			if v.VisitedAt.After(ckpts[key]) {
 				ckpts[key] = v.VisitedAt
 			}
@@ -66,10 +74,14 @@ func RunBrowserHistory(ctx context.Context, store *buffer.Store, dataDir string,
 		if emitted > 0 {
 			saveCheckpoints(ckptPath, ckpts)
 			log.Printf("browser history: %d visit(s) recorded", emitted)
+		} else if first {
+			// One line on startup so "is the collector even seeing a
+			// browser?" is answerable from the log alone.
+			log.Printf("browser history: first scan — %d visit(s) found, 0 new", len(visits))
 		}
 	}
 
-	poll()
+	poll(true)
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
@@ -77,7 +89,7 @@ func RunBrowserHistory(ctx context.Context, store *buffer.Store, dataDir string,
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			poll()
+			poll(false)
 		}
 	}
 }

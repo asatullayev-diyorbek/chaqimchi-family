@@ -245,7 +245,11 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 		func(lv *updater.LatestVersion) {
 			log.Printf("update available: %s -> %s", version, lv.Version)
 			if err := updater.Apply(ctx, lv, version, dataDir); err != nil {
+				// Download / verify / smoke-test failures only ever hit the
+				// log otherwise (rollback is the only path that reports).
+				// Surface them so a stuck update is visible on the dashboard.
 				log.Printf("applying update %s: %v", lv.Version, err)
+				reportAgentEvent("agent_update_failed", fmt.Sprintf("%s -> %s: %v", version, lv.Version, err))
 				return
 			}
 			log.Printf("update %s staged and swapped; stopping for service restart", lv.Version)

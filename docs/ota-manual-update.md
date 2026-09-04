@@ -110,14 +110,39 @@ Authorization: Device <device_id>:<device_secret>
 
 ---
 
-## 3. OTA'ni kodda mustahkamlash (keyingi ish)
+## 3. Aniqlangan sabab + kod tuzatishlari — 2026-09-04
 
-`agent/internal/updater/apply_windows.go`:
+Real diagnostika (`agent.log`):
 
-- **Apply xatosini serverga bildirish** — hozir download/verify/smoke xatolari
-  faqat `log.Printf` bo'ladi. `reportAgentEvent("agent_update_failed", err)`
-  chaqirilsa, dashboard'dan ko'rinardi (hozir faqat `rollback()` yuboradi).
-- **Defender bilan kelishuv** — smoke-test'dan oldin `Unblock-File` ekvivalenti
-  yoki yangi `.exe` ni Program Files ichida yozib, keyin ishga tushirish.
-- Uzoq muddatli: **Authenticode imzo** (`docs/windows-distribution.md` §"Code
-  signing mavjud bo'lgach").
+```
+13:01:01  update available: 0.4.0-rc.5 -> 0.5.0        ← poll ISHLADI
+13:04:18  applying update 0.5.0: reading update body:
+          read tcp ...->185.199.108.133:443: wsarecv:
+          An existing connection was forcibly closed    ← GitHub yuklab olish uzildi
+```
+
+**Defender emas.** `Get-MpThreat` faqat eski Inno `Setup.exe`ni ko'rsatadi;
+agent binariysi toza. Sabab: **transient tarmoq uzilishi** GitHub asset
+yuklashda + retry yo'q + serverga event yo'q.
+
+Bundan tashqari, `0.5.0`ni qo'lda o'rnatgach ma'lum bo'ldi: **brauzer tarixi
+umuman yig'ilmaydi** — bu alohida, chuqurroq xato (Bug #3 turkumidan).
+
+### Tuzatildi (commit — quyida)
+
+1. **`updater.download()` — retry** (`apply_windows.go`): 3 urinish, backoff bilan.
+   Tarmoq xatosi / mid-stream uzilish / 5xx / 429 → qayta urinadi; 4xx → yo'q.
+   `TestDownload_*` (3 test) — mid-stream drop → 3-urinishda tiklanadi.
+2. **Apply xatosi serverga bildiriladi** (`cmd/agent/main.go`): download / verify
+   / smoke xatosi endi `reportAgentEvent("agent_update_failed", ...)` yuboradi
+   (avval faqat `rollback()` yuborardi → stuck update dashboard'da ko'rinmasdi).
+3. **Brauzer tarixi Session 0 xatosi** (`browser_history_windows.go`):
+   `os.Getenv("LOCALAPPDATA")` SYSTEM xizmati uchun
+   `C:\Windows\System32\config\systemprofile\AppData\Local` — bola profili emas.
+   Endi `C:\Users\*` bo'ylab yuriladi (SYSTEM har bir foydalanuvchi faylini
+   o'qiy oladi); checkpoint kaliti `<user>/<browser>/<profile>`. Diagnostika
+   uchun start'da log: `browser history: N user profile(s), M history DB(s) found`.
+   Real natija (0.5.1-dev): `1 user profile(s), 4 history DB(s)`, `238 visit(s) recorded`.
+
+Uzoq muddatli (ochiq): **Authenticode imzo** (`docs/windows-distribution.md`),
+va `0.5.1` OTA release'ni macOS'dan imzolab chiqarish (bu tuzatishlar bilan).

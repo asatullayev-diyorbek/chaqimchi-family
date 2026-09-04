@@ -173,26 +173,64 @@ func rollback(dataDir string, st *updateState, dir, exePath, reason string, repo
 	return ErrRolledBack
 }
 
+// downloadAttempts is how many times download() will try the GitHub asset
+// before giving up. This machine's first real OTA attempt failed on a single
+// mid-stream connection reset ("wsarecv: forcibly closed") and then didn't try
+// again for 6 hours; a couple of quick retries ride out a flaky link.
+const downloadAttempts = 3
+
+// downloadBackoff is the base delay between download attempts (attempt N waits
+// N * downloadBackoff). A var so tests can zero it.
+var downloadBackoff = 4 * time.Second
+
 func download(ctx context.Context, url string) ([]byte, error) {
+	var lastErr error
+	for i := 0; i < downloadAttempts; i++ {
+		if i > 0 && downloadBackoff > 0 {
+			t := time.NewTimer(time.Duration(i) * downloadBackoff)
+			select {
+			case <-ctx.Done():
+				t.Stop()
+				return nil, ctx.Err()
+			case <-t.C:
+			}
+		}
+		data, retryable, err := downloadOnce(ctx, url)
+		if err == nil {
+			return data, nil
+		}
+		lastErr = err
+		if !retryable {
+			break
+		}
+	}
+	return nil, lastErr
+}
+
+// downloadOnce makes a single GET. retryable is true for transport errors, a
+// mid-stream read failure, 5xx and 429 — the failures a retry can recover —
+// and false for a 4xx, which means the manifest URL itself is wrong.
+func downloadOnce(ctx context.Context, url string) (data []byte, retryable bool, err error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	client := &http.Client{Timeout: 10 * time.Minute}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("downloading update: %w", err)
+		return nil, true, fmt.Errorf("downloading update: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("update download rejected: %s", resp.Status)
+		retry := resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests
+		return nil, retry, fmt.Errorf("update download rejected: %s", resp.Status)
 	}
 	// 128 MB ceiling — an agent build is ~20 MB; anything near this is wrong.
-	data, err := io.ReadAll(io.LimitReader(resp.Body, 128<<20))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 128<<20))
 	if err != nil {
-		return nil, fmt.Errorf("reading update body: %w", err)
+		return nil, true, fmt.Errorf("reading update body: %w", err)
 	}
-	return data, nil
+	return body, false, nil
 }
 
 func smokeTest(ctx context.Context, path string) error {
