@@ -4,6 +4,7 @@ import Reveal from "@/components/Reveal";
 import SiteNav from "@/components/SiteNav";
 import CountUp from "@/components/CountUp";
 import { WeekBars, CategoryDonut, MiniWeek } from "@/components/Charts";
+import ParentWebMock from "@/components/ParentWebMock";
 import {
   SITE,
   PROMISES,
@@ -147,43 +148,9 @@ export default function Page() {
             </div>
 
             <div className="showcase">
-              <div className="glass panel hero-anim">
-                <div className="panel-bar">
-                  <i /><i /><i /><span>Bugun · Aziz</span>
-                  <span className="panel-badge"><span className="pb-dot" />1 yangi</span>
-                </div>
-                <div className="tile hp panel-chart" style={{ "--d": "140ms" } as React.CSSProperties}>
-                  <div className="k">Oxirgi 7 kun · o&apos;rtacha 3s 24d</div>
-                  <MiniWeek />
-                </div>
-                <div className="tile hp panel-cats" style={{ "--d": "380ms" } as React.CSSProperties}>
-                  <div className="k">Kategoriyalar</div>
-                  <div className="catbar">
-                    <span style={{ flex: 34, background: "var(--cat-teal)" }} />
-                    <span style={{ flex: 28, background: "var(--cat-blue)" }} />
-                    <span style={{ flex: 22, background: "var(--cat-amber)" }} />
-                    <span style={{ flex: 16, background: "var(--cat-slate)" }} />
-                  </div>
-                  <div className="catlabels">
-                    <span><i style={{ background: "var(--cat-teal)" }} />Ta&apos;lim</span>
-                    <span><i style={{ background: "var(--cat-blue)" }} />O&apos;yin</span>
-                    <span><i style={{ background: "var(--cat-amber)" }} />Ijtimoiy</span>
-                  </div>
-                </div>
-                <div className="rows">
-                  {DEMO_APPS.slice(0, 3).map((a, i) => (
-                    <div className="row hp" key={a.name} style={{ "--d": `${420 + i * 90}ms` } as React.CSSProperties}>
-                      <span className="app"><AppChip icon={a.icon} color={a.color} />{a.name}</span>
-                      <b>{fmt(a.minutes)}</b>
-                    </div>
-                  ))}
-                </div>
-                <div className="strip hp" style={{ "--d": "720ms" } as React.CSSProperties}>
-                  <Check />
-                  Dam olish vaqti 22:00–07:00 — faol
-                </div>
-              </div>
-              <div className="float-chip">
+              <ParentWebMock />
+            </div>
+            <div className="float-chip">
                 <span className="ring" />
                 <div>
                   <b>1s 20d qoldi</b>
