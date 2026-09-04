@@ -231,6 +231,11 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 
 	go tracker.RunDeviceInfo(ctx, store, 60*time.Second)
 
+	// Browser history -> per-site list the parent sees under Faoliyat.
+	// Reads each browser's local history DB every few minutes and emits one
+	// domain-only "browser_domain" event per new visit (no URLs, no titles).
+	go tracker.RunBrowserHistory(ctx, store, dataDir, 5*time.Minute)
+
 	// OTA updates: every binary is Ed25519-verified against a pinned key and
 	// smoke-tested before the swap; a bad one is rolled back on next start
 	// (internal/updater). Updates are silent by design — a guardian the

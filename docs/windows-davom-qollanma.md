@@ -126,6 +126,17 @@ Backend PA'ga deploy qilingan (2026-09-02), quyidagilar tekshirilsin:
    Bola tray ilovasini yopsa blok ko'rinmaydi — service guardian bo'lib qoladi,
    bu MVP uchun kutilgan (shaffoflik tamoyili).
 
+3. **Brauzer tarixi → Web-saytlar (yangi 2026-09-04)**
+   Agent har 5 daqiqada Chrome / Edge / Brave / Opera / Vivaldi / Firefox
+   tarixi bazasini o'qiydi (`%LOCALAPPDATA%\...\History` nusxasini olib) va
+   har yangi tashrif uchun **faqat domen** bo'lgan `browser_domain` event
+   yuboradi (URL yoki sarlavha yo'q). Checkpoint: `%ProgramData%\ChaqimchiFamily\
+   browser_history.json`. Birinchi ishga tushishda oxirgi 3 kun backfill
+   qilinadi. Tekshirish: bir necha sayt oching → ~5-6 daq'dan so'ng
+   Dashboard → Faoliyat → **Web-saytlar** tabida domenlar + tashrif soni +
+   vaqt ko'rinishi kerak. Backend/frontend allaqachon tayyor edi — faqat
+   agent yangi build kerak.
+
 ---
 
 ## 5. Agent OTA release chiqarish (yangi versiya tarqatish)

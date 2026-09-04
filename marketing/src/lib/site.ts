@@ -160,14 +160,15 @@ export const PRIVACY_POINTS = [
 export const DATA_COLLECTED = [
   "Faoliyat vaqti",
   "Ilova nomi",
+  "Tashrif buyurilgan sayt domeni",
   "Qurilma holati",
-  "Qoida hodisalari",
 ];
 
 export const DATA_NOT_COLLECTED = [
   "Skrinshot",
   "Klaviatura yozuvi",
   "Mikrofon",
+  "To'liq havolalar va sahifa mazmuni",
   "Shaxsiy xabarlar",
 ];
 
@@ -213,12 +214,12 @@ export const FAQ = [
   {
     q: "Aynan nimalar kuzatiladi?",
     a:
-      "Faol ilova nomi va undan foydalanish vaqti, qurilma holati (batareya, oxirgi ulanish) hamda qoida hodisalari — masalan limit tugashi. Boshqa hech narsa.",
+      "Faol ilova nomi va undan foydalanish vaqti, tashrif buyurilgan sayt domeni (masalan youtube.com — to'liq havola emas), qurilma holati va qoida hodisalari. Boshqa hech narsa.",
   },
   {
     q: "Skrinshot yoki klaviatura yozuvi olinadimi?",
     a:
-      "Yo'q. Skrinshot, klaviatura bosilishi, mikrofon va shaxsiy xabarlar hech qachon yozilmaydi. Bu mahsulotning asosiy tamoyili.",
+      "Yo'q. Skrinshot, klaviatura bosilishi, mikrofon, to'liq havolalar, sahifa mazmuni va shaxsiy xabarlar hech qachon yozilmaydi.",
   },
   {
     q: "Bola dasturni o'chira oladimi?",
