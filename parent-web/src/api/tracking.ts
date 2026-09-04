@@ -116,18 +116,27 @@ export async function getActivityHistory(
   return apiFetch(`/api/tracking/history/${deviceId}/?${params.toString()}`);
 }
 
+export type BrowserUsage = {
+  browser: string;
+  visits: number;
+  minutes?: number;
+};
+
 export type SiteUsage = {
   domain: string;
   minutes: number;
   visits: number;
   last_visited_at: string | null;
+  browsers?: BrowserUsage[];
 };
 
 export type SitesResponse = {
   device_id: string;
   date: string;
   total_minutes: number;
+  total_visits?: number;
   results: SiteUsage[];
+  by_browser?: BrowserUsage[];
   count: number;
 };
 

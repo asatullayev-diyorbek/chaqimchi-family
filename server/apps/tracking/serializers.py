@@ -56,11 +56,18 @@ class SummarySerializer(serializers.Serializer):
     breakdown = DayBreakdownSerializer(many=True)
 
 
+class BrowserUsageSerializer(serializers.Serializer):
+    browser = serializers.CharField()
+    visits = serializers.IntegerField()
+    minutes = serializers.IntegerField(required=False)
+
+
 class SiteUsageSerializer(serializers.Serializer):
     domain = serializers.CharField()
     minutes = serializers.IntegerField()
     visits = serializers.IntegerField()
     last_visited_at = serializers.DateTimeField(allow_null=True)
+    browsers = BrowserUsageSerializer(many=True, required=False)
 
 
 class ActivityHistorySerializer(serializers.Serializer):

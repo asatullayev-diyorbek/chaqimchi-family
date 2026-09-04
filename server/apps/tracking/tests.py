@@ -595,6 +595,21 @@ class SitesTests(TestCase):
         # No "unknown" bucket, and nothing unparsed reaches the parent's UI.
         self.assertEqual([s["domain"] for s in self._sites(self.laptop)["results"]], ["youtube.com"])
 
+    def test_browser_breakdown_per_site_and_overall(self):
+        self._visit(self.laptop, "b1", domain="youtube.com", duration_seconds=300, browser="chrome")
+        self._visit(self.laptop, "b2", domain="youtube.com", duration_seconds=120, browser="firefox")
+        self._visit(self.laptop, "b3", domain="youtube.com", duration_seconds=60, browser="chrome")
+        self._visit(self.laptop, "b4", domain="wikipedia.org", duration_seconds=60, browser="edge")
+        self._visit(self.laptop, "b5", domain="example.com", duration_seconds=30, browser="weird-fork")
+
+        payload = self._sites(self.laptop)
+        yt = next(s for s in payload["results"] if s["domain"] == "youtube.com")
+        self.assertEqual(yt["browsers"], [{"browser": "chrome", "visits": 2}, {"browser": "firefox", "visits": 1}])
+
+        by_browser = {b["browser"]: b["visits"] for b in payload["by_browser"]}
+        self.assertEqual(by_browser, {"chrome": 2, "firefox": 1, "edge": 1, "boshqa": 1})
+        self.assertEqual(payload["total_visits"], 5)
+
     def test_app_usage_does_not_leak_into_the_sites_list(self):
         self._visit(self.laptop, "b1", type="app_usage", app_id="chrome.exe", duration_seconds=600)
 

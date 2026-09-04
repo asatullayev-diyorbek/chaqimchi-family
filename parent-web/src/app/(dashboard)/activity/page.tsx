@@ -63,6 +63,38 @@ function exportAppsCsv(apps: { app: string; minutes: number; last_used_at: strin
 
 const PAGE_SIZE = 10;
 
+const BROWSER_META: Record<string, { label: string; icon: string; color: string }> = {
+  chrome: { label: "Chrome", icon: "logos:chrome", color: "#4285F4" },
+  edge: { label: "Edge", icon: "logos:microsoft-edge", color: "#0F7EBD" },
+  firefox: { label: "Firefox", icon: "logos:firefox", color: "#FF7139" },
+  brave: { label: "Brave", icon: "logos:brave", color: "#FB542B" },
+  opera: { label: "Opera", icon: "logos:opera", color: "#FF1B2D" },
+  vivaldi: { label: "Vivaldi", icon: "logos:vivaldi-icon", color: "#EF3939" },
+  boshqa: { label: "Boshqa", icon: "solar:global-linear", color: "#7a8698" },
+};
+const browserMeta = (b: string) => BROWSER_META[b] ?? BROWSER_META.boshqa;
+
+function exportSitesCsv(sites: SiteUsage[], rangeLabel: string) {
+  const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+  const rows = [
+    ["Sayt", "Tashriflar", "Daqiqa", "Brauzerlar", "Oxirgi tashrif"],
+    ...sites.map((s) => [
+      s.domain,
+      String(s.visits),
+      String(s.minutes),
+      (s.browsers ?? []).map((b) => `${browserMeta(b.browser).label} (${b.visits})`).join("; "),
+      s.last_visited_at ?? "",
+    ]),
+  ];
+  const csv = "﻿" + rows.map((r) => r.map(esc).join(",")).join("\r\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `chaqimchi-saytlar-${rangeLabel.replace(/\s+/g, "-")}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 function formatActivityTime(value: string | null): string {
   if (!value) return "—";
   return uzTime(new Date(value));
@@ -77,6 +109,7 @@ function ActivityContent() {
   const [appsPage, setAppsPage] = useState(0);
   const [appSort, setAppSort] = useState<"minutes" | "name" | "recent">("minutes");
   const [sitesPage, setSitesPage] = useState(0);
+  const [siteSort, setSiteSort] = useState<"minutes" | "visits" | "domain">("minutes");
   const [tab, setTab] = useState<"screen" | "history" | "sites">("screen");
   const [historyOffset, setHistoryOffset] = useState(0);
   const [historyDate, setHistoryDate] = useState(todayISO);
@@ -122,7 +155,14 @@ function ActivityContent() {
     [activeDeviceId, range],
     { enabled: Boolean(activeDeviceId) && tab === "sites" },
   );
-  const sites: SiteUsage[] = sitesQuery.data?.results ?? [];
+  const rawSites: SiteUsage[] = sitesQuery.data?.results ?? [];
+  const byBrowser = sitesQuery.data?.by_browser ?? [];
+  const totalVisits = sitesQuery.data?.total_visits ?? rawSites.reduce((n, s) => n + s.visits, 0);
+  const sites: SiteUsage[] = [...rawSites].sort((a, b) => {
+    if (siteSort === "domain") return a.domain.localeCompare(b.domain);
+    if (siteSort === "visits") return b.visits - a.visits || b.minutes - a.minutes;
+    return b.minutes - a.minutes || b.visits - a.visits;
+  });
   const sitesLoading = sitesQuery.isInitialLoad;
   const sitesError = sitesQuery.error !== null;
 
@@ -413,54 +453,116 @@ function ActivityContent() {
             )}
 
             {tab === "sites" && (
-              <div className="card">
-                <div className="card-header">
-                  <h3>Web-saytlar</h3>
-                  <span className="muted-sm">{RANGE_LABELS[range]} · {sites.length} ta</span>
-                </div>
-
-                {sitesLoading && <p className="muted">Saytlar yuklanmoqda...</p>}
-                {sitesError && (
-                  <p className="error-text">
-                    Saytlarni yuklab bo&apos;lmadi. Qayta urinib ko&apos;ring.
-                  </p>
-                )}
-                {!sitesLoading && !sitesError && sites.length === 0 && (
-                  <p className="muted">
-                    Bu davrda sayt tashrifi qayd etilmagan.
-                  </p>
-                )}
-                {!sitesLoading && !sitesError && sites.length > 0 && (
-                  <div className="stack">
-                    {sites.slice(sitesPageC * PAGE_SIZE, sitesPageC * PAGE_SIZE + PAGE_SIZE).map((site) => (
-                      <div
-                        key={site.domain}
-                        className="data-row"
-                      >
-                        <span className="site-badge" aria-hidden="true">
-                          <iconify-icon icon="solar:global-linear"></iconify-icon>
-                        </span>
-                        <span className="data-row-body">
-                          <span className="data-row-title">
-                            {site.domain}
+              <>
+                {!sitesLoading && !sitesError && byBrowser.length > 0 && (
+                  <div className="card" style={{ marginBottom: 16 }}>
+                    <div className="card-header">
+                      <h3>Brauzerlar bo&apos;yicha</h3>
+                      <span className="muted-sm">{RANGE_LABELS[range]} · {totalVisits} tashrif</span>
+                    </div>
+                    <div style={{ display: "flex", height: 12, borderRadius: 999, overflow: "hidden", background: "var(--chart-track)", marginTop: 4 }}>
+                      {byBrowser.map((b) => (
+                        <span key={b.browser} title={`${browserMeta(b.browser).label}: ${b.visits}`}
+                          style={{ flex: b.visits, background: browserMeta(b.browser).color }} />
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "10px 18px", marginTop: 12 }}>
+                      {byBrowser.map((b) => {
+                        const m = browserMeta(b.browser);
+                        const pct = totalVisits ? Math.round((b.visits / totalVisits) * 100) : 0;
+                        return (
+                          <span key={b.browser} style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 600 }}>
+                            <iconify-icon icon={m.icon} style={{ fontSize: 16, color: m.color }}></iconify-icon>
+                            {m.label}
+                            <span className="muted-sm">{b.visits} · {pct}%</span>
                           </span>
-                          <span className="data-row-sub muted">{site.visits} marta</span>
-                        </span>
-                        <em className="data-row-value">
-                          {formatMinutes(site.minutes)}
-                        </em>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="card">
+                  <div className="card-header">
+                    <h3>Web-saytlar</h3>
+                    <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span className="muted-sm">{RANGE_LABELS[range]} · {sites.length} ta</span>
+                      {sites.length > 1 && (
+                        <select value={siteSort} onChange={(e) => { setSiteSort(e.target.value as typeof siteSort); setSitesPage(0); }} className="btn-view" style={{ fontSize: 12 }}>
+                          <option value="minutes">Vaqt bo&apos;yicha</option>
+                          <option value="visits">Tashriflar bo&apos;yicha</option>
+                          <option value="domain">Nomi bo&apos;yicha</option>
+                        </select>
+                      )}
+                      {sites.length > 0 && (
+                        <button className="btn-view" onClick={() => exportSitesCsv(sites, RANGE_LABELS[range])} style={{ fontSize: 12 }}>↓ CSV</button>
+                      )}
+                    </span>
+                  </div>
+
+                  {sitesLoading && <p className="muted">Saytlar yuklanmoqda...</p>}
+                  {sitesError && (
+                    <p className="error-text">Saytlarni yuklab bo&apos;lmadi. Qayta urinib ko&apos;ring.</p>
+                  )}
+                  {!sitesLoading && !sitesError && sites.length === 0 && (
+                    <p className="muted">Bu davrda sayt tashrifi qayd etilmagan.</p>
+                  )}
+                  {!sitesLoading && !sitesError && sites.length > 1 && (() => {
+                    const top = [...sites].sort((a, b) => b.minutes - a.minutes || b.visits - a.visits).slice(0, 5);
+                    const max = Math.max(...top.map((s) => s.minutes || s.visits), 1);
+                    return (
+                      <div style={{ display: "grid", gap: 8, margin: "6px 0 16px" }}>
+                        {top.map((s) => {
+                          const v = s.minutes || s.visits;
+                          return (
+                            <div key={s.domain} style={{ display: "grid", gridTemplateColumns: "minmax(0,120px) 1fr auto", alignItems: "center", gap: 10 }}>
+                              <span style={{ fontSize: 12, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.domain}</span>
+                              <span style={{ height: 8, borderRadius: 999, background: "var(--chart-track)" }}>
+                                <span style={{ display: "block", height: "100%", width: `${Math.max(4, (v / max) * 100)}%`, borderRadius: 999, background: "var(--brand-blue)" }} />
+                              </span>
+                              <span className="muted-sm" style={{ fontSize: 12 }}>{s.minutes ? formatMinutes(s.minutes) : `${s.visits} marta`}</span>
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                )}
-                {!sitesLoading && !sitesError && sites.length > PAGE_SIZE && (
-                  <div className="pager">
-                    <button className="btn-view" disabled={sitesPageC === 0} onClick={() => setSitesPage(sitesPageC - 1)}>← Oldingi</button>
-                    <span className="muted-sm">{sitesPageC + 1} / {Math.ceil(sites.length / PAGE_SIZE)}</span>
-                    <button className="btn-view" disabled={(sitesPageC + 1) * PAGE_SIZE >= sites.length} onClick={() => setSitesPage(sitesPageC + 1)}>Keyingi →</button>
-                  </div>
-                )}
-              </div>
+                    );
+                  })()}
+                  {!sitesLoading && !sitesError && sites.length > 0 && (
+                    <div className="stack">
+                      {sites.slice(sitesPageC * PAGE_SIZE, sitesPageC * PAGE_SIZE + PAGE_SIZE).map((site) => (
+                        <div key={site.domain} className="data-row">
+                          <span className="site-badge" aria-hidden="true">
+                            <iconify-icon icon="solar:global-linear"></iconify-icon>
+                          </span>
+                          <span className="data-row-body">
+                            <span className="data-row-title">{site.domain}</span>
+                            <span className="data-row-sub muted" style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                              <span>{site.visits} marta</span>
+                              {(site.browsers ?? []).map((b) => {
+                                const m = browserMeta(b.browser);
+                                return (
+                                  <span key={b.browser} title={`${m.label}: ${b.visits}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                    <iconify-icon icon={m.icon} style={{ fontSize: 13, color: m.color }}></iconify-icon>
+                                    {b.visits}
+                                  </span>
+                                );
+                              })}
+                            </span>
+                          </span>
+                          <em className="data-row-value">{formatMinutes(site.minutes)}</em>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {!sitesLoading && !sitesError && sites.length > PAGE_SIZE && (
+                    <div className="pager">
+                      <button className="btn-view" disabled={sitesPageC === 0} onClick={() => setSitesPage(sitesPageC - 1)}>← Oldingi</button>
+                      <span className="muted-sm">{sitesPageC + 1} / {Math.ceil(sites.length / PAGE_SIZE)}</span>
+                      <button className="btn-view" disabled={(sitesPageC + 1) * PAGE_SIZE >= sites.length} onClick={() => setSitesPage(sitesPageC + 1)}>Keyingi →</button>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </>
         )}

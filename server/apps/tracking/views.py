@@ -23,6 +23,7 @@ from .models import EVENT_TYPES, ICON_EVENT_TYPE, DeviceAppIcon, Event, EventBat
 MAX_ICON_B64_LEN = 96 * 1024
 from .serializers import (
     ActivityHistorySerializer,
+    BrowserUsageSerializer,
     IngestSerializer,
     SiteUsageSerializer,
     SummarySerializer,
@@ -105,6 +106,16 @@ def _normalize_domain(payload: dict) -> str:
     if not raw or len(raw) > 253 or "/" in raw or " " in raw:
         return ""
     return raw
+
+
+# Browsers the agent knows how to read a history DB from. The payload's
+# `browser` field is attacker-controlled, so anything else folds to "boshqa".
+KNOWN_BROWSERS = ("chrome", "edge", "brave", "opera", "vivaldi", "firefox")
+
+
+def _browser_of(payload: dict) -> str:
+    raw = (payload.get("browser") or "").strip().lower()
+    return raw if raw in KNOWN_BROWSERS else "boshqa"
 
 
 def _store_app_icon(device, event: dict) -> bool:
@@ -574,6 +585,9 @@ class SitesView(APIView):
         minutes_per_domain = defaultdict(float)
         visits_per_domain = defaultdict(int)
         last_visited_at = {}
+        browsers_per_domain = defaultdict(lambda: defaultdict(int))  # domain -> browser -> visits
+        visits_per_browser = defaultdict(int)
+        minutes_per_browser = defaultdict(float)
         for event in events:
             payload = event.payload or {}
             domain = _normalize_domain(payload)
@@ -581,10 +595,21 @@ class SitesView(APIView):
                 # A browser_domain event we cannot attribute to a host is
                 # dropped rather than bucketed under a fake "unknown" row.
                 continue
-            minutes_per_domain[domain] += _event_minutes(payload)
+            mins = _event_minutes(payload)
+            browser = _browser_of(payload)
+            minutes_per_domain[domain] += mins
             visits_per_domain[domain] += 1
+            browsers_per_domain[domain][browser] += 1
+            visits_per_browser[browser] += 1
+            minutes_per_browser[browser] += mins
             if domain not in last_visited_at or event.occurred_at > last_visited_at[domain]:
                 last_visited_at[domain] = event.occurred_at
+
+        def _browser_rows(counts):
+            return [
+                {"browser": b, "visits": v}
+                for b, v in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+            ]
 
         results = [
             {
@@ -592,17 +617,29 @@ class SitesView(APIView):
                 "minutes": round(minutes),
                 "visits": visits_per_domain[domain],
                 "last_visited_at": last_visited_at.get(domain),
+                "browsers": _browser_rows(browsers_per_domain[domain]),
             }
             for domain, minutes in minutes_per_domain.items()
         ]
         results.sort(key=lambda entry: (-entry["minutes"], -entry["visits"], entry["domain"]))
+
+        by_browser = [
+            {
+                "browser": b,
+                "visits": visits_per_browser[b],
+                "minutes": round(minutes_per_browser[b]),
+            }
+            for b in sorted(visits_per_browser, key=lambda b: (-visits_per_browser[b], b))
+        ]
 
         return Response(
             {
                 "device_id": device.id,
                 "date": target_date,
                 "total_minutes": round(sum(minutes_per_domain.values())),
+                "total_visits": sum(visits_per_domain.values()),
                 "results": SiteUsageSerializer(results, many=True).data,
+                "by_browser": BrowserUsageSerializer(by_browser, many=True).data,
                 "count": len(results),
             }
         )
