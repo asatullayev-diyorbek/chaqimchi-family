@@ -153,7 +153,7 @@ export const STEPS = [
 
 export const CHECKS = [
   "Bola tray belgisi va status oynasi orqali agent borligini ko'radi",
-  "Bloklash oynasi tushunarli: «bugungi vaqting tugadi, ertaga davom etasan»",
+  "Bloklash oynasi tushunarli: «bugungi ekran vaqti tugadi, ertaga yana ochiladi»",
   "Skrinshot olinmaydi",
   "Klaviatura bosilishi yozilmaydi",
   "Mikrofon yozilmaydi",
@@ -201,19 +201,24 @@ export const PLATFORMS = [
 
 export const FAQ = [
   {
-    q: "Windows «Noma'lum noshir» deb ogohlantirsa nima qilaman?",
+    q: "Aynan nimalar kuzatiladi?",
     a:
-      "Dastur hozircha kod bilan imzolanmagan (MVP/Beta). SmartScreen oynasida «More info» → «Run anyway». Defender, SmartScreen yoki UAC'ni o'chirish shart emas va tavsiya qilinmaydi.",
+      "Faol ilova nomi va undan foydalanish vaqti, qurilma holati (batareya, oxirgi ulanish) hamda qoida hodisalari — masalan limit tugashi. Boshqa hech narsa.",
   },
   {
-    q: "Aynan nima yoziladi?",
+    q: "Skrinshot yoki klaviatura yozuvi olinadimi?",
     a:
-      "Faol ilova nomi va undan foydalanish vaqti, qurilma holati (batareya, oxirgi ulanish), qoida hodisalari. Klaviatura bosilishi, skrinshot, mikrofon yoki shaxsiy xabarlar — yo'q.",
+      "Yo'q. Skrinshot, klaviatura bosilishi, mikrofon va shaxsiy xabarlar hech qachon yozilmaydi. Bu mahsulotning asosiy tamoyili.",
   },
   {
     q: "Bola dasturni o'chira oladimi?",
     a:
       "Agent Windows xizmati sifatida ishlaydi va oddiy foydalanuvchi uni to'xtata olmaydi. Lekin u yashirin emas — bola tray belgisini va status oynasini ko'radi. O'chirishni ota-ona qiladi.",
+  },
+  {
+    q: "Windows agent qanday ishlaydi?",
+    a:
+      "Kichik fon xizmati qaysi ilova faol ekanini va qancha vaqt ishlatilganini kuzatadi, qoidalarni lokal qo'llaydi va ma'lumotni panelga yuboradi. Limit yoki dam olish vaqti kelganda ekranga xushmuomala bloklash oynasi chiqadi.",
   },
   {
     q: "Internet bo'lmasa ishlaydimi?",
@@ -224,6 +229,16 @@ export const FAQ = [
     q: "Bir nechta bola yoki qurilma bo'lsa-chi?",
     a:
       "Bitta oila hisobiga bir nechta bola va qurilma bog'lanadi. Panelda har bola alohida ko'rinadi, haftalik solishtirma bilan.",
+  },
+  {
+    q: "Mobil ilova qachon chiqadi?",
+    a:
+      "Ota-ona uchun mobil ilova hozir yopiq sinovda. Hozircha nazoratni web panel va Telegram bot orqali to'liq amalga oshirasiz.",
+  },
+  {
+    q: "Windows «Noma'lum noshir» deb ogohlantirsa nima qilaman?",
+    a:
+      "Dastur hozircha kod bilan imzolanmagan (MVP/Beta). SmartScreen oynasida «More info» → «Run anyway». Defender, SmartScreen yoki UAC'ni o'chirish shart emas va tavsiya qilinmaydi.",
   },
   {
     q: "Narxi qancha?",

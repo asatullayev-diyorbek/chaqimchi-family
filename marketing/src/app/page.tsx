@@ -45,36 +45,72 @@ function fmt(mins: number) {
 
 /* ---- small live-looking previews for the three feature blocks ---- */
 
+function Ring({ pct, label, sub }: { pct: number; label: string; sub: string }) {
+  const r = 34;
+  const c = 2 * Math.PI * r;
+  return (
+    <div className="ring">
+      <svg viewBox="0 0 84 84" width="84" height="84" aria-hidden>
+        <circle cx="42" cy="42" r={r} fill="none" stroke="var(--chart-track)" strokeWidth="9" />
+        <circle
+          className="ring-fill"
+          cx="42" cy="42" r={r} fill="none" stroke="var(--chart-bar-active)" strokeWidth="9"
+          strokeLinecap="round" strokeDasharray={`${c} ${c}`}
+          transform="rotate(-90 42 42)"
+          style={{ "--dfull": c, "--d": c * (1 - pct / 100) } as React.CSSProperties}
+        />
+      </svg>
+      <div className="ring-c"><b>{label}</b><small>{sub}</small></div>
+    </div>
+  );
+}
+
 function BlockPreview({ kind }: { kind: string }) {
   if (kind === "limit") {
     return (
       <div className="fp">
-        <div className="fp-head"><span>Kunlik limit</span><b>3s 24d / 4s</b></div>
-        <div className="meter"><i style={{ "--w": "85%" } as React.CSSProperties} /></div>
-        <div className="fp-tags">
-          <span>Ish kuni · 4s</span>
-          <span>Dam olish · 6s</span>
+        <div className="fp-head"><span>Bugun</span><b>3s 24d / 4s</b></div>
+        <div className="fp-limit">
+          <Ring pct={85} label="85%" sub="ishlatildi" />
+          <div className="fp-limit-side">
+            <div className="fp-mini">
+              <span>Ish kuni</span><strong>4 soat</strong>
+            </div>
+            <div className="fp-mini">
+              <span>Dam olish</span><strong>6 soat</strong>
+            </div>
+          </div>
         </div>
+        <MiniWeek />
       </div>
     );
   }
   if (kind === "quiet") {
     return (
       <div className="fp">
-        <div className="fp-head"><span>Dam olish vaqti</span><b>22:00 → 07:00</b></div>
-        <div className="fp-clock">
-          <Ico name="solar:moon-sleep-bold" />
-          <div className="fp-track"><i style={{ "--w": "100%" } as React.CSSProperties} /></div>
+        <div className="fp-head"><span>Dam olish vaqti</span><b className="fp-on">Faol</b></div>
+        <div className="fp-timeline">
+          <span>22:00</span>
+          <div className="fp-timeline-bar"><i /></div>
+          <span>07:00</span>
         </div>
-        <div className="fp-note">Ekran xushmuomala tarzda bloklangan</div>
+        <div className="fp-block">
+          <Ico name="solar:moon-sleep-bold" />
+          <div>
+            <strong>Ekran bloklangan</strong>
+            <small>Ertaga 07:00 da o&apos;zi ochiladi</small>
+          </div>
+        </div>
       </div>
     );
   }
   return (
     <div className="fp">
-      <div className="fp-head"><span>Cheklangan</span><b>2 ta ilova</b></div>
-      <div className="fp-row"><AppChip icon="logos:steam" />Steam<em>bloklangan</em></div>
-      <div className="fp-row"><AppChip icon="logos:discord-icon" />Discord<em>bloklangan</em></div>
+      <div className="fp-head"><span>Ilovalar</span><b>2 tasi cheklangan</b></div>
+      <div className="fp-row"><AppChip icon="logos:chrome" />Google Chrome<em className="ok">ruxsat</em></div>
+      <div className="fp-row"><AppChip icon="logos:youtube-icon" />YouTube<em className="ok">ruxsat</em></div>
+      <div className="fp-row"><AppChip icon="logos:steam" />Steam<em>cheklangan</em></div>
+      <div className="fp-row"><AppChip icon="logos:discord-icon" />Discord<em>cheklangan</em></div>
     </div>
   );
 }
@@ -112,6 +148,7 @@ export default function Page() {
               <div className="glass panel hero-anim">
                 <div className="panel-bar">
                   <i /><i /><i /><span>Bugun · Aziz</span>
+                  <span className="panel-badge"><span className="pb-dot" />1 yangi</span>
                 </div>
                 <div className="tiles">
                   <div className="tile hp" style={{ "--d": "120ms" } as React.CSSProperties}>
@@ -128,6 +165,20 @@ export default function Page() {
                 <div className="tile hp panel-chart" style={{ "--d": "320ms" } as React.CSSProperties}>
                   <div className="k">Oxirgi 7 kun</div>
                   <MiniWeek />
+                </div>
+                <div className="tile hp panel-cats" style={{ "--d": "380ms" } as React.CSSProperties}>
+                  <div className="k">Kategoriyalar</div>
+                  <div className="catbar">
+                    <span style={{ flex: 34, background: "var(--cat-teal)" }} />
+                    <span style={{ flex: 28, background: "var(--cat-blue)" }} />
+                    <span style={{ flex: 22, background: "var(--cat-amber)" }} />
+                    <span style={{ flex: 16, background: "var(--cat-slate)" }} />
+                  </div>
+                  <div className="catlabels">
+                    <span><i style={{ background: "var(--cat-teal)" }} />Ta&apos;lim</span>
+                    <span><i style={{ background: "var(--cat-blue)" }} />O&apos;yin</span>
+                    <span><i style={{ background: "var(--cat-amber)" }} />Ijtimoiy</span>
+                  </div>
                 </div>
                 <div className="rows">
                   {DEMO_APPS.slice(0, 3).map((a, i) => (
@@ -404,8 +455,8 @@ export default function Page() {
                 <div className="cap"><span className="tag">Bola</span> Windows ekrani</div>
                 <div className="block-mock">
                   <span className="em"><Ico name="solar:moon-sleep-bold" /></span>
-                  <strong>Bugungi ekran vaqting tugadi</strong>
-                  <span>Ertaga davom etasan! Savoling bo&apos;lsa, ota-onangga murojaat qil.</span>
+                  <strong>Bugungi ekran vaqti tugadi</strong>
+                  <span>Ertaga yana ochiladi. Savol bo&apos;lsa, ota-onaga murojaat qiling.</span>
                 </div>
               </Reveal>
             </div>
@@ -442,10 +493,20 @@ export default function Page() {
             <div className="grid grid-3">
               {PLATFORMS.map((p, i) => (
                 <Reveal as="article" className="glass card plat-card" key={p.title} delay={i * 90}>
-                  <span className={`ico ${i === 2 ? "teal" : ""}`}><Ico name={p.icon} /></span>
                   <div className="plat-row">
                     <small>{p.tag}</small>
                     <span className={`plat-status ${p.status === "Mavjud" ? "live" : "soon"}`}>{p.status}</span>
+                  </div>
+                  <div className={`plat-viz pv-${i}`} aria-hidden>
+                    {i === 0 && (
+                      <div className="pv-laptop"><div className="pv-screen"><Ico name="solar:shield-check-bold" /></div><span className="pv-base" /></div>
+                    )}
+                    {i === 1 && (
+                      <div className="pv-browser"><span className="pv-bar"><i /><i /><i /></span><div className="pv-grid"><span /><span /><span /><span /></div></div>
+                    )}
+                    {i === 2 && (
+                      <div className="pv-phone"><div className="pv-notch" /><div className="pv-soon">Tez orada</div></div>
+                    )}
                   </div>
                   <h3>{p.title}</h3>
                   <p>{p.body}</p>
