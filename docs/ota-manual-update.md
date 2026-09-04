@@ -144,5 +144,15 @@ umuman yig'ilmaydi** — bu alohida, chuqurroq xato (Bug #3 turkumidan).
    uchun start'da log: `browser history: N user profile(s), M history DB(s) found`.
    Real natija (0.5.1-dev): `1 user profile(s), 4 history DB(s)`, `238 visit(s) recorded`.
 
-Uzoq muddatli (ochiq): **Authenticode imzo** (`docs/windows-distribution.md`),
-va `0.5.1` OTA release'ni macOS'dan imzolab chiqarish (bu tuzatishlar bilan).
+### `0.5.1` OTA — chiqarildi (2026-09-04)
+
+- GitHub Release `agent-v0.5.1`, asset `chaqimchi-agent.exe`
+  SHA-256 `4d78e889f6a2400a5e7e10ab7b5b42c2524f91a6ffb5ff9ade7668b97ea7fc0e`
+- PA: `AgentVersion` `0.5.1` `is_active=True`, `0.5.0` `is_active=False`
+- `GET /api/deploy/latest/` → `0.5.1` manifestini qaytaradi (tekshirildi, 200)
+- Ichida: brauzer tarixi SYSTEM-fix + OTA download retry + `agent_update_failed`
+  bildirish. Endi transient tarmoq uzilishi update'ni to'xtatmaydi.
+- O'rnatilgan agentlar 6 soat ichida `0.5.1` ga o'tadi (yoki
+  `Restart-Service ChaqimchiFamilyAgent`).
+
+Uzoq muddatli (ochiq): **Authenticode imzo** (`docs/windows-distribution.md`).
