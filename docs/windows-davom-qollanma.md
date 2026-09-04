@@ -145,13 +145,25 @@ Mavjud o'rnatilgan agentlar avtomatik yangilanadi (Ed25519 imzo tekshiriladi).
 
 ```powershell
 # gh CLI authenticated bo'lishi kerak; imzo kaliti agent/.secrets/update-signing.key
-bash scripts/updates/publish-agent-release.sh 0.5.0
+bash scripts/updates/publish-agent-release.sh 0.6.0
 ```
 
 Keyin skript chop etgan ma'lumot bilan Django admin'da `AgentVersion` qatori
 qo'shiladi: `/admin/deploy/agentversion/` — version, binary_url, sha256,
 signature, `is_active=yes`. **Avval bitta test qurilmaga** chiqar, dashboard'da
 `agent_version` yangilanganини ko'r, keyin hammага.
+
+### Holat: 2026-09-04 — **OTA yoqildi, `0.5.0` chiqarildi**
+
+- GitHub Release: `agent-v0.5.0`, asset `chaqimchi-agent.exe`
+  (sha256 `ae24e541…`), macOS'dan cross-compile qilib chiqarildi
+- PA `AgentVersion` qatori: `0.5.0`, `is_active=True` — `GET /api/deploy/latest/`
+  endi shu manifestni qaytaradi (tekshirildi, 200)
+- Imzo pinned pubkey `fcdbbef0…` bilan tasdiqlandi
+- O'rnatilgan agentlar (`0.4.0-rc.4`) 6 soat ichida `0.5.0` ga o'tadi
+  (brauzer-tarixi feature'i shu bilan tarqaladi)
+- `publish-agent-release.sh` tuzatildi: asset nomi endi `chaqimchi-agent.exe`
+  (avval `-VERSION.exe` edi, chop etilgan URL noto'g'ri chiqardi)
 
 > Django admin PA'da: `https://apiguard.pythonanywhere.com/admin/`
 > (yoki `https://api.guard.chaqimchi-ai.uz/admin/`).

@@ -15,7 +15,9 @@ ROOT="$(git rev-parse --show-toplevel)"
 KEY="${RELSIGN_KEY:-$ROOT/agent/.secrets/update-signing.key}"
 TAG="agent-v$VERSION"
 ASSET_NAME="chaqimchi-agent.exe"
-OUT="$ROOT/agent/build/chaqimchi-agent-$VERSION.exe"
+# Build to the exact asset name so the GitHub download URL is predictable
+# (the AgentVersion.binary_url below must match it byte-for-byte).
+OUT="$ROOT/agent/build/$ASSET_NAME"
 
 [ -f "$KEY" ] || { echo "signing key not found: $KEY" >&2; exit 1; }
 
@@ -29,7 +31,7 @@ echo "==> signing"
 ( cd "$ROOT/agent" && go run ./cmd/relsign sign -key "$KEY" -bin "$OUT" -version "$VERSION" )
 
 echo "==> publishing GitHub release $TAG"
-gh release create "$TAG" "$OUT#$ASSET_NAME" \
+gh release create "$TAG" "$OUT" \
   --repo "$REPO" --title "Agent $VERSION" \
   --notes "Agent OTA build $VERSION. Verified by the agent against the pinned Ed25519 key before install."
 
