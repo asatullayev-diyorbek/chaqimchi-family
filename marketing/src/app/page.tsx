@@ -10,11 +10,13 @@ import {
   FEATURE_BLOCKS,
   FEATURE_CARDS,
   STEPS,
-  CHECKS,
   PRICING,
   PLATFORMS,
   FAQ,
   DEMO_APPS,
+  PRIVACY_POINTS,
+  DATA_COLLECTED,
+  DATA_NOT_COLLECTED,
 } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -250,33 +252,37 @@ export default function Page() {
         <section>
           <div className="wrap">
             <Reveal as="div" className="glass band">
-              <div className="cols">
-                <div>
+              <div className="band-privacy">
+                <div className="band-privacy-text">
                   <span className="eyebrow">Muhim</span>
                   <h2>Bu yashirin kuzatuv yoki jazolash vositasi emas</h2>
                   <p className="section-lead">
                     ChaqimchiAI oilalarga bola kompyuteridan foydalanish bo&apos;yicha
                     <b> ochiq kelishilgan </b> raqamli tartibni boshqarishga yordam beradi.
                   </p>
-                  <div className="pviz">
+                  <ul className="band-mini">
+                    {PRIVACY_POINTS.map((p) => (
+                      <li key={p}><Check />{p}</li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="bp-card">
+                  <div className="bp-head">
                     <span className="pviz-shield"><Ico name="solar:shield-keyhole-bold" /></span>
-                    <div className="pviz-list">
-                      <div className="pviz-item yes"><Ico name="solar:check-circle-bold" /> Faoliyat vaqti va ilova nomi</div>
-                      <div className="pviz-item yes"><Ico name="solar:check-circle-bold" /> Qurilma holati</div>
-                      <div className="pviz-item no"><Ico name="solar:close-circle-bold" /> Skrinshot</div>
-                      <div className="pviz-item no"><Ico name="solar:close-circle-bold" /> Klaviatura yozuvi</div>
-                      <div className="pviz-item no"><Ico name="solar:close-circle-bold" /> Mikrofon</div>
-                      <div className="pviz-item no"><Ico name="solar:close-circle-bold" /> Shaxsiy xabarlar</div>
+                    Ma&apos;lumot chegarasi
+                  </div>
+                  <div className="bp-cols">
+                    <div className="bp-col yes">
+                      <h4><Ico name="solar:check-circle-bold" /> Yig&apos;iladi</h4>
+                      {DATA_COLLECTED.map((d) => <span key={d}>{d}</span>)}
+                    </div>
+                    <div className="bp-col no">
+                      <h4><Ico name="solar:close-circle-bold" /> Yig&apos;ilmaydi</h4>
+                      {DATA_NOT_COLLECTED.map((d) => <span key={d}>{d}</span>)}
                     </div>
                   </div>
                 </div>
-                <ul className="checks">
-                  {CHECKS.map((c, i) => (
-                    <li key={c} style={{ "--d": `${i * 90}ms` } as React.CSSProperties}>
-                      <span className="tick"><Check /></span>{c}
-                    </li>
-                  ))}
-                </ul>
               </div>
             </Reveal>
           </div>

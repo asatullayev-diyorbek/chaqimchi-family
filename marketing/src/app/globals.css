@@ -955,3 +955,39 @@ footer { margin-top: 90px; padding: 60px 0 40px; }
 .pv-notch { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); width: 22px; height: 4px; border-radius: 3px; background: var(--border); }
 .pv-soon { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
 @media (prefers-reduced-motion: reduce) { .reveal.in .fp-timeline-bar > i { animation: none; width: 100%; } }
+
+/* ==================== v5: privacy section redesign ==================== */
+.band-privacy { display: grid; grid-template-columns: 1fr 1fr; gap: 44px; align-items: center; position: relative; }
+@media (max-width: 860px) { .band-privacy { grid-template-columns: 1fr; gap: 28px; } }
+
+.band-mini { list-style: none; display: grid; gap: 11px; margin-top: 22px; }
+.band-mini li { display: flex; gap: 10px; align-items: flex-start; color: var(--body); font-size: 0.94rem; }
+.band-mini li iconify-icon { color: var(--accent-ink); font-size: 17px; flex: 0 0 auto; margin-top: 2px; }
+
+.bp-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow-md);
+}
+.bp-head {
+  display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 0.95rem;
+  padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid var(--border);
+}
+.bp-head .pviz-shield {
+  width: 40px; height: 40px; border-radius: 12px; font-size: 20px; box-shadow: 0 8px 18px -8px rgba(37,99,235,.5);
+}
+.bp-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 420px) { .bp-cols { grid-template-columns: 1fr; gap: 14px; } }
+.bp-col { display: grid; gap: 9px; align-content: start; }
+.bp-col h4 {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 0.72rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.bp-col h4 iconify-icon { font-size: 16px; }
+.bp-col.yes h4 { color: var(--accent-ink); }
+.bp-col.no h4 { color: var(--danger); }
+.bp-col span {
+  font-size: 0.88rem; font-weight: 600; color: var(--body);
+  padding: 7px 11px; border-radius: 9px; background: var(--surface-2); border: 1px solid var(--border);
+}
+.bp-col.no span { color: var(--muted); }

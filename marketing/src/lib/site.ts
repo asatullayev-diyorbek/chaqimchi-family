@@ -151,14 +151,25 @@ export const STEPS = [
   },
 ];
 
-export const CHECKS = [
+export const PRIVACY_POINTS = [
   "Bola tray belgisi va status oynasi orqali agent borligini ko'radi",
-  "Bloklash oynasi tushunarli: «bugungi ekran vaqti tugadi, ertaga yana ochiladi»",
-  "Skrinshot olinmaydi",
-  "Klaviatura bosilishi yozilmaydi",
-  "Mikrofon yozilmaydi",
-  "Shaxsiy xabarlar o'qilmaydi",
-  "Faqat kerakli faoliyat ma'lumotlari: ilova nomi + vaqti, qurilma holati, qoida hodisalari",
+  "Bloklash oynasi tushunarli va xushmuomala",
+  "Ma'lumot faqat sizning oila hisobingizga bog'lanadi va sotilmaydi",
+];
+
+export const DATA_COLLECTED = [
+  "Faoliyat vaqti",
+  "Ilova nomi",
+  "Qurilma holati",
+  "Qoida hodisalari",
+];
+
+export const DATA_NOT_COLLECTED = [
+  "Skrinshot",
+  "Klaviatura yozuvi",
+  "Mikrofon",
+  "Shaxsiy xabarlar",
+  "Brauzer tarixi mazmuni",
 ];
 
 export const PRICING = [
