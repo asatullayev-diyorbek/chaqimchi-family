@@ -165,6 +165,10 @@ signature, `is_active=yes`. **Avval bitta test qurilmaga** chiqar, dashboard'da
 - `publish-agent-release.sh` tuzatildi: asset nomi endi `chaqimchi-agent.exe`
   (avval `-VERSION.exe` edi, chop etilgan URL noto'g'ri chiqardi)
 
+⚠️ **Reboot'dan keyin `0.4.0-rc.5` agent `0.5.0` ga o'tmadi** (event ham yo'q) —
+OTA yo'lida jimgina xatolik. Qo'lda yangilash va diagnostika:
+**`docs/ota-manual-update.md`**.
+
 > Django admin PA'da: `https://apiguard.pythonanywhere.com/admin/`
 > (yoki `https://api.guard.chaqimchi-ai.uz/admin/`).
 
