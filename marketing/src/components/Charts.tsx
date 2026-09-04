@@ -176,28 +176,38 @@ export function CategoryDonut() {
   );
 }
 
-/** Compact 7-bar sparkline for the hero panel. */
+/** 7-bar weekly chart for the hero panel. Taller than a sparkline, with a
+ *  hover label showing the day's time. */
 export function MiniWeek() {
   const { ref, seen } = useInView<HTMLDivElement>();
+  const [hover, setHover] = useState<number | null>(null);
   const maxM = Math.max(...DEMO_WEEK.map((v) => v.m));
   const peak = maxM;
   return (
-    <div className="mini-week" ref={ref}>
-      {DEMO_WEEK.map((w, i) => (
-        <div key={w.d} className="mini-week-col" title={`${w.d}: ${hm(w.m)}`}>
-          <div className="mini-week-track">
-            <div
-              className="mini-week-bar"
-              style={{
-                height: seen ? `${Math.max(8, (w.m / maxM) * 100)}%` : "0%",
-                background: w.m === peak ? "var(--chart-bar-active)" : "var(--chart-bar)",
-                transition: `height .6s cubic-bezier(.2,.7,.2,1) ${i * 60}ms`,
-              }}
-            />
+    <div className="mini-week" ref={ref} onMouseLeave={() => setHover(null)}>
+      {DEMO_WEEK.map((w, i) => {
+        const on = hover === i;
+        return (
+          <div
+            key={w.d}
+            className={`mini-week-col${on ? " on" : ""}`}
+            onMouseEnter={() => setHover(i)}
+          >
+            <span className="mini-week-val" aria-hidden>{hm(w.m)}</span>
+            <div className="mini-week-track">
+              <div
+                className="mini-week-bar"
+                style={{
+                  height: seen ? `${Math.max(8, (w.m / maxM) * 100)}%` : "0%",
+                  background: on || w.m === peak ? "var(--chart-bar-active)" : "var(--chart-bar)",
+                  transition: `height .6s cubic-bezier(.2,.7,.2,1) ${i * 60}ms, background .15s`,
+                }}
+              />
+            </div>
+            <span className="mini-week-day">{w.d}</span>
           </div>
-          <span>{w.d}</span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

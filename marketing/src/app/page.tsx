@@ -150,20 +150,8 @@ export default function Page() {
                   <i /><i /><i /><span>Bugun · Aziz</span>
                   <span className="panel-badge"><span className="pb-dot" />1 yangi</span>
                 </div>
-                <div className="tiles">
-                  <div className="tile hp" style={{ "--d": "120ms" } as React.CSSProperties}>
-                    <div className="k">Bugungi ekran vaqti</div>
-                    <div className="v">2s 40d</div>
-                    <div className="meter"><i style={{ "--w": "66%" } as React.CSSProperties} /></div>
-                  </div>
-                  <div className="tile hp" style={{ "--d": "220ms" } as React.CSSProperties}>
-                    <div className="k">Kunlik limit</div>
-                    <div className="v">4 soat</div>
-                    <div className="meter warn"><i style={{ "--w": "66%" } as React.CSSProperties} /></div>
-                  </div>
-                </div>
-                <div className="tile hp panel-chart" style={{ "--d": "320ms" } as React.CSSProperties}>
-                  <div className="k">Oxirgi 7 kun</div>
+                <div className="tile hp panel-chart" style={{ "--d": "140ms" } as React.CSSProperties}>
+                  <div className="k">Oxirgi 7 kun · o&apos;rtacha 3s 24d</div>
                   <MiniWeek />
                 </div>
                 <div className="tile hp panel-cats" style={{ "--d": "380ms" } as React.CSSProperties}>

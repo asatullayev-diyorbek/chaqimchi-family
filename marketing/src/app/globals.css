@@ -806,13 +806,20 @@ footer { margin-top: 90px; padding: 60px 0 40px; }
 
 /* ==================== v3 polish: richer previews ==================== */
 
-/* hero panel: mini 7-day chart tile */
-.panel-chart { display: grid; gap: 8px; }
-.mini-week { display: flex; align-items: flex-end; gap: 6px; height: 46px; }
-.mini-week-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.mini-week-track { width: 100%; height: 38px; display: flex; align-items: flex-end; }
-.mini-week-bar { width: 100%; border-radius: 4px 4px 2px 2px; min-height: 3px; }
-.mini-week-col span { font-size: 8.5px; font-weight: 700; color: var(--chart-axis); }
+/* hero panel: 7-day chart */
+.panel-chart { display: grid; gap: 10px; }
+.mini-week { display: flex; align-items: flex-end; gap: 8px; height: 132px; padding-top: 14px; }
+.mini-week-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: default; position: relative; }
+.mini-week-track { width: 100%; height: 98px; display: flex; align-items: flex-end; }
+.mini-week-bar { width: 100%; border-radius: 6px 6px 2px 2px; min-height: 4px; }
+.mini-week-day { font-size: 10px; font-weight: 700; color: var(--chart-axis); }
+.mini-week-val {
+  position: absolute; top: -14px; left: 50%; transform: translate(-50%, 3px);
+  font-size: 10px; font-weight: 800; color: var(--fg);
+  opacity: 0; transition: opacity .15s, transform .15s; white-space: nowrap; pointer-events: none;
+}
+.mini-week-col.on .mini-week-val { opacity: 1; transform: translate(-50%, 0); }
+.mini-week-col.on .mini-week-day { color: var(--brand-ink); }
 @media (prefers-reduced-motion: reduce) { .mini-week-bar { transition: none !important; } }
 
 /* browser frame: sidebar + main */
