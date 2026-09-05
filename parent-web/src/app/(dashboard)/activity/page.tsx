@@ -158,7 +158,7 @@ function ActivityContent() {
   const [appsPage, setAppsPage] = useState(0);
   const [appSort, setAppSort] = useState<"minutes" | "name" | "recent">("minutes");
   const [sitesPage, setSitesPage] = useState(0);
-  const [siteSort, setSiteSort] = useState<"minutes" | "visits" | "domain">("minutes");
+  const [siteSort, setSiteSort] = useState<"recent" | "visits" | "domain">("recent");
   const [tab, setTab] = useState<"screen" | "history" | "sites">("screen");
   const [historyOffset, setHistoryOffset] = useState(0);
   const [historyDate, setHistoryDate] = useState(todayISO);
@@ -211,7 +211,8 @@ function ActivityContent() {
   const sites: SiteUsage[] = [...rawSites].sort((a, b) => {
     if (siteSort === "domain") return a.domain.localeCompare(b.domain);
     if (siteSort === "visits") return b.visits - a.visits || b.minutes - a.minutes;
-    return b.minutes - a.minutes || b.visits - a.visits;
+    // "recent": most recently visited first, then earlier visits following.
+    return (b.last_visited_at ?? "").localeCompare(a.last_visited_at ?? "") || b.minutes - a.minutes;
   });
   // Real-data derived views for the redesigned tab — no fabricated metrics.
   const topSite = [...rawSites].sort((a, b) => b.minutes - a.minutes || b.visits - a.visits)[0] ?? null;
@@ -605,8 +606,8 @@ function ActivityContent() {
                             <span className="muted-sm">{RANGE_LABELS[range]} · {sites.length} ta</span>
                             {sites.length > 1 && (
                               <select value={siteSort} onChange={(e) => { setSiteSort(e.target.value as typeof siteSort); setSitesPage(0); }} className="btn-view" style={{ fontSize: 12 }}>
-                                <option value="minutes">Vaqt bo&apos;yicha</option>
-                                <option value="visits">Tashriflar bo&apos;yicha</option>
+                                <option value="recent">Vaqt bo&apos;yicha</option>
+                                <option value="visits">Tashriflar soni bo&apos;yicha</option>
                                 <option value="domain">Nomi bo&apos;yicha</option>
                               </select>
                             )}
