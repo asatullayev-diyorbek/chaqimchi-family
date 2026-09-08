@@ -5,6 +5,7 @@ import SiteNav from "@/components/SiteNav";
 import CountUp from "@/components/CountUp";
 import { WeekBars, CategoryDonut, MiniWeek } from "@/components/Charts";
 import ParentWebMock from "@/components/ParentWebMock";
+import Logo from "@/components/Logo";
 import {
   SITE,
   PROMISES,
@@ -128,29 +129,25 @@ export default function Page() {
         <section className="hero">
           <div className="wrap hero-grid">
             <div className="hero-copy">
-              <span className="badge"><span className="dot" /> Windows 10/11 · MVP/Beta davrida bepul</span>
+              <span className="badge"><span className="dot" /> Windows 10/11 • Beta‑davr, bepul</span>
               <h1>
-                Oila uchun <span className="grad">ochiq</span> ekran-vaqt qoidalari
+                Oilangiz uchun <span className="grad">ochiq</span> ekran‑vaqt qoidalari
               </h1>
               <p className="lead">
-                Kunlik limit, dam olish soatlari va ilova cheklovlarini oddiy tilda boshqaring.
-                Bola ham qoidalarni va qolgan vaqtini o&apos;z ekranida ko&apos;radi.
+                Kundalik limit, dam olish soatlari va ilova cheklovlarini oddiy tilda boshqaring. Bola ham qoidalarni va qolgan vaqtini ekranda ko'radi.
               </p>
               <div className="hero-cta">
-                <a className="btn btn-primary btn-lg btn-glow" href={SITE.downloadUrl}>{DownloadIcon}Windows uchun yuklab olish</a>
+                <a className="btn btn-primary btn-lg btn-glow" href={SITE.downloadUrl}>{DownloadIcon}Windows`ga yuklab olish</a>
                 <a className="btn btn-ghost btn-lg" href={SITE.signupUrl}>Bepul boshlash</a>
               </div>
               <p className="hero-note">
-                Josuslik yoki jazolash vositasi emas
-                <span className="sep" /> Offline ham ishlaydi
-                <span className="sep" /> Bir necha bola va qurilma
+                Jozibali yoki jazolash vositasi emas <span className="sep" /> Offline ham ishlaydi <span className="sep" /> Bir necha bola va qurilma
               </p>
             </div>
 
             <div className="showcase">
               <ParentWebMock />
-            </div>
-            <div className="float-chip">
+              <div className="float-chip">
                 <span className="ring" />
                 <div>
                   <b>1s 20d qoldi</b>
@@ -325,7 +322,7 @@ export default function Page() {
               </div>
               <div className="browser-body">
                 <aside className="bside" aria-hidden>
-                  <div className="bside-brand"><span className="brand-mark">C</span></div>
+                  <div className="bside-brand"><Logo className="brand-logo" /></div>
                   <a className="bside-item active"><Ico name="solar:home-2-linear" /> Bosh sahifa</a>
                   <a className="bside-item"><Ico name="solar:chart-2-linear" /> Faoliyat</a>
                   <a className="bside-item"><Ico name="solar:devices-linear" /> Qurilmalar</a>
@@ -540,7 +537,7 @@ export default function Page() {
         <div className="wrap foot-main">
           <div className="foot-brand">
             <div className="brand">
-              <span className="brand-mark">C</span> ChaqimchiAI Family
+              <Logo className="brand-logo" /> ChaqimchiAI Family
             </div>
             <p>Ota-ona va bola o&apos;rtasidagi ekran-vaqt qoidalarini ochiq boshqarish vositasi.</p>
           </div>

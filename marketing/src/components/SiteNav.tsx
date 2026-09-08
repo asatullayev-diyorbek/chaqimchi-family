@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { NAV_LINKS, SITE } from "@/lib/site";
+import Logo from "@/components/Logo";
 
 export default function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
@@ -24,16 +25,18 @@ export default function SiteNav() {
   }, [open]);
 
   return (
-    <header className={`nav ${scrolled ? "nav-scrolled" : ""}`}>
+    <header className={`nav ${scrolled ? "nav-scrolled" : ""} glass`}>
       <div className="wrap nav-inner">
         <Link className="brand" href="/" onClick={() => setOpen(false)}>
-          <span className="brand-mark">C</span>
+          <Logo className="brand-logo" />
           ChaqimchiAI Family
         </Link>
 
         <nav className="nav-links">
           {NAV_LINKS.map((l) => (
-            <a key={l.href} href={l.href}>{l.label}</a>
+            <Link key={l.href} href={l.href} className="nav-link">
+              {l.label}
+            </Link>
           ))}
         </nav>
 
@@ -58,7 +61,9 @@ export default function SiteNav() {
       <div className={`nav-sheet ${open ? "open" : ""}`} onClick={() => setOpen(false)}>
         <div className="nav-sheet-inner" onClick={(e) => e.stopPropagation()}>
           {NAV_LINKS.map((l) => (
-            <a key={l.href} href={l.href} onClick={() => setOpen(false)}>{l.label}</a>
+            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="nav-sheet-link">
+              {l.label}
+            </Link>
           ))}
           <div className="nav-sheet-cta">
             <a className="btn btn-ghost" href={SITE.loginUrl}>Kirish</a>

@@ -1,7 +1,20 @@
 import React from 'react';
 import { MiniWeek, WeekBars, CategoryDonut } from '@/components/Charts';
-import AppChip from '@/components/AppChip';
-import { DEMO_APPS, fmt } from '@/lib/site';
+import { DEMO_APPS } from '@/lib/site';
+
+function AppChip({ icon, color }: { icon: string; color?: string }) {
+  return (
+    <span className="chip-ico brand">
+      <iconify-icon icon={icon} style={color ? { color } : undefined} />
+    </span>
+  );
+}
+
+function fmt(mins: number) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h ? `${h}s ${m}d` : `${m}d`;
+}
 
 // A lightweight mock of the real Parent Web dashboard used in the hero section.
 // It assembles existing chart components to give a realistic preview without
