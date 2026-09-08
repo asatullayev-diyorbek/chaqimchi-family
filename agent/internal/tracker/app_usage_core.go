@@ -51,9 +51,19 @@ func AppendIconEvent(store *buffer.Store, appID, sha256hex, pngB64 string) {
 	})
 }
 
+// maxObservationGap bounds how long the current app_usage interval may run
+// without a fresh observation confirming the app is still in the foreground.
+// Observations arrive about every 10s; a longer silence means the producer
+// stalled — the machine slept, the session-reporter child was restarted, or
+// the box was locked — and the time since the last observation was NOT screen
+// time. When the gap is exceeded we close the interval at the last known-good
+// observation instead of letting it absorb the whole silent stretch.
+var maxObservationGap = 45 * time.Second
+
 func RunAppUsageFromObservations(ctx context.Context, store *buffer.Store, obs <-chan string, onPoll func(app string)) {
 	var currentApp string
 	var startedAt time.Time
+	var lastObsAt time.Time
 
 	flush := func(endedAt time.Time) {
 		if currentApp == "" {
@@ -87,6 +97,16 @@ func RunAppUsageFromObservations(ctx context.Context, store *buffer.Store, obs <
 				return
 			}
 			now := time.Now()
+			if !lastObsAt.IsZero() && now.Sub(lastObsAt) > maxObservationGap {
+				// The observation stream went silent for longer than a
+				// healthy poll cadence: sleep, lock, or a reporter restart.
+				// Close the running interval at the last confirmed sighting
+				// so the silent stretch isn't counted, then start fresh.
+				flush(lastObsAt)
+				currentApp = ""
+				startedAt = time.Time{}
+			}
+			lastObsAt = now
 			if app != currentApp {
 				flush(now)
 				currentApp = app

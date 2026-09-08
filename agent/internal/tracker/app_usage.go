@@ -29,6 +29,9 @@ var (
 
 const (
 	processQueryLimitedInformation = 0x1000
+	// idlePollThreshold mirrors the session reporter's idleThreshold: once
+	// there's been no input for this long, stop attributing screen time.
+	idlePollThreshold = 90 * time.Second
 )
 
 // ForegroundProcessName returns the executable name (e.g. "chrome.exe") of
@@ -99,6 +102,11 @@ func RunAppUsage(ctx context.Context, store *buffer.Store, pollInterval time.Dur
 				return
 			case <-ticker.C:
 				name, path := ForegroundProcessInfo()
+				// Treat "away from keyboard" as no foreground app so the
+				// usage interval closes instead of absorbing idle time.
+				if name != "" && IdleDuration() >= idlePollThreshold {
+					name, path = "", ""
+				}
 				icons.Observe(name, path, func(appID, sha, b64 string) {
 					AppendIconEvent(store, appID, sha, b64)
 				})

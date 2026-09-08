@@ -81,6 +81,37 @@ func TestRunAppUsageFromObservationsFlushesOnChange(t *testing.T) {
 	}
 }
 
+func TestRunAppUsageFromObservationsClosesIntervalOnObservationGap(t *testing.T) {
+	prev := maxObservationGap
+	maxObservationGap = 40 * time.Millisecond
+	t.Cleanup(func() { maxObservationGap = prev })
+
+	store := openTestStore(t)
+	obs := make(chan string)
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		RunAppUsageFromObservations(ctx, store, obs, nil)
+		close(done)
+	}()
+
+	obs <- "chrome.exe"
+	obs <- "chrome.exe"
+	time.Sleep(80 * time.Millisecond) // stall: sleep / lock / reporter restart
+	obs <- "chrome.exe"               // same app, but the gap must close the old interval
+	obs <- "code.exe"
+	cancel()
+	<-done
+
+	events := appUsageEvents(t, store)
+	if len(events) != 3 {
+		t.Fatalf("want 3 intervals (chrome pre-gap, chrome post-gap, code), got %d: %v", len(events), events)
+	}
+	if d, _ := events[0]["duration_seconds"].(float64); d > 1 {
+		t.Fatalf("pre-gap interval should end at the last sighting, not absorb the stall: %vs", d)
+	}
+}
+
 func TestRunAppUsageFromObservationsIgnoresIdleWhenNothingFocused(t *testing.T) {
 	store := openTestStore(t)
 	obs := make(chan string)

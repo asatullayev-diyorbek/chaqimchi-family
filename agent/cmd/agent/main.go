@@ -361,6 +361,10 @@ func runForegroundReporter(parentPID int) {
 		pollInterval   = 10 * time.Second
 		endpointURL    = "http://" + localipc.Address + "/v1/foreground"
 		maxConsecFails = 12
+		// No keyboard/mouse input for this long => the child has left the
+		// machine; report "no foreground app" so the service closes the
+		// running app_usage interval instead of counting the idle time.
+		idleThreshold = 90 * time.Second
 	)
 	_ = parentPID
 	reporterLog("foreground reporter started")
@@ -387,6 +391,9 @@ func runForegroundReporter(parentPID int) {
 
 	for range ticker.C {
 		name, path := tracker.ForegroundProcessInfo()
+		if name != "" && tracker.IdleDuration() >= idleThreshold {
+			name, path = "", ""
+		}
 		report := localipc.ForegroundReport{App: name}
 		if name != "" && path != "" && iconAttempts[path] < maxIconAttempts {
 			if _, have := pendingIcons[name]; !have {
