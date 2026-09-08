@@ -1,160 +1,361 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { FlatList, Text, View } from "react-native";
-import { getDevices } from "../../api/tracking";
-import { Rule, createRule, deleteRule, getRules } from "../../api/rules";
-import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, colors, Screen } from "../../ui";
+import React, { useCallback, useMemo, useState } from "react";
+import { Pressable, View } from "react-native";
+import { colors, radius } from "../../theme";
+import { formatMinutes } from "../../lib/format";
+import { appDisplay } from "../../lib/appDisplay";
+import { useFamily } from "../../state/family";
+import {
+  blockedApps,
+  blockedWindows,
+  createRule,
+  dailyLimitRule,
+  deleteRule,
+  getRules,
+  Rule,
+} from "../../api/rules";
+import { useQuery } from "../../hooks/useQuery";
+import {
+  AppHeader,
+  Button,
+  Card,
+  ChildSelector,
+  ComingSoonCard,
+  ConfirmSheet,
+  DurationPickerSheet,
+  EmptyState,
+  ErrorState,
+  Field,
+  Icon,
+  IconButton,
+  ListRow,
+  LoadingState,
+  Muted,
+  Screen,
+  Sheet,
+  Text,
+  TimeRangePickerSheet,
+  useToast,
+} from "../../components";
 
 export default function RulesScreen() {
-  const [deviceId, setDeviceId] = useState<string | null>(null);
-  const [rules, setRules] = useState<Rule[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
+  const { childDevices, selectedChild, activeDevice, setDevice, loading: familyLoading } = useFamily();
 
-  const [limitHours, setLimitHours] = useState("");
-  const [limitMinutes, setLimitMinutes] = useState("");
-  const [newApp, setNewApp] = useState("");
+  // Rules always target one device. If the child has several and none is
+  // picked, default to the first so the screen is never empty.
+  const deviceId = activeDevice?.id ?? childDevices[0]?.id ?? "";
 
-  const dailyLimitRule = rules.find((r) => r.rule_type === "daily_limit_minutes");
-  const blockedAppRules = rules.filter((r) => r.rule_type === "blocked_app");
+  const { data, loading, error, refetch, refreshing, reload } = useQuery(
+    () => getRules(deviceId),
+    [deviceId],
+    { enabled: Boolean(deviceId) },
+  );
+  const rules = data ?? [];
 
-  const load = useCallback(async () => {
-    try {
-      setError(null);
-      const devices = await getDevices();
-      const linked = devices.find((d) => d.status === "linked");
-      if (!linked) return;
-      setDeviceId(linked.id);
-      const fetchedRules = await getRules(linked.id);
-      setRules(fetchedRules);
-      const limitRule = fetchedRules.find((r) => r.rule_type === "daily_limit_minutes");
-      if (limitRule && "minutes" in limitRule.value) {
-        setLimitHours(String(Math.floor(limitRule.value.minutes / 60)));
-        setLimitMinutes(String(limitRule.value.minutes % 60));
+  const [limitOpen, setLimitOpen] = useState<"weekday" | "weekend" | null>(null);
+  const [windowOpen, setWindowOpen] = useState(false);
+  const [appOpen, setAppOpen] = useState(false);
+  const [appName, setAppName] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<Rule | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const limit = dailyLimitRule(rules);
+  const weekdayMin = limit?.value.minutes ?? 0;
+  const weekendMin = limit?.value.weekend_minutes ?? 0;
+  const apps = blockedApps(rules);
+  const windows = blockedWindows(rules);
+
+  const saveLimit = useCallback(
+    async (which: "weekday" | "weekend", minutes: number) => {
+      setBusy(true);
+      try {
+        const nextValue: { minutes: number; weekend_minutes?: number } = {
+          minutes: which === "weekday" ? minutes : weekdayMin || minutes,
+        };
+        const we = which === "weekend" ? minutes : weekendMin;
+        if (we > 0) nextValue.weekend_minutes = we;
+
+        if (which === "weekday" && minutes === 0) {
+          if (limit) await deleteRule(limit.id);
+        } else {
+          const created = await createRule(deviceId, "daily_limit_minutes", nextValue);
+          if (limit) await deleteRule(limit.id).catch(() => undefined);
+          void created;
+        }
+        await reload();
+        toast.success("Limit saqlandi");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Saqlanmadi");
+      } finally {
+        setBusy(false);
+        setLimitOpen(null);
       }
-    } catch (e: any) {
-      setError(e.message);
+    },
+    [deviceId, limit, weekdayMin, weekendMin, reload, toast],
+  );
+
+  const addApp = useCallback(async () => {
+    const name = appName.trim();
+    if (!name) return;
+    if (apps.some((r) => r.value.app.toLowerCase() === name.toLowerCase())) {
+      toast.error("Bu ilova allaqachon cheklangan");
+      return;
     }
-  }, []);
-
-  useEffect(() => {
-    load().finally(() => setLoading(false));
-  }, [load]);
-
-  async function applyDailyLimit(hoursStr: string, minutesStr: string) {
-    if (!deviceId) return;
-    const hours = parseInt(hoursStr, 10) || 0;
-    const minutes = parseInt(minutesStr, 10) || 0;
-    const totalMinutes = hours * 60 + minutes;
-
+    setBusy(true);
     try {
-      if (dailyLimitRule) {
-        await deleteRule(dailyLimitRule.id);
+      await createRule(deviceId, "blocked_app", { app: name });
+      await reload();
+      setAppName("");
+      setAppOpen(false);
+      toast.success("Ilova cheklandi");
+    } catch (e: any) {
+      toast.error(e?.message ?? "Qo‘shilmadi");
+    } finally {
+      setBusy(false);
+    }
+  }, [appName, apps, deviceId, reload, toast]);
+
+  const addWindow = useCallback(
+    async (start: string, end: string) => {
+      setBusy(true);
+      try {
+        await createRule(deviceId, "blocked_window", { start, end });
+        await reload();
+        setWindowOpen(false);
+        toast.success("Tinch soat qo‘shildi");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Qo‘shilmadi");
+      } finally {
+        setBusy(false);
       }
-      if (totalMinutes > 0) {
-        const rule = await createRule(deviceId, "daily_limit_minutes", { minutes: totalMinutes });
-        setRules((prev) => [...prev.filter((r) => r.rule_type !== "daily_limit_minutes"), rule]);
-      } else {
-        setRules((prev) => prev.filter((r) => r.rule_type !== "daily_limit_minutes"));
-      }
-    } catch (e: any) {
-      setError(e.message);
-    }
-  }
+    },
+    [deviceId, reload, toast],
+  );
 
-  async function addBlockedApp() {
-    if (!deviceId || !newApp.trim()) return;
+  const removeRule = useCallback(async () => {
+    if (!confirmDelete) return;
+    setBusy(true);
     try {
-      const rule = await createRule(deviceId, "blocked_app", { app: newApp.trim() });
-      setRules((prev) => [...prev, rule]);
-      setNewApp("");
+      await deleteRule(confirmDelete.id);
+      await reload();
+      toast.success("Qoida o‘chirildi");
     } catch (e: any) {
-      setError(e.message);
+      toast.error(e?.message ?? "O‘chirilmadi");
+    } finally {
+      setBusy(false);
+      setConfirmDelete(null);
     }
-  }
+  }, [confirmDelete, reload, toast]);
 
-  async function removeBlockedApp(rule: Rule) {
-    try {
-      await deleteRule(rule.id);
-      setRules((prev) => prev.filter((r) => r.id !== rule.id));
-    } catch (e: any) {
-      setError(e.message);
-    }
-  }
+  const header = (
+    <View style={{ gap: 12 }}>
+      <AppHeader title="Qoidalar" subtitle={selectedChild?.name} />
+      <ChildSelector />
+      {childDevices.length > 1 ? (
+        <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+          {childDevices.map((d) => {
+            const active = d.id === deviceId;
+            return (
+              <Pressable
+                key={d.id}
+                onPress={() => setDevice(d.id)}
+                style={{
+                  paddingVertical: 7,
+                  paddingHorizontal: 12,
+                  borderRadius: radius.pill,
+                  borderWidth: 1,
+                  borderColor: active ? colors.blue : colors.border,
+                  backgroundColor: active ? colors.blueSoft : colors.surface,
+                }}
+              >
+                <Text variant="micro" color={active ? colors.blue : colors.muted}>
+                  {d.child_name || (d.platform === "windows" ? "Kompyuter" : d.platform)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+    </View>
+  );
 
-  if (loading) {
-    return <Screen><View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}><Text style={{ color: colors.muted }}>Yuklanmoqda...</Text></View></Screen>;
+  if (familyLoading || (loading && deviceId)) {
+    return (
+      <Screen scroll>
+        {header}
+        <LoadingState />
+      </Screen>
+    );
   }
-
   if (!deviceId) {
-    return <Screen><View style={{ flex: 1, justifyContent: "center" }}><Card><Text style={{ color: colors.text }}>Hali bog‘langan qurilma yo‘q.</Text></Card></View></Screen>;
+    return (
+      <Screen scroll>
+        {header}
+        <EmptyState icon="device" title="Qurilma yo‘q" message="Qoida qo‘yish uchun avval farzand qurilmasini ulang." />
+      </Screen>
+    );
+  }
+  if (error && !data) {
+    return (
+      <Screen scroll>
+        {header}
+        <ErrorState message={error.message} onRetry={refetch} />
+      </Screen>
+    );
   }
 
   return (
-    <Screen>
-      <View style={{ gap: 16, flex: 1 }}>
-      <View style={{ gap: 4 }}><Text style={{ fontSize: 26, fontWeight: "800", color: colors.text }}>Qoidalar</Text><Text style={{ color: colors.muted }}>Ekran vaqtini bolangiz bilan kelishib boshqaring.</Text></View>
-      <Card style={{ gap: 12 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>Kunlik ekran vaqti limiti</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Field
-            placeholder="soat"
-            keyboardType="number-pad"
-            value={limitHours}
-            onChangeText={setLimitHours}
-            onBlur={() => applyDailyLimit(limitHours, limitMinutes)}
-            style={{ width: 76, textAlign: "center" }}
-          />
-          <Text>soat</Text>
-          <Field
-            placeholder="daqiqa"
-            keyboardType="number-pad"
-            value={limitMinutes}
-            onChangeText={setLimitMinutes}
-            onBlur={() => applyDailyLimit(limitHours, limitMinutes)}
-            style={{ width: 76, textAlign: "center" }}
-          />
-          <Text>daqiqa</Text>
+    <Screen scroll refreshing={refreshing} onRefresh={refetch}>
+      {header}
+
+      {/* Daily limit */}
+      <Card padded={false}>
+        <View style={{ padding: 16, gap: 3 }}>
+          <Text variant="h3">Kunlik ekran vaqti</Text>
+          <Muted>O‘zgarishlar keyingi sinxronizatsiyada qurilmaga yetadi.</Muted>
         </View>
-        <Text style={{ color: colors.muted, fontSize: 12 }}>0 qoldirsangiz, limit o‘chiriladi.</Text>
+        <View style={{ paddingHorizontal: 16 }}>
+          <ListRow
+            first
+            icon="clock"
+            title="Ish kunlari"
+            subtitle={weekdayMin ? "Dushanba–Juma" : "Belgilanmagan"}
+            right={<Text variant="label" color={colors.blue}>{weekdayMin ? formatMinutes(weekdayMin) : "Qo‘shish"}</Text>}
+            onPress={() => setLimitOpen("weekday")}
+          />
+          <ListRow
+            icon="calendar"
+            title="Dam olish kunlari"
+            subtitle={weekendMin ? "Shanba–Yakshanba" : "Ish kunlari limiti qo‘llanadi"}
+            right={<Text variant="label" color={colors.blue}>{weekendMin ? formatMinutes(weekendMin) : "Qo‘shish"}</Text>}
+            onPress={() => (weekdayMin ? setLimitOpen("weekend") : toast.error("Avval ish kunlari limitini belgilang"))}
+          />
+        </View>
       </Card>
 
-      <Card style={{ gap: 12, flex: 1 }}>
-        <Text style={{ fontSize: 18, fontWeight: "800", color: colors.text }}>Ruxsat etilmagan ilovalar</Text>
-        <View style={{ flexDirection: "row", gap: 8 }}>
+      {/* Blocked apps */}
+      <Card padded={false}>
+        <View style={{ padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ gap: 3, flex: 1 }}>
+            <Text variant="h3">Cheklangan ilovalar</Text>
+            <Muted>Farzand ilovada «hozircha mavjud emas» ko‘rinishida bo‘ladi.</Muted>
+          </View>
+          <IconButton name="plusCircle" onPress={() => setAppOpen(true)} accessibilityLabel="Ilova qo‘shish" color={colors.blue} />
+        </View>
+        {apps.length === 0 ? (
+          <View style={{ padding: 16, paddingTop: 0 }}>
+            <Muted>Hali cheklangan ilova yo‘q.</Muted>
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: 16 }}>
+            {apps.map((r, i) => (
+              <ListRow
+                key={r.id}
+                first={i === 0}
+                icon="shieldOff"
+                iconColor={colors.danger}
+                iconBg={colors.dangerSoft}
+                title={appDisplay(r.value.app).label}
+                right={<IconButton name="trash" onPress={() => setConfirmDelete(r)} accessibilityLabel="O‘chirish" color={colors.faint} size={17} />}
+              />
+            ))}
+          </View>
+        )}
+      </Card>
+
+      {/* Quiet hours */}
+      <Card padded={false}>
+        <View style={{ padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View style={{ gap: 3, flex: 1 }}>
+            <Text variant="h3">Tinch soatlar</Text>
+            <Muted>Uyqu vaqti yoki dars vaqti — belgilangan oraliqda ekran bloklanadi.</Muted>
+          </View>
+          <IconButton name="plusCircle" onPress={() => setWindowOpen(true)} accessibilityLabel="Oyna qo‘shish" color={colors.blue} />
+        </View>
+        {windows.length === 0 ? (
+          <View style={{ padding: 16, paddingTop: 0 }}>
+            <Muted>Hali tinch soat belgilanmagan.</Muted>
+          </View>
+        ) : (
+          <View style={{ paddingHorizontal: 16 }}>
+            {windows.map((r, i) => (
+              <ListRow
+                key={r.id}
+                first={i === 0}
+                icon="moon"
+                iconColor={colors.catPurple}
+                iconBg={colors.catPurpleBg}
+                title={`${r.value.start} – ${r.value.end}`}
+                right={<IconButton name="trash" onPress={() => setConfirmDelete(r)} accessibilityLabel="O‘chirish" color={colors.faint} size={17} />}
+              />
+            ))}
+          </View>
+        )}
+      </Card>
+
+      <ComingSoonCard
+        icon="app"
+        title="Ilovaga vaqt limiti"
+        message="Bitta ilovaga alohida kunlik limit (masalan, YouTube — 45 daqiqa). Hozircha faqat umumiy limit va to‘liq blok mavjud."
+      />
+      <ComingSoonCard
+        icon="globe"
+        title="Web-sayt qoidalari"
+        message="Alohida saytlarni bloklash yoki cheklash. Hozircha web-saytlar faqat kuzatiladi."
+      />
+      <ComingSoonCard
+        icon="lock"
+        title="Darhol bloklash / Internetni to‘xtatish"
+        message="Bir tugma bilan qurilmani zudlik bilan bloklash. Hozircha qoidalar keyingi sinxronizatsiyada yetadi."
+      />
+
+      {/* Sheets */}
+      <DurationPickerSheet
+        visible={limitOpen === "weekday"}
+        onClose={() => setLimitOpen(null)}
+        onSubmit={(m) => saveLimit("weekday", m)}
+        title="Ish kunlari limiti"
+        initial={weekdayMin}
+        loading={busy}
+      />
+      <DurationPickerSheet
+        visible={limitOpen === "weekend"}
+        onClose={() => setLimitOpen(null)}
+        onSubmit={(m) => saveLimit("weekend", m)}
+        title="Dam olish kunlari limiti"
+        initial={weekendMin || weekdayMin}
+        loading={busy}
+      />
+      <TimeRangePickerSheet
+        visible={windowOpen}
+        onClose={() => setWindowOpen(false)}
+        onSubmit={addWindow}
+        title="Tinch soat"
+        loading={busy}
+      />
+      <Sheet visible={appOpen} onClose={() => setAppOpen(false)} title="Ilovani cheklash" scroll={false}>
+        <View style={{ gap: 14 }}>
           <Field
-            placeholder="masalan: steam.exe"
+            label="Ilova nomi"
+            hint="Ilova nomini yozing, masalan: Steam, Roblox, Discord"
             autoCapitalize="none"
-            value={newApp}
-            onChangeText={setNewApp}
-            style={{ flex: 1 }}
+            value={appName}
+            onChangeText={setAppName}
+            onSubmitEditing={addApp}
           />
-          <View style={{ width: 106 }}><PrimaryButton title="Qo‘shish" onPress={addBlockedApp} /></View>
+          <Button title="Cheklash" onPress={addApp} loading={busy} disabled={!appName.trim()} />
         </View>
-        <FlatList
-          data={blockedAppRules}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: 12,
-                borderTopWidth: 1,
-                borderColor: "#edf0f5",
-                marginTop: 8,
-              }}
-            >
-              <Text style={{ color: colors.text, fontWeight: "700" }}>{"app" in item.value ? item.value.app : ""}</Text>
-              <SecondaryButton title="O‘chirish" onPress={() => removeBlockedApp(item)} />
-            </View>
-          )}
-          ListEmptyComponent={<Text style={{ color: colors.muted }}>Hali ruxsat etilmagan ilova yo‘q.</Text>}
-        />
-      </Card>
-
-      <ErrorText message={error} />
-      </View>
+      </Sheet>
+      <ConfirmSheet
+        visible={confirmDelete !== null}
+        onClose={() => setConfirmDelete(null)}
+        onConfirm={removeRule}
+        title="Qoidani o‘chirasizmi?"
+        message="Bu cheklov olib tashlanadi va keyingi sinxronizatsiyada qurilmada ham bekor bo‘ladi."
+        confirmLabel="O‘chirish"
+        destructive
+        loading={busy}
+      />
     </Screen>
   );
 }

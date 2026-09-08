@@ -1,5 +1,5 @@
 {
-  "name": "chaqimchi-parent-mobile",
+  "name": "spino24-parent-mobile",
   "version": "0.1.0",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
@@ -9,6 +9,8 @@
     "ios": "expo start --ios"
   },
   "dependencies": {
+    "@expo/metro-runtime": "~4.0.1",
+    "@react-navigation/bottom-tabs": "^7.18.18",
     "@react-navigation/native": "^7.0.0",
     "@react-navigation/native-stack": "^7.0.0",
     "@types/react": "~18.3.12",
@@ -16,11 +18,18 @@
     "expo-asset": "~11.0.5",
     "expo-barcode-scanner": "~13.0.1",
     "expo-constants": "~17.0.8",
+    "expo-font": "~13.0.4",
+    "expo-image-picker": "~16.0.6",
+    "expo-linear-gradient": "~14.0.2",
+    "expo-secure-store": "~14.0.1",
     "expo-status-bar": "~2.0.1",
     "react": "18.3.1",
+    "react-dom": "18.3.1",
     "react-native": "0.76.9",
     "react-native-safe-area-context": "4.12.0",
     "react-native-screens": "~4.4.0",
+    "react-native-svg": "15.8.0",
+    "react-native-web": "~0.19.13",
     "typescript": "^5.3.3"
   }
 }

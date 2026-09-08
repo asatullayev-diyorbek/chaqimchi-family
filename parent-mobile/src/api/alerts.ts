@@ -1,6 +1,6 @@
 import { apiFetch } from "./client";
 
-export type AlertType = "limit_reached" | "blocked_app_opened";
+export type AlertType = "limit_reached" | "blocked_app_opened" | "settings_panel_access";
 
 export type Alert = {
   id: string;
@@ -11,10 +11,10 @@ export type Alert = {
   seen: boolean;
 };
 
-export async function getAlerts(deviceId: string): Promise<Alert[]> {
+export function getAlerts(deviceId: string): Promise<Alert[]> {
   return apiFetch(`/api/alerts/${deviceId}/`);
 }
 
-export async function markAlertSeen(alertId: string): Promise<Alert> {
+export function markAlertSeen(alertId: string): Promise<Alert> {
   return apiFetch(`/api/alerts/${alertId}/mark-seen/`, { method: "POST" });
 }

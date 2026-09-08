@@ -1,19 +1,35 @@
 {
   "expo": {
-    "name": "ChaqimchiAI Family",
-    "slug": "chaqimchi-family-parent",
+    "name": "Spino24",
+    "slug": "spino24-parent",
+    "scheme": "spino24",
     "version": "0.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
-    "plugins": ["expo-asset"],
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#eef1fb",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#eef1fb"
+    },
+    "plugins": ["expo-asset", "expo-secure-store", "expo-font"],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "QR kod skaner qilish uchun kamera kerak."
+        "NSCameraUsageDescription": "QR-kodni skanerlash uchun kamera kerak.",
+        "NSPhotoLibraryUsageDescription": "Farzand rasmini tanlash uchun galereyaga ruxsat kerak."
       }
     },
     "android": {
-      "permissions": ["CAMERA"]
+      "permissions": ["CAMERA", "READ_MEDIA_IMAGES"],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }

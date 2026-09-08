@@ -1,0 +1,483 @@
+import React, { useMemo, useState } from "react";
+import { LayoutChangeEvent, Pressable, View } from "react-native";
+import Svg, {
+  Circle,
+  Defs,
+  G,
+  Line,
+  LinearGradient,
+  Path,
+  Rect,
+  Stop,
+} from "react-native-svg";
+import { CAT_COLORS, colors, gradients, radius } from "../theme";
+import { formatMinutesShort } from "../lib/format";
+import { Text } from "./primitives";
+
+// --- Meter (linear progress) --------------------------------------
+
+export function Meter({
+  value,
+  max,
+  tone = "blue",
+  height = 8,
+}: {
+  value: number;
+  max: number;
+  tone?: "blue" | "warn" | "danger" | "mint";
+  height?: number;
+}) {
+  const pct = max > 0 ? Math.min(100, Math.max(0, (value / max) * 100)) : 0;
+  const over = max > 0 && value > max;
+  const fill =
+    tone === "warn"
+      ? colors.warning
+      : tone === "danger" || over
+        ? colors.danger
+        : tone === "mint"
+          ? colors.mint
+          : colors.chartBarActive;
+  return (
+    <View
+      style={{
+        height,
+        borderRadius: 999,
+        backgroundColor: colors.chartTrack,
+        overflow: "hidden",
+        flexDirection: "row",
+      }}
+    >
+      <View style={{ width: `${pct}%`, height: "100%", borderRadius: 999, backgroundColor: fill }} />
+      {over ? <View style={{ flex: 1, height: "100%", backgroundColor: `${colors.danger}33` }} /> : null}
+    </View>
+  );
+}
+
+// --- RingProgress (used vs limit) --------------------------------
+
+export function RingProgress({
+  value,
+  max,
+  size = 176,
+  stroke = 15,
+  centerTop,
+  centerBottom,
+  tone,
+}: {
+  value: number;
+  max: number | null;
+  size?: number;
+  stroke?: number;
+  centerTop: string;
+  centerBottom?: string;
+  tone?: "blue" | "warn" | "danger";
+}) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const ratio = max && max > 0 ? Math.min(1, value / max) : 0;
+  const over = max != null && max > 0 && value > max;
+  const overRatio = over ? Math.min(1, (value - max!) / max!) : 0;
+
+  const grad =
+    over || tone === "danger"
+      ? gradients.ringDanger
+      : tone === "warn" || ratio > 0.85
+        ? gradients.ringWarn
+        : gradients.ring;
+  const cx = size / 2;
+
+  return (
+    <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
+      <Svg width={size} height={size} style={{ position: "absolute" }}>
+        <Defs>
+          <LinearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor={grad[0]} />
+            <Stop offset="1" stopColor={grad[1]} />
+          </LinearGradient>
+        </Defs>
+        <Circle cx={cx} cy={cx} r={r} stroke={colors.chartTrack} strokeWidth={stroke} fill="none" />
+        {max != null && ratio > 0 && (
+          <Circle
+            cx={cx}
+            cy={cx}
+            r={r}
+            stroke="url(#ringGrad)"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${c * ratio} ${c}`}
+            fill="none"
+            transform={`rotate(-90 ${cx} ${cx})`}
+          />
+        )}
+        {/* a thin inner arc showing how far past the limit */}
+        {over && (
+          <Circle
+            cx={cx}
+            cy={cx}
+            r={r - stroke}
+            stroke={colors.danger}
+            strokeOpacity={0.55}
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeDasharray={`${2 * Math.PI * (r - stroke) * overRatio} ${2 * Math.PI * (r - stroke)}`}
+            fill="none"
+            transform={`rotate(-90 ${cx} ${cx})`}
+          />
+        )}
+      </Svg>
+      <Text variant="display" style={{ fontSize: 28 }}>
+        {centerTop}
+      </Text>
+      {centerBottom ? (
+        <Text variant="caption" color={over ? colors.danger : colors.muted} style={{ marginTop: 2 }}>
+          {centerBottom}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+// --- WeekBars (7/30-day screen time) ----------------------------
+
+type Day = { label: string; minutes: number; weekend?: boolean };
+
+export function WeekBars({
+  days,
+  showValues = false,
+  height = 132,
+  showAverage = true,
+}: {
+  days: Day[];
+  showValues?: boolean;
+  height?: number;
+  showAverage?: boolean;
+}) {
+  const [width, setWidth] = useState(0);
+  const [active, setActive] = useState<number | null>(null);
+
+  const { maxMin, avg, peak } = useMemo(() => {
+    const vals = days.map((d) => d.minutes);
+    const nonZero = vals.filter((v) => v > 0);
+    return {
+      maxMin: Math.max(60, ...vals),
+      avg: nonZero.length ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0,
+      peak: Math.max(0, ...vals),
+    };
+  }, [days]);
+
+  const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
+
+  const padTop = showValues ? 16 : 6;
+  const axisH = 16;
+  const plotH = height - axisH - padTop;
+  const dense = days.length > 10;
+  const barW = dense ? Math.max(4, width / days.length - 4) : Math.min(20, width / days.length - 10);
+  const step = width / days.length;
+  const yFor = (m: number) => padTop + plotH - Math.min(1, m / maxMin) * plotH;
+
+  return (
+    <View onLayout={onLayout} style={{ height }}>
+      {width > 0 && (
+        <>
+          <Svg width={width} height={height}>
+            <Defs>
+              <LinearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={gradients.bar[1]} />
+                <Stop offset="1" stopColor={gradients.bar[0]} />
+              </LinearGradient>
+              <LinearGradient id="barActive" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor={gradients.barActive[0]} />
+                <Stop offset="1" stopColor={gradients.barActive[1]} />
+              </LinearGradient>
+            </Defs>
+
+            {/* gridlines at 1/3, 2/3, top */}
+            {[0.33, 0.66, 1].map((f) => (
+              <Line
+                key={f}
+                x1={0}
+                x2={width}
+                y1={padTop + plotH - f * plotH}
+                y2={padTop + plotH - f * plotH}
+                stroke={colors.chartGrid}
+                strokeWidth={1}
+              />
+            ))}
+            {/* baseline */}
+            <Line x1={0} x2={width} y1={padTop + plotH} y2={padTop + plotH} stroke={colors.border} strokeWidth={1} />
+
+            {/* average line */}
+            {showAverage && avg > 0 && (
+              <Line
+                x1={0}
+                x2={width}
+                y1={yFor(avg)}
+                y2={yFor(avg)}
+                stroke={colors.mintDark}
+                strokeWidth={1.5}
+                strokeDasharray="4 4"
+              />
+            )}
+
+            {days.map((d, i) => {
+              const x = i * step + step / 2;
+              const isPeak = d.minutes === peak && peak > 0;
+              const isActive = active === i;
+              if (d.minutes <= 0) {
+                return <Circle key={i} cx={x} cy={padTop + plotH - 2} r={2} fill={colors.chartAxis} />;
+              }
+              const y = yFor(d.minutes);
+              return (
+                <Rect
+                  key={i}
+                  x={x - barW / 2}
+                  y={y}
+                  width={barW}
+                  height={padTop + plotH - y}
+                  rx={Math.min(6, barW / 2)}
+                  fill={isPeak || isActive ? "url(#barActive)" : "url(#barGrad)"}
+                />
+              );
+            })}
+          </Svg>
+
+          {/* value labels + tap targets + axis (overlaid so text is crisp) */}
+          <View style={{ position: "absolute", left: 0, right: 0, top: 0, height, flexDirection: "row" }}>
+            {days.map((d, i) => (
+              <Pressable
+                key={i}
+                onPressIn={() => setActive(i)}
+                onPressOut={() => setActive(null)}
+                style={{ flex: 1, alignItems: "center", justifyContent: "space-between", paddingTop: 0 }}
+              >
+                <Text variant="micro" color={colors.faint} style={{ height: padTop }}>
+                  {(showValues || active === i) && d.minutes ? formatMinutesShort(d.minutes) : ""}
+                </Text>
+                <Text
+                  variant="micro"
+                  color={active === i ? colors.blue : d.weekend ? colors.warning : colors.chartAxis}
+                  style={{ height: axisH }}
+                >
+                  {dense ? (i % 5 === 0 ? d.label : "") : d.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
+// --- Sparkline (tiny trend, e.g. child card) --------------------
+
+export function Sparkline({
+  values,
+  width = 72,
+  height = 24,
+  color = colors.blue,
+}: {
+  values: number[];
+  width?: number;
+  height?: number;
+  color?: string;
+}) {
+  if (values.length < 2) return <View style={{ width, height }} />;
+  const max = Math.max(1, ...values);
+  const step = width / (values.length - 1);
+  const pt = (v: number, i: number) => [i * step, height - 3 - (v / max) * (height - 6)] as const;
+  const line = values.map((v, i) => `${i === 0 ? "M" : "L"}${pt(v, i)[0]},${pt(v, i)[1]}`).join(" ");
+  const area = `${line} L${width},${height} L0,${height} Z`;
+  return (
+    <Svg width={width} height={height}>
+      <Defs>
+        <LinearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor={color} stopOpacity={0.22} />
+          <Stop offset="1" stopColor={color} stopOpacity={0} />
+        </LinearGradient>
+      </Defs>
+      <Path d={area} fill="url(#sparkFill)" />
+      <Path d={line} stroke={color} strokeWidth={2} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+// --- SplitBar (proportional stack + legend) --------------------
+
+export function SplitBar({ items }: { items: { label: string; minutes: number }[] }) {
+  const total = items.reduce((s, x) => s + x.minutes, 0) || 1;
+  return (
+    <View style={{ gap: 12 }}>
+      <View style={{ flexDirection: "row", height: 12, gap: 3 }}>
+        {items.map((it, i) => (
+          <View
+            key={it.label}
+            style={{
+              flex: Math.max(0.04, it.minutes / total),
+              backgroundColor: CAT_COLORS[i % CAT_COLORS.length],
+              borderRadius: 999,
+            }}
+          />
+        ))}
+      </View>
+      <View style={{ gap: 9 }}>
+        {items.map((it, i) => (
+          <View key={it.label} style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 3,
+                backgroundColor: CAT_COLORS[i % CAT_COLORS.length],
+              }}
+            />
+            <Text variant="label" color={colors.body} style={{ flex: 1 }} numberOfLines={1}>
+              {it.label}
+            </Text>
+            <Text variant="caption" color={colors.muted}>
+              {formatMinutesShort(it.minutes)}
+            </Text>
+            <Text variant="micro" color={colors.faint} style={{ width: 34, textAlign: "right" }}>
+              {Math.round((it.minutes / total) * 100)}%
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// --- DayTimeline (0..24h per-app lanes) -----------------------
+
+import { appDisplay } from "../lib/appDisplay";
+import { Block, BUCKET_META, Bucket, bucketOf, foldBlocks } from "../lib/timeline";
+import { TimelineSegment } from "../api/tracking";
+import { AppIcon } from "./AppIcon";
+
+const AXIS_HOURS = [0, 6, 12, 18, 24];
+const TRACK_H = 20;
+
+type Lane = {
+  app_id: string;
+  app_name: string;
+  icon: string | null;
+  color: string;
+  bucket: Bucket;
+  totalMin: number;
+  blocks: Block[];
+};
+
+export function DayTimeline({
+  segments,
+  nowMinute,
+}: {
+  segments: TimelineSegment[];
+  /** minute-of-day for the "hozir" marker; omit for a past day */
+  nowMinute?: number | null;
+}) {
+  const [width, setWidth] = useState(0);
+
+  const lanes: Lane[] = useMemo(() => {
+    const byApp = new Map<string, TimelineSegment[]>();
+    for (const s of segments) {
+      const arr = byApp.get(s.app_id) ?? [];
+      arr.push(s);
+      byApp.set(s.app_id, arr);
+    }
+    return [...byApp.entries()]
+      .map(([app_id, parts]) => {
+        const d = appDisplay(app_id, parts[0].app_name);
+        const bucket = bucketOf(app_id, d.category);
+        return {
+          app_id,
+          app_name: parts[0].app_name,
+          icon: parts.find((p) => p.icon)?.icon ?? null,
+          color: BUCKET_META[bucket].color,
+          bucket,
+          totalMin: parts.reduce((t, p) => t + (p.end_minute - p.start_minute), 0),
+          blocks: foldBlocks(parts),
+        };
+      })
+      .sort((a, b) => b.totalMin - a.totalMin)
+      .slice(0, 10);
+  }, [segments]);
+
+  const usedBuckets = [...new Set(lanes.map((l) => l.bucket))];
+  const xFor = (min: number) => (min / 1440) * width;
+
+  return (
+    <View style={{ gap: 12 }} onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        {AXIS_HOURS.map((h) => (
+          <Text key={h} variant="micro" color={colors.chartAxis}>
+            {String(h).padStart(2, "0")}:00
+          </Text>
+        ))}
+      </View>
+
+      {width > 0 &&
+        lanes.map((lane) => {
+          const d = appDisplay(lane.app_id, lane.app_name);
+          return (
+            <View key={lane.app_id} style={{ gap: 6 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <AppIcon appId={lane.app_id} appName={lane.app_name} icon={lane.icon} size={22} />
+                <Text variant="caption" color={colors.body} style={{ flex: 1 }} numberOfLines={1}>
+                  {d.label}
+                </Text>
+                <Text variant="micro" color={colors.faint}>
+                  {formatMinutesShort(lane.totalMin)}
+                </Text>
+              </View>
+              <Svg width={width} height={TRACK_H}>
+                <Defs>
+                  <LinearGradient id={`lane-${lane.app_id}`} x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0" stopColor={lane.color} stopOpacity={0.95} />
+                    <Stop offset="1" stopColor={lane.color} stopOpacity={0.75} />
+                  </LinearGradient>
+                </Defs>
+                <Rect x={0} y={0} width={width} height={TRACK_H} rx={7} fill={colors.chartTrack} />
+                {AXIS_HOURS.map((h) => (
+                  <Line
+                    key={h}
+                    x1={xFor(h * 60)}
+                    x2={xFor(h * 60)}
+                    y1={0}
+                    y2={TRACK_H}
+                    stroke={colors.chartGrid}
+                    strokeWidth={1}
+                  />
+                ))}
+                {lane.blocks.map((b, i) => {
+                  const x = xFor(b.start);
+                  const w = Math.max(3, xFor(b.end) - x);
+                  return <Rect key={i} x={x} y={0} width={w} height={TRACK_H} rx={6} fill={`url(#lane-${lane.app_id})`} />;
+                })}
+                {typeof nowMinute === "number" && (
+                  <Line
+                    x1={xFor(nowMinute)}
+                    x2={xFor(nowMinute)}
+                    y1={-2}
+                    y2={TRACK_H + 2}
+                    stroke={colors.blue}
+                    strokeWidth={2}
+                  />
+                )}
+              </Svg>
+            </View>
+          );
+        })}
+
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 14, marginTop: 2 }}>
+        {usedBuckets.map((b) => (
+          <View key={b} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: BUCKET_META[b].color }} />
+            <Text variant="micro" color={colors.muted}>
+              {BUCKET_META[b].label}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
