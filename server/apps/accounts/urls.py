@@ -6,6 +6,7 @@ from .account_views import (
     PasswordResetStartView,
     PasswordResetVerifyView,
 )
+from .telegram_webapp import TelegramWebAppLoginView
 from .telegram import (
     TelegramCompleteView,
     TelegramLinkStartView,
@@ -25,6 +26,7 @@ urlpatterns = [
     path("password/change/", PasswordChangeView.as_view(), name="password-change"),
     path("password/reset/start/", PasswordResetStartView.as_view(), name="password-reset-start"),
     path("password/reset/verify/", PasswordResetVerifyView.as_view(), name="password-reset-verify"),
+    path("telegram/webapp/", TelegramWebAppLoginView.as_view(), name="telegram-webapp"),
     path("telegram/start/", TelegramStartView.as_view(), name="telegram-start"),
     path("telegram/webhook/", TelegramWebhookView.as_view(), name="telegram-webhook"),
     path("telegram/status/<uuid:token>/", TelegramStatusView.as_view(), name="telegram-status"),

@@ -213,3 +213,55 @@ class AccountSelfServiceTests(TestCase):
         self.assertEqual(self.client.post(reverse("password-reset-start"), {"username": "nobody"}, format="json").status_code, 200)
         self.assertEqual(self.client.post(reverse("password-reset-start"), {"username": "diyor"}, format="json").status_code, 200)
         send_text.assert_not_called()
+
+
+class TelegramWebAppLoginTests(TestCase):
+    """Auto-login for the Spino24 parent Mini App (signed initData)."""
+
+    BOT_TOKEN = "999:WEBAPPTEST"
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def _init_data(self, user_json='{"id":555,"first_name":"Ali","username":"ali"}', auth_date=None):
+        import hashlib, hmac, time
+        from urllib.parse import urlencode
+
+        fields = {"user": user_json, "auth_date": str(auth_date or int(time.time())), "query_id": "q1"}
+        dcs = "\n".join(f"{k}={fields[k]}" for k in sorted(fields))
+        secret = hmac.new(b"WebAppData", self.BOT_TOKEN.encode(), hashlib.sha256).digest()
+        fields["hash"] = hmac.new(secret, dcs.encode(), hashlib.sha256).hexdigest()
+        return urlencode(fields)
+
+    @override_settings(TELEGRAM_BOT_TOKEN=BOT_TOKEN)
+    def test_creates_user_and_returns_tokens_on_first_open(self):
+        r = self.client.post(reverse("telegram-webapp"), {"init_data": self._init_data()}, format="json")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertTrue(r.json()["is_new_user"])
+        self.assertIn("access", r.json())
+        user = ParentUser.objects.get(telegram_id=555)
+        self.assertEqual(user.telegram_username, "ali")
+
+    @override_settings(TELEGRAM_BOT_TOKEN=BOT_TOKEN)
+    def test_second_open_reuses_user(self):
+        self.client.post(reverse("telegram-webapp"), {"init_data": self._init_data()}, format="json")
+        r = self.client.post(reverse("telegram-webapp"), {"init_data": self._init_data()}, format="json")
+        self.assertFalse(r.json()["is_new_user"])
+        self.assertEqual(ParentUser.objects.filter(telegram_id=555).count(), 1)
+
+    @override_settings(TELEGRAM_BOT_TOKEN=BOT_TOKEN)
+    def test_rejects_tampered_payload(self):
+        bad = self._init_data().replace("Ali", "Eve")
+        r = self.client.post(reverse("telegram-webapp"), {"init_data": bad}, format="json")
+        self.assertEqual(r.status_code, 401)
+
+    @override_settings(TELEGRAM_BOT_TOKEN=BOT_TOKEN)
+    def test_rejects_stale_auth_date(self):
+        stale = self._init_data(auth_date=1)
+        r = self.client.post(reverse("telegram-webapp"), {"init_data": stale}, format="json")
+        self.assertEqual(r.status_code, 401)
+
+    @override_settings(TELEGRAM_BOT_TOKEN="")
+    def test_503_when_bot_not_configured(self):
+        r = self.client.post(reverse("telegram-webapp"), {"init_data": "x"}, format="json")
+        self.assertEqual(r.status_code, 503)
