@@ -11,15 +11,19 @@ from apps.tracking.models import Event
 
 ONLINE_THRESHOLD = timedelta(minutes=5)
 
+# One foreground interval longer than this is a stalled poller (sleep, lock,
+# session handoff), not real usage — cap it. Mirrors views.MAX_EVENT_MINUTES.
+MAX_EVENT_MINUTES = 120
+
 
 def _event_minutes(payload):
     duration = payload.get("duration_seconds")
     if isinstance(duration, (int, float)) and duration >= 0:
-        return duration / 60
+        return min(duration / 60, MAX_EVENT_MINUTES)
     started = parse_datetime(payload.get("started_at") or "")
     ended = parse_datetime(payload.get("ended_at") or "")
     if started and ended and ended > started:
-        return (ended - started).total_seconds() / 60
+        return min((ended - started).total_seconds() / 60, MAX_EVENT_MINUTES)
     return 0.0
 
 

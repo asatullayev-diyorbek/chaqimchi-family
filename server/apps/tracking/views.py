@@ -70,19 +70,28 @@ def _owned_device(request, device_id):
     return device, None
 
 
+# A single foreground/browsing event can't legitimately last longer than
+# this. The agent polls every ~10s, so a healthy interval is minutes, not
+# hours; anything past this cap is a stalled poller (sleep, lock, session
+# handoff) that let one interval swallow a silent stretch. Newer agents
+# close the interval themselves, but this keeps historical rows and any
+# still-old agent from inflating the screen-time totals.
+MAX_EVENT_MINUTES = 120
+
+
 def _event_minutes(payload: dict) -> float:
-    """How long one usage event lasted, in minutes.
+    """How long one usage event lasted, in minutes (capped, see above).
 
     duration_seconds is authoritative when the agent sends it; older agents
     only sent the start/end pair, so fall back to the difference.
     """
     duration = payload.get("duration_seconds")
     if isinstance(duration, (int, float)) and duration >= 0:
-        return duration / 60
+        return min(duration / 60, MAX_EVENT_MINUTES)
     started = parse_datetime(payload.get("started_at") or "")
     ended = parse_datetime(payload.get("ended_at") or "")
     if started and ended and ended > started:
-        return (ended - started).total_seconds() / 60
+        return min((ended - started).total_seconds() / 60, MAX_EVENT_MINUTES)
     return 0
 
 

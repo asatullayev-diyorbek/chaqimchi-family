@@ -178,6 +178,22 @@ class SummaryTests(TestCase):
         )
         self.assertTrue(data["top_apps"][0]["last_used_at"])
 
+    def test_summary_caps_an_implausibly_long_event(self):
+        # An old agent that slept with an app focused emits one interval
+        # spanning the whole night; it must not inflate the day's total.
+        Event.objects.create(
+            batch=self.batch,
+            device=self.device,
+            event_type="app_usage",
+            payload={"type": "app_usage", "app": "game.exe", "duration_seconds": 9 * 3600},
+            occurred_at=timezone.now().replace(hour=9, minute=30, second=0, microsecond=0),
+        )
+        self.client.force_authenticate(user=self.parent)
+        data = self.client.get(self.url, {"date": self.today_str}).json()
+        game = next(a for a in data["top_apps"] if a["app"] == "game.exe")
+        self.assertEqual(game["minutes"], 120)
+        self.assertEqual(data["total_screen_minutes"], 135 + 120)
+
     def test_summary_rejects_other_family_device(self):
         other_parent = ParentUser.objects.create_user(
             email="other@example.com", password="supersecret123"
