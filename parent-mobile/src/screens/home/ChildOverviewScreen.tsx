@@ -130,21 +130,25 @@ export default function ChildOverviewScreen({ route, navigation }: any) {
               </View>
             </View>
 
-            <View style={{ alignItems: "center" }}>
+            <View style={{ alignItems: "center", gap: 8 }}>
               <RingProgress
                 size={156}
                 stroke={13}
                 value={day.total_screen_minutes}
                 max={limit}
-                centerTop={formatMinutes(day.total_screen_minutes)}
+                centerTop={formatMinutesShort(day.total_screen_minutes)}
                 centerBottom={
                   limit
                     ? over
                       ? `${formatMinutesShort(day.total_screen_minutes - limit)} oshdi`
                       : `${formatMinutesShort(limit - day.total_screen_minutes)} qoldi`
-                    : "Bugungi ekran vaqti"
+                    : "bugun"
                 }
               />
+              <Text variant="body" color={colors.body}>
+                {formatMinutes(day.total_screen_minutes)}
+                {limit ? ` · limit ${formatMinutes(limit)}` : ""}
+              </Text>
             </View>
 
             {weekDays.length > 0 ? <WeekBars days={weekDays} height={104} /> : null}

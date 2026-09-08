@@ -68,23 +68,28 @@ export function RingProgress({
   max: number | null;
   size?: number;
   stroke?: number;
+  /** Keep this SHORT (e.g. "4s 18d") — it must fit inside the ring. */
   centerTop: string;
   centerBottom?: string;
   tone?: "blue" | "warn" | "danger";
 }) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const ratio = max && max > 0 ? Math.min(1, value / max) : 0;
+  const raw = max && max > 0 ? value / max : 0;
+  const ratio = Math.min(1, raw);
   const over = max != null && max > 0 && value > max;
-  const overRatio = over ? Math.min(1, (value - max!) / max!) : 0;
+  const cx = size / 2;
 
   const grad =
     over || tone === "danger"
       ? gradients.ringDanger
-      : tone === "warn" || ratio > 0.85
+      : tone === "warn" || (raw > 0.85 && !over)
         ? gradients.ringWarn
         : gradients.ring;
-  const cx = size / 2;
+
+  // Fit the big label inside the inner circle.
+  const inner = size - 2 * stroke - 20;
+  const bigSize = centerTop.length > 6 ? 22 : centerTop.length > 4 ? 26 : 30;
 
   return (
     <View style={{ width: size, height: size, alignItems: "center", justifyContent: "center" }}>
@@ -96,7 +101,11 @@ export function RingProgress({
           </LinearGradient>
         </Defs>
         <Circle cx={cx} cy={cx} r={r} stroke={colors.chartTrack} strokeWidth={stroke} fill="none" />
-        {max != null && ratio > 0 && (
+        {max != null && over ? (
+          // At/over the limit — a solid full ring reads clearer than a
+          // near-complete arc with a confusing detached stub.
+          <Circle cx={cx} cy={cx} r={r} stroke="url(#ringGrad)" strokeWidth={stroke} fill="none" />
+        ) : max != null && ratio > 0 ? (
           <Circle
             cx={cx}
             cy={cx}
@@ -108,31 +117,27 @@ export function RingProgress({
             fill="none"
             transform={`rotate(-90 ${cx} ${cx})`}
           />
-        )}
-        {/* a thin inner arc showing how far past the limit */}
-        {over && (
-          <Circle
-            cx={cx}
-            cy={cx}
-            r={r - stroke}
-            stroke={colors.danger}
-            strokeOpacity={0.55}
-            strokeWidth={3}
-            strokeLinecap="round"
-            strokeDasharray={`${2 * Math.PI * (r - stroke) * overRatio} ${2 * Math.PI * (r - stroke)}`}
-            fill="none"
-            transform={`rotate(-90 ${cx} ${cx})`}
-          />
-        )}
+        ) : null}
       </Svg>
-      <Text variant="display" style={{ fontSize: 28 }}>
-        {centerTop}
-      </Text>
-      {centerBottom ? (
-        <Text variant="caption" color={over ? colors.danger : colors.muted} style={{ marginTop: 2 }}>
-          {centerBottom}
+      <View style={{ width: inner, alignItems: "center" }}>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={{ fontSize: bigSize, lineHeight: bigSize + 4, fontWeight: "800", color: colors.text }}
+        >
+          {centerTop}
         </Text>
-      ) : null}
+        {centerBottom ? (
+          <Text
+            variant="caption"
+            color={over ? colors.danger : colors.muted}
+            style={{ marginTop: 3, textAlign: "center" }}
+            numberOfLines={2}
+          >
+            {centerBottom}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }

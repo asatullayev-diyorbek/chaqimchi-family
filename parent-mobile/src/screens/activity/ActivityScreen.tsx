@@ -5,6 +5,7 @@ import {
   addDaysISO,
   dayLabel,
   formatMinutes,
+  formatMinutesShort,
   isTodayISO,
   shortWeekday,
   todayISO,
@@ -24,7 +25,6 @@ import {
   EmptyState,
   ErrorState,
   IconButton,
-  Meter,
   Muted,
   RingProgress,
   Screen,
@@ -272,32 +272,39 @@ function ScreenTimeTab({ q, range, limit }: { q: any; range: SummaryRange; limit
     weekend: [0, 6].includes(new Date(`${b.date}T00:00:00`).getDay()),
   }));
 
+  const used = s.total_screen_minutes as number;
+  const over = limit != null && used > limit;
+
   return (
     <View style={{ gap: 16 }}>
-      <Card style={{ alignItems: "center", gap: 8 }}>
+      <Card style={{ alignItems: "center", gap: 12 }}>
         {range === "day" ? (
-          <RingProgress
-            value={s.total_screen_minutes}
-            max={limit}
-            centerTop={formatMinutes(s.total_screen_minutes)}
-            centerBottom={limit ? `Limit ${formatMinutes(limit)}` : "Ekran vaqti"}
-          />
+          <>
+            <RingProgress
+              value={used}
+              max={limit}
+              centerTop={formatMinutesShort(used)}
+              centerBottom={
+                limit
+                  ? over
+                    ? `Limitdan ${formatMinutesShort(used - limit)} oshdi`
+                    : `${formatMinutesShort(limit - used)} qoldi`
+                  : "Bugungi ekran vaqti"
+              }
+            />
+            <Text variant="body" color={colors.body}>
+              {formatMinutes(used)}
+              {limit ? ` · limit ${formatMinutes(limit)}` : ""}
+            </Text>
+          </>
         ) : (
           <>
             <Text variant="display">{formatMinutes(total)}</Text>
-            <Muted>{range === "month" ? "30 kunlik jami" : "7 kunlik jami"} · kuniga {formatMinutes(avg)}</Muted>
+            <Muted>
+              {range === "month" ? "30 kunlik jami" : "7 kunlik jami"} · kuniga {formatMinutes(avg)}
+            </Muted>
           </>
         )}
-        {range === "day" && limit ? (
-          <View style={{ alignSelf: "stretch", gap: 4 }}>
-            <Meter value={s.total_screen_minutes} max={limit} tone={s.total_screen_minutes > limit ? "danger" : "blue"} />
-            <Muted style={{ textAlign: "center" }}>
-              {s.total_screen_minutes > limit
-                ? `Limitdan ${formatMinutes(s.total_screen_minutes - limit)} oshdi`
-                : `${formatMinutes(limit - s.total_screen_minutes)} qoldi`}
-            </Muted>
-          </View>
-        ) : null}
       </Card>
 
       {bars.length > 0 ? (
