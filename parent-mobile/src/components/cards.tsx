@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, View } from "react-native";
 import { colors, radius, spacing } from "../theme";
-import { formatMinutes, formatMinutesShort, formatTime, relativeTime } from "../lib/format";
+import { formatMinutes, formatMinutesShort, relativeTime } from "../lib/format";
 import { appDisplay, domainDisplay } from "../lib/appDisplay";
 import type { Alert } from "../api/alerts";
 import type { Device } from "../api/tracking";
@@ -184,6 +184,7 @@ export function DeviceRow({
   online,
   todayMinutes,
   battery,
+  childName,
   selected = false,
   onPress,
 }: {
@@ -191,11 +192,19 @@ export function DeviceRow({
   online: boolean;
   todayMinutes: number;
   battery?: number | null;
+  /** The owning child's name — a device "name" equal to it carries no info. */
+  childName?: string;
   selected?: boolean;
   onPress?: () => void;
 }) {
   const platformName =
-    device.platform === "windows" ? "Windows" : device.platform === "ios" ? "iPad / iPhone" : "Android";
+    device.platform === "windows" ? "Windows" : device.platform === "ios" ? "iPad" : "Android";
+  const stored = device.child_name?.trim();
+  const hasName = Boolean(stored) && stored!.toLowerCase() !== (childName ?? "").trim().toLowerCase();
+  const meta =
+    (online
+      ? `Onlayn${todayMinutes ? ` · ${formatMinutesShort(todayMinutes)}` : ""}`
+      : "Oflayn");
   const content = (
     <View
       style={{
@@ -224,18 +233,18 @@ export function DeviceRow({
 
       <View style={{ flex: 1, gap: 3 }}>
         <Text variant="label" numberOfLines={1}>
-          {device.child_name?.trim() || platformName}
+          {hasName ? stored : platformName}
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <StatusDot online={online} size={7} />
           <Muted numberOfLines={1}>
-            {online ? `Onlayn · ${formatMinutes(todayMinutes)}` : `Oflayn · ${relativeTime(device.last_sync)}`}
+            {hasName ? `${platformName} · ${meta}` : meta}
           </Muted>
         </View>
       </View>
 
       <View style={{ alignItems: "flex-end", gap: 2 }}>
-        {typeof battery === "number" ? (
+        {online && typeof battery === "number" ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
             <Icon name="battery" size={14} color={colors.muted} />
             <Text variant="caption" color={colors.body}>
@@ -243,14 +252,9 @@ export function DeviceRow({
             </Text>
           </View>
         ) : !online && device.last_sync ? (
-          <>
-            <Text variant="micro" color={colors.faint}>
-              Oxirgi faollik
-            </Text>
-            <Text variant="caption" color={colors.body}>
-              {formatTime(device.last_sync)}
-            </Text>
-          </>
+          <Text variant="caption" color={colors.faint}>
+            {relativeTime(device.last_sync)}
+          </Text>
         ) : null}
       </View>
 

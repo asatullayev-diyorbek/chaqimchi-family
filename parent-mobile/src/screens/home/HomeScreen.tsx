@@ -182,39 +182,37 @@ export default function HomeScreen({ navigation }: any) {
       {subtitle}
 
       {/* Today screen time */}
-      <Card style={{ gap: 12, overflow: "hidden" }}>
-        <Spino24Mascot width={96} style={{ position: "absolute", top: 6, right: 2 }} />
+      <Card style={{ gap: 10, overflow: "hidden" }}>
+        <Spino24Mascot width={82} style={{ position: "absolute", top: 6, right: 2 }} />
 
-        <View style={{ paddingRight: 92, gap: 12 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Icon name="clock" size={16} color={colors.blue} />
-            <Text variant="label" color={colors.muted}>
-              Bugungi ekran vaqti
-            </Text>
-          </View>
-
-          <Text
-            variant="display"
-            style={{ fontSize: 32, lineHeight: 38 }}
-            color={over ? colors.danger : colors.text}
-            numberOfLines={2}
-            adjustsFontSizeToFit
-          >
-            {formatMinutes(scopeMinutes)}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingRight: 84 }}>
+          <Icon name="clock" size={16} color={colors.blue} />
+          <Text variant="label" color={colors.muted}>
+            Bugungi ekran vaqti
           </Text>
-
-          {isAllScope ? (
-            <Muted>{devices.length} qurilmada jami</Muted>
-          ) : scopeLimit ? (
-            <Text variant="body" color={over ? colors.danger : colors.body}>
-              {over
-                ? `Limitdan ${formatMinutes(scopeMinutes - scopeLimit)} oshdi`
-                : `Limit: ${formatMinutes(scopeLimit)}`}
-            </Text>
-          ) : (
-            <Muted>Limit o‘rnatilmagan</Muted>
-          )}
         </View>
+
+        <Text
+          style={{ fontSize: 27, lineHeight: 33, fontWeight: "800" }}
+          color={over ? colors.danger : colors.text}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.7}
+        >
+          {formatMinutes(scopeMinutes)}
+        </Text>
+
+        {isAllScope ? (
+          <Muted>{devices.length} qurilmada jami</Muted>
+        ) : scopeLimit ? (
+          <Text variant="body" color={over ? colors.danger : colors.body}>
+            {over
+              ? `Limitdan ${formatMinutes(scopeMinutes - scopeLimit)} oshdi`
+              : `Limit: ${formatMinutes(scopeLimit)}`}
+          </Text>
+        ) : (
+          <Muted>Limit o‘rnatilmagan</Muted>
+        )}
 
         {!isAllScope && scopeLimit ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
@@ -264,6 +262,7 @@ export default function HomeScreen({ navigation }: any) {
               online={d.online}
               todayMinutes={d.todayMinutes}
               battery={d.battery}
+              childName={child.name}
               selected={deviceCount > 1 && activeDevice?.id === d.device.id}
               onPress={() => navigation.navigate("DeviceDetail", { deviceId: d.device.id })}
             />
