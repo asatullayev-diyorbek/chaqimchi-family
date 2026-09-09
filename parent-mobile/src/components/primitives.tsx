@@ -245,11 +245,13 @@ export function Divider({ style }: { style?: ViewStyle }) {
 export function SectionHeader({
   title,
   hint,
+  icon,
   actionLabel,
   onAction,
 }: {
   title: string;
   hint?: string;
+  icon?: IconName;
   actionLabel?: string;
   onAction?: () => void;
 }) {
@@ -262,9 +264,12 @@ export function SectionHeader({
         gap: spacing.md,
       }}
     >
-      <View style={{ flex: 1 }}>
-        <Text variant="h3">{title}</Text>
-        {hint ? <Muted style={{ marginTop: 2 }}>{hint}</Muted> : null}
+      <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+        {icon ? <Icon name={icon} size={17} color={colors.blue} /> : null}
+        <View style={{ flexShrink: 1 }}>
+          <Text variant="h3">{title}</Text>
+          {hint ? <Muted style={{ marginTop: 2 }}>{hint}</Muted> : null}
+        </View>
       </View>
       {actionLabel && onAction ? (
         <Pressable onPress={onAction} hitSlop={8} style={({ pressed }) => (pressed ? { opacity: 0.6 } : null)}>

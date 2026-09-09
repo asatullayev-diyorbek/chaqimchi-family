@@ -1,7 +1,7 @@
 import React from "react";
 import { Pressable, View } from "react-native";
 import { colors, radius, spacing } from "../theme";
-import { formatMinutes, formatMinutesShort, relativeTime } from "../lib/format";
+import { formatMinutes, formatMinutesShort, formatTime, relativeTime } from "../lib/format";
 import { appDisplay, domainDisplay } from "../lib/appDisplay";
 import type { Alert } from "../api/alerts";
 import type { Device } from "../api/tracking";
@@ -175,67 +175,91 @@ export function DeviceCard({
 
 // --- DeviceRow (compact, for the Home devices list) ---------------
 
+const PLATFORM_ICON = { windows: "laptop", ios: "tablet", android: "phone" } as const;
+
+/** One device as an inset panel — icon tile, name, status + today's minutes,
+ *  battery (only when the agent reports it) or last-activity time. */
 export function DeviceRow({
   device,
   online,
   todayMinutes,
+  battery,
   selected = false,
-  first = false,
   onPress,
 }: {
   device: Device;
   online: boolean;
   todayMinutes: number;
+  battery?: number | null;
   selected?: boolean;
-  first?: boolean;
   onPress?: () => void;
 }) {
+  const platformName =
+    device.platform === "windows" ? "Windows" : device.platform === "ios" ? "iPad / iPhone" : "Android";
   const content = (
     <View
       style={{
         flexDirection: "row",
         alignItems: "center",
         gap: 12,
-        paddingVertical: 12,
-        borderTopWidth: first ? 0 : 1,
-        borderTopColor: colors.border,
+        padding: 12,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: selected ? colors.blue : colors.border,
+        backgroundColor: selected ? colors.blueSoft : colors.surface,
       }}
     >
       <View
         style={{
-          width: 38,
-          height: 38,
+          width: 40,
+          height: 40,
           borderRadius: radius.md,
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: selected ? colors.blue : colors.blueSoft,
         }}
       >
-        <Icon
-          name={device.platform === "windows" ? "laptop" : device.platform === "ios" ? "tablet" : "phone"}
-          size={18}
-          color={selected ? "#fff" : colors.blue}
-        />
+        <Icon name={PLATFORM_ICON[device.platform]} size={19} color={selected ? "#fff" : colors.blue} />
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
+
+      <View style={{ flex: 1, gap: 3 }}>
         <Text variant="label" numberOfLines={1}>
-          {device.child_name || (device.platform === "windows" ? "Kompyuter" : "Qurilma")}
+          {device.child_name?.trim() || platformName}
         </Text>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <StatusDot online={online} size={7} />
-          <Muted>
-            {online
-              ? `Onlayn · ${formatMinutes(todayMinutes)}`
-              : `Oflayn · ${relativeTime(device.last_sync)}`}
+          <Muted numberOfLines={1}>
+            {online ? `Onlayn · ${formatMinutes(todayMinutes)}` : `Oflayn · ${relativeTime(device.last_sync)}`}
           </Muted>
         </View>
       </View>
+
+      <View style={{ alignItems: "flex-end", gap: 2 }}>
+        {typeof battery === "number" ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name="battery" size={14} color={colors.muted} />
+            <Text variant="caption" color={colors.body}>
+              {battery}%
+            </Text>
+          </View>
+        ) : !online && device.last_sync ? (
+          <>
+            <Text variant="micro" color={colors.faint}>
+              Oxirgi faollik
+            </Text>
+            <Text variant="caption" color={colors.body}>
+              {formatTime(device.last_sync)}
+            </Text>
+          </>
+        ) : null}
+      </View>
+
       {onPress ? <Icon name="chevronRight" size={16} color={colors.faint} /> : null}
     </View>
   );
   if (!onPress) return content;
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => (pressed ? { opacity: 0.6 } : null)}>
+    <Pressable onPress={onPress} style={({ pressed }) => (pressed ? { opacity: 0.65 } : null)}>
       {content}
     </Pressable>
   );

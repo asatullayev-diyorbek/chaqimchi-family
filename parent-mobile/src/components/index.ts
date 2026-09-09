@@ -26,7 +26,7 @@ export {
   SyncStatus,
   ComingSoonCard,
 } from "./states";
-export { Spino24Logo, Spino24Mark, Spino24Wordmark, Spino24Badge } from "./brand";
+export { Spino24Logo, Spino24Mark, Spino24Wordmark, Spino24Badge, Spino24Mascot } from "./brand";
 export { AppHeader } from "./AppHeader";
 export { Hero, TrendPill } from "./Hero";
 export { Avatar, PlatformBadge, StatusDot } from "./Avatar";

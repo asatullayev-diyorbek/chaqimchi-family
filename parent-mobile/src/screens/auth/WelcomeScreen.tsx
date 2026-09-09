@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { View } from "react-native";
 import { colors } from "../../theme";
 import { useSession } from "../../state/session";
-import { Button, Card, Icon, Screen, Spino24Logo, Text } from "../../components";
+import { Button, Card, Icon, Screen, Spino24Logo, Spino24Mascot, Text } from "../../components";
 
 const POINTS = [
   { icon: "activity" as const, title: "Kunlik ko‘rinish", text: "Ekran vaqti, ilovalar va saytlar — bir qarashda." },
@@ -18,7 +18,8 @@ export default function WelcomeScreen({ navigation }: any) {
     <Screen scroll>
       <View style={{ flex: 1, justifyContent: "center", gap: 24, paddingVertical: 20 }}>
         <View style={{ alignItems: "center", gap: 14 }}>
-          <Spino24Logo width={230} />
+          <Spino24Mascot width={140} />
+          <Spino24Logo width={220} />
           <Text variant="bodyLg" color={colors.muted} style={{ textAlign: "center", maxWidth: 300 }}>
             Farzandingizning raqamli kunini xotirjam kuzating va boshqaring.
           </Text>

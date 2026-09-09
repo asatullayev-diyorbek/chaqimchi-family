@@ -46,3 +46,27 @@ export function Spino24Mark({ size = 40, style }: { size?: number; style?: ViewS
     </View>
   );
 }
+
+// --- Mascot -------------------------------------------------------
+
+const MASCOT = require("../../assets/mascot.png");
+const MASCOT_RATIO = 320 / 265; // width / height
+
+/** The Spino24 dino — a brand accent for the Home hero card, splash, and
+ *  empty states. Keep it decorative; it must never sit over key data. */
+export function Spino24Mascot({
+  width = 96,
+  style,
+}: {
+  width?: number;
+  style?: StyleProp<ImageStyle>;
+}) {
+  return (
+    <Image
+      source={MASCOT}
+      resizeMode="contain"
+      style={[{ width, height: Math.round(width / MASCOT_RATIO) }, style]}
+      accessibilityLabel="Spino"
+    />
+  );
+}

@@ -10,6 +10,7 @@ export type HomeDevice = {
   online: boolean;
   todayMinutes: number;
   limitMinutes: number | null;
+  battery: number | null;
 };
 
 export type HomeData = {
@@ -72,6 +73,7 @@ export function useHomeData() {
             online: day?.device_status === "online",
             todayMinutes: day?.total_screen_minutes ?? 0,
             limitMinutes: getDailyLimitMinutes(rules),
+            battery: typeof day?.battery_percent === "number" ? day.battery_percent : null,
           };
         }),
       );

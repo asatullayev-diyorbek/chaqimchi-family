@@ -54,15 +54,15 @@ export function QuickActions({ actions }: { actions: QuickAction[] }) {
           >
             <View
               style={{
-                width: 38,
-                height: 38,
-                borderRadius: radius.md,
+                width: 46,
+                height: 46,
+                borderRadius: 15,
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: t.bg,
               }}
             >
-              <Icon name={a.icon} size={19} color={t.fg} />
+              <Icon name={a.icon} size={21} color={t.fg} />
             </View>
             <Text
               style={{ fontSize: 11.5, fontWeight: "700", color: colors.body, textAlign: "center" }}

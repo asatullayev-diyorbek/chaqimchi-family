@@ -129,7 +129,7 @@ export function telegramInsets(): { top: number; bottom: number } {
   // Bot API 8.0+ reports the exact inset from Telegram's chrome — trust it
   // whenever the field exists (0 is a valid value, e.g. Telegram Desktop).
   // Older clients have no such field; reserve room for the floating header.
-  const top = content ? safe.top + content.top : safe.top + 52;
+  const top = content ? safe.top + content.top : safe.top + 44;
   return { top, bottom: safe.bottom + (content?.bottom ?? 0) };
 }
 

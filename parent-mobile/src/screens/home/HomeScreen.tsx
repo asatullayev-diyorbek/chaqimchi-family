@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import { colors } from "../../theme";
+import { colors, radius } from "../../theme";
 import { formatMinutes, shortWeekday } from "../../lib/format";
 import { appDisplay } from "../../lib/appDisplay";
 import { useFamily } from "../../state/family";
@@ -22,6 +22,7 @@ import {
   SectionHeader,
   Skeleton,
   SkeletonCard,
+  Spino24Mascot,
   Spino24Wordmark,
   Text,
   WeekBars,
@@ -181,43 +182,50 @@ export default function HomeScreen({ navigation }: any) {
       {subtitle}
 
       {/* Today screen time */}
-      <Card style={{ gap: 12 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Icon name="clock" size={16} color={colors.blue} />
-          <Text variant="label" color={colors.muted}>
-            Bugungi ekran vaqti
+      <Card style={{ gap: 12, overflow: "hidden" }}>
+        <Spino24Mascot width={96} style={{ position: "absolute", top: 6, right: 2 }} />
+
+        <View style={{ paddingRight: 92, gap: 12 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Icon name="clock" size={16} color={colors.blue} />
+            <Text variant="label" color={colors.muted}>
+              Bugungi ekran vaqti
+            </Text>
+          </View>
+
+          <Text
+            variant="display"
+            style={{ fontSize: 32, lineHeight: 38 }}
+            color={over ? colors.danger : colors.text}
+            numberOfLines={2}
+            adjustsFontSizeToFit
+          >
+            {formatMinutes(scopeMinutes)}
           </Text>
-        </View>
 
-        <Text
-          variant="display"
-          style={{ fontSize: 34, lineHeight: 40 }}
-          color={over ? colors.danger : colors.text}
-        >
-          {formatMinutes(scopeMinutes)}
-        </Text>
-
-        {isAllScope ? (
-          <Muted>{devices.length} qurilmada jami · limitni har qurilmada alohida ko‘rasiz</Muted>
-        ) : scopeLimit ? (
-          <>
+          {isAllScope ? (
+            <Muted>{devices.length} qurilmada jami</Muted>
+          ) : scopeLimit ? (
             <Text variant="body" color={over ? colors.danger : colors.body}>
               {over
                 ? `Limitdan ${formatMinutes(scopeMinutes - scopeLimit)} oshdi`
                 : `Limit: ${formatMinutes(scopeLimit)}`}
             </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <View style={{ flex: 1 }}>
-                <Meter value={scopeMinutes} max={scopeLimit} tone={over ? "danger" : near ? "warn" : "blue"} />
-              </View>
-              <Text variant="label" color={over ? colors.danger : colors.muted}>
-                {pct}%
-              </Text>
+          ) : (
+            <Muted>Limit o‘rnatilmagan</Muted>
+          )}
+        </View>
+
+        {!isAllScope && scopeLimit ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Meter value={scopeMinutes} max={scopeLimit} tone={over ? "danger" : near ? "warn" : "blue"} height={10} />
             </View>
-          </>
-        ) : (
-          <Muted>Limit o‘rnatilmagan</Muted>
-        )}
+            <Text variant="label" color={over ? colors.danger : colors.muted}>
+              {pct}%
+            </Text>
+          </View>
+        ) : null}
 
         {lastApp ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -240,32 +248,34 @@ export default function HomeScreen({ navigation }: any) {
       <QuickActions actions={quickActions} />
 
       {/* Devices */}
-      <View style={{ gap: 10 }}>
+      <Card style={{ gap: 12 }}>
         <SectionHeader
+          icon="device"
           title={`Qurilmalar (${deviceCount})`}
-          actionLabel="Boshqarish"
+          actionLabel="Barchasini ko‘rish"
           onAction={() => navigation.navigate("Devices")}
         />
         {deviceCount > 1 ? <DeviceScopePicker /> : null}
-        <Card padded={false} style={{ paddingHorizontal: 16, paddingVertical: 2 }}>
-          {devices.map((d, i) => (
+        <View style={{ gap: 10 }}>
+          {devices.map((d) => (
             <DeviceRow
               key={d.device.id}
               device={d.device}
               online={d.online}
               todayMinutes={d.todayMinutes}
-              selected={activeDevice?.id === d.device.id}
-              first={i === 0}
+              battery={d.battery}
+              selected={deviceCount > 1 && activeDevice?.id === d.device.id}
               onPress={() => navigation.navigate("DeviceDetail", { deviceId: d.device.id })}
             />
           ))}
-        </Card>
-      </View>
+        </View>
+      </Card>
 
       {/* 7-day statistics */}
       {bars.length > 0 ? (
         <Card style={{ gap: 14 }}>
           <SectionHeader
+            icon="activity"
             title="7 kunlik statistika"
             actionLabel="Batafsil"
             onAction={() =>
@@ -275,11 +285,23 @@ export default function HomeScreen({ navigation }: any) {
               })
             }
           />
-          <WeekBars days={bars} showValues showAverage />
-          <Muted>
-            {isAllScope ? "Eng faol qurilma bo‘yicha · " : ""}
-            o‘rtacha {formatMinutes(weekAverage)}
-          </Muted>
+          <WeekBars days={bars} showAverage />
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.surfaceMuted,
+              borderRadius: radius.md,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+            }}
+          >
+            <Icon name="activity" size={14} color={colors.muted} />
+            <Muted>
+              {isAllScope ? "Eng faol qurilma · " : ""}O‘rtacha: {formatMinutes(weekAverage)}
+            </Muted>
+          </View>
         </Card>
       ) : null}
     </Screen>
