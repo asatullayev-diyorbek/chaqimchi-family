@@ -115,7 +115,9 @@ export default function AppNavigator() {
           paddingTop: 6,
           paddingBottom: Platform.OS === "ios" ? 28 : 8,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: "700" },
+        tabBarLabelStyle: { fontSize: 10.5, fontWeight: "700" },
+        tabBarLabelPosition: "below-icon",
+        tabBarItemStyle: { paddingHorizontal: 2 },
       }}
     >
       <Tab.Screen name="HomeTab" component={HomeStack} options={{ title: "Bosh sahifa", tabBarIcon: tabIcon("home") }} />
@@ -125,7 +127,7 @@ export default function AppNavigator() {
         name="AlertsTab"
         component={AlertsStack}
         options={{
-          title: "Ogohlantirishlar",
+          title: "Xabarlar",
           tabBarIcon: tabIcon("alerts"),
           tabBarBadge: badge || undefined,
           tabBarBadgeStyle: { backgroundColor: colors.danger, fontSize: 10 },

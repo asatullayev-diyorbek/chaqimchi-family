@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { Pressable, View } from "react-native";
 import { colors, radius, spacing } from "../theme";
 import { formatMinutes, formatMinutesShort, relativeTime } from "../lib/format";
 import { appDisplay, domainDisplay } from "../lib/appDisplay";
@@ -170,6 +170,74 @@ export function DeviceCard({
         {device.agent_version ? ` · v${device.agent_version}` : ""}
       </Muted>
     </Card>
+  );
+}
+
+// --- DeviceRow (compact, for the Home devices list) ---------------
+
+export function DeviceRow({
+  device,
+  online,
+  todayMinutes,
+  selected = false,
+  first = false,
+  onPress,
+}: {
+  device: Device;
+  online: boolean;
+  todayMinutes: number;
+  selected?: boolean;
+  first?: boolean;
+  onPress?: () => void;
+}) {
+  const content = (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingVertical: 12,
+        borderTopWidth: first ? 0 : 1,
+        borderTopColor: colors.border,
+      }}
+    >
+      <View
+        style={{
+          width: 38,
+          height: 38,
+          borderRadius: radius.md,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: selected ? colors.blue : colors.blueSoft,
+        }}
+      >
+        <Icon
+          name={device.platform === "windows" ? "laptop" : device.platform === "ios" ? "tablet" : "phone"}
+          size={18}
+          color={selected ? "#fff" : colors.blue}
+        />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text variant="label" numberOfLines={1}>
+          {device.child_name || (device.platform === "windows" ? "Kompyuter" : "Qurilma")}
+        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <StatusDot online={online} size={7} />
+          <Muted>
+            {online
+              ? `Onlayn · ${formatMinutes(todayMinutes)}`
+              : `Oflayn · ${relativeTime(device.last_sync)}`}
+          </Muted>
+        </View>
+      </View>
+      {onPress ? <Icon name="chevronRight" size={16} color={colors.faint} /> : null}
+    </View>
+  );
+  if (!onPress) return content;
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => (pressed ? { opacity: 0.6 } : null)}>
+      {content}
+    </Pressable>
   );
 }
 

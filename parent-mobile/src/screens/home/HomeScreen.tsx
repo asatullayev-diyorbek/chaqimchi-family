@@ -1,57 +1,90 @@
 import React from "react";
 import { View } from "react-native";
-import { colors } from "../../theme";
+import { colors, spacing } from "../../theme";
 import { formatMinutes, shortWeekday } from "../../lib/format";
+import { appDisplay } from "../../lib/appDisplay";
+import { useFamily } from "../../state/family";
 import { useHomeData } from "./useHomeData";
 import {
-  AppHeader,
   Button,
   Card,
-  ChildCard,
+  ChildSwitcher,
+  DeviceRow,
+  DeviceScopePicker,
   EmptyState,
   ErrorState,
-  Hero,
   Icon,
+  IconButton,
+  Meter,
+  Muted,
+  QuickActions,
   Screen,
   SectionHeader,
   Skeleton,
   SkeletonCard,
+  Spino24Wordmark,
   Text,
   WeekBars,
 } from "../../components";
+import type { QuickAction } from "../../components";
 
 export default function HomeScreen({ navigation }: any) {
-  const { glances, loading, refreshing, error, refresh, hasChildren, hasAnyDevice } = useHomeData();
+  const { setDevice, activeDevice } = useFamily();
+  const { child, data, loading, refreshing, error, refresh, hasDevice, deviceCount } = useHomeData();
 
   const header = (
-    <AppHeader
-      brand
-      subtitle="Bugungi qisqa ko‘rinish"
-      action={{ icon: "bell", onPress: () => navigation.navigate("AlertsTab"), label: "Ogohlantirishlar" }}
-    />
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
+      <Spino24Wordmark size={17} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
+        <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
+        <View>
+          <IconButton
+            name="bell"
+            onPress={() => navigation.navigate("AlertsTab")}
+            accessibilityLabel="Ogohlantirishlar"
+            color={colors.body}
+          />
+          {data && data.unseenAlerts > 0 ? (
+            <View
+              style={{
+                position: "absolute",
+                top: 2,
+                right: 2,
+                minWidth: 15,
+                height: 15,
+                paddingHorizontal: 3,
+                borderRadius: 8,
+                backgroundColor: colors.danger,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Text style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}>
+                {data.unseenAlerts > 9 ? "9+" : data.unseenAlerts}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      </View>
+    </View>
   );
 
   if (loading) {
     return (
       <Screen scroll>
         {header}
-        <Skeleton height={104} radius={22} />
-        <SkeletonCard />
-        <SkeletonCard lines={2} />
+        <Skeleton height={148} radius={22} />
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={80} radius={18} style={{ flex: 1 }} />
+          ))}
+        </View>
+        <SkeletonCard lines={3} />
       </Screen>
     );
   }
 
-  if (error && !glances) {
-    return (
-      <Screen>
-        {header}
-        <ErrorState message={error} onRetry={refresh} />
-      </Screen>
-    );
-  }
-
-  if (!hasChildren) {
+  if (!child) {
     return (
       <Screen scroll refreshing={refreshing} onRefresh={refresh}>
         {header}
@@ -65,127 +98,168 @@ export default function HomeScreen({ navigation }: any) {
     );
   }
 
-  const list = glances ?? [];
-  const totalUnseen = list.reduce((t, g) => t + g.unseenAlerts, 0);
-  const withDevice = list.filter((g) => g.hasDevice);
-  const activeDevices = list.filter((g) => g.online).length;
-  const familyToday = list.reduce((t, g) => t + g.todayMinutes, 0);
+  if (!hasDevice) {
+    return (
+      <Screen scroll refreshing={refreshing} onRefresh={refresh}>
+        {header}
+        <Card tone="hero" style={{ gap: 10 }}>
+          <Text variant="h3">{child.name} uchun qurilma ulanmagan</Text>
+          <Text variant="body" color={colors.body}>
+            Farzand kompyuteridagi Spino24 dasturi ko‘rsatgan 6 xonali kodni kiriting.
+          </Text>
+          <Button title="Qurilma ulash" onPress={() => navigation.navigate("PairDevice", { childId: child.id })} />
+        </Card>
+      </Screen>
+    );
+  }
 
-  const single = list.length === 1 ? list[0] : null;
-  const trend =
-    single && single.weekBreakdown.length
-      ? single.weekBreakdown.map((b) => ({
-          label: shortWeekday(b.date),
-          minutes: b.total_minutes || 0,
-          weekend: [0, 6].includes(new Date(`${b.date}T00:00:00`).getDay()),
-        }))
-      : null;
+  if (error && !data) {
+    return (
+      <Screen scroll>
+        {header}
+        <ErrorState message={error} onRetry={refresh} />
+      </Screen>
+    );
+  }
+  if (!data) return null;
+
+  const { scopeMinutes, scopeLimit, isAllScope, devices, weekBreakdown, weekAverage, currentApp } = data;
+  const over = scopeLimit != null && scopeMinutes > scopeLimit;
+  const near = scopeLimit != null && !over && scopeMinutes > scopeLimit * 0.85;
+  const pct = scopeLimit ? Math.round((scopeMinutes / scopeLimit) * 100) : null;
+
+  const quickActions: QuickAction[] = [
+    {
+      icon: "clock",
+      label: "Limit",
+      tone: "blue",
+      onPress: () => navigation.navigate("RulesTab"),
+    },
+    {
+      icon: "rules",
+      label: "Qoidalar",
+      tone: "mint",
+      onPress: () => navigation.navigate("RulesTab"),
+    },
+    {
+      icon: "activity",
+      label: "Faoliyat",
+      tone: "amber",
+      onPress: () =>
+        navigation.navigate("ActivityTab", {
+          screen: "Activity",
+          params: activeDevice ? { deviceId: activeDevice.id } : undefined,
+        }),
+    },
+    {
+      icon: "chart",
+      label: "Hisobot",
+      tone: "muted",
+      onPress: () => navigation.navigate("MoreTab", { screen: "Reports" }),
+    },
+  ];
+
+  const bars = weekBreakdown.map((b) => ({
+    label: shortWeekday(b.date),
+    minutes: b.total_minutes || 0,
+    weekend: [0, 6].includes(new Date(`${b.date}T00:00:00`).getDay()),
+  }));
 
   return (
     <Screen scroll refreshing={refreshing} onRefresh={refresh}>
       {header}
 
-      {!hasAnyDevice ? (
-        <Card tone="hero" style={{ gap: 10 }}>
-          <Text variant="h3">Qurilma hali ulanmagan</Text>
-          <Text variant="body" color={colors.body}>
-            Farzand kompyuteridagi Spino24 dasturi ko‘rsatgan 6 xonali kodni kiriting.
+      {/* Today screen time */}
+      <Card style={{ gap: 12 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Icon name="clock" size={16} color={colors.blue} />
+          <Text variant="label" color={colors.muted}>
+            Bugungi ekran vaqti
           </Text>
-          <Button title="Qurilma ulash" onPress={() => navigation.navigate("PairDevice")} />
-        </Card>
-      ) : (
-        <Hero
-          icon="clock"
-          label="Bugungi ekran vaqti"
-          value={formatMinutes(familyToday)}
-          hint={
-            withDevice.length > 1
-              ? `${withDevice.length} farzand · ${activeDevices} ta onlayn`
-              : activeDevices
-                ? "Qurilma onlayn"
-                : "Qurilma oflayn"
-          }
-          right={
-            withDevice.length > 1 ? (
-              <View style={{ alignItems: "flex-end", gap: 2 }}>
-                <Text style={{ fontSize: 22, fontWeight: "800", color: "#fff" }}>
-                  {activeDevices}/{withDevice.length}
-                </Text>
-                <Text variant="micro" color="rgba(255,255,255,0.8)">
-                  onlayn
-                </Text>
-              </View>
-            ) : undefined
-          }
-        />
-      )}
+        </View>
 
+        <Text
+          variant="display"
+          style={{ fontSize: 34, lineHeight: 40 }}
+          color={over ? colors.danger : colors.text}
+        >
+          {formatMinutes(scopeMinutes)}
+        </Text>
+
+        {isAllScope ? (
+          <Muted>{devices.length} qurilmada jami · limitni har qurilmada alohida ko‘rasiz</Muted>
+        ) : scopeLimit ? (
+          <>
+            <Text variant="body" color={over ? colors.danger : colors.body}>
+              {over
+                ? `Limitdan ${formatMinutes(scopeMinutes - scopeLimit)} oshdi`
+                : `Limit: ${formatMinutes(scopeLimit)}`}
+            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <Meter value={scopeMinutes} max={scopeLimit} tone={over ? "danger" : near ? "warn" : "blue"} />
+              </View>
+              <Text variant="label" color={over ? colors.danger : colors.muted}>
+                {pct}%
+              </Text>
+            </View>
+          </>
+        ) : (
+          <Muted>Limit o‘rnatilmagan</Muted>
+        )}
+
+        {currentApp ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint }} />
+            <Muted>Hozir: {appDisplay(currentApp).label}</Muted>
+          </View>
+        ) : null}
+      </Card>
+
+      {/* Quick actions */}
+      <QuickActions actions={quickActions} />
+
+      {/* Devices */}
       <View style={{ gap: 10 }}>
-        {list.length > 1 ? <SectionHeader title="Farzandlar" /> : null}
-        {list.map((g) => (
-          <ChildCard
-            key={g.childId}
-            name={g.name}
-            photoUrl={g.photoUrl}
-            seed={g.childId}
-            online={g.online}
-            todayMinutes={g.todayMinutes}
-            limitMinutes={g.limitMinutes}
-            hasDevice={g.hasDevice}
-            currentApp={g.currentApp}
-            unseenAlerts={g.unseenAlerts}
-            weekMinutes={g.weekBreakdown.map((b) => b.total_minutes || 0)}
-            onPress={() =>
-              g.hasDevice
-                ? navigation.navigate("ChildOverview", { childId: g.childId })
-                : navigation.navigate("PairDevice", { childId: g.childId })
-            }
-          />
-        ))}
+        <SectionHeader
+          title={`Qurilmalar (${deviceCount})`}
+          actionLabel="Barchasi"
+          onAction={() => navigation.navigate("MoreTab", { screen: "Devices" })}
+        />
+        {deviceCount > 1 ? <DeviceScopePicker /> : null}
+        <Card padded={false} style={{ paddingHorizontal: 16, paddingVertical: 2 }}>
+          {devices.map((d, i) => (
+            <DeviceRow
+              key={d.device.id}
+              device={d.device}
+              online={d.online}
+              todayMinutes={d.todayMinutes}
+              selected={activeDevice?.id === d.device.id}
+              first={i === 0}
+              onPress={() => navigation.navigate("MoreTab", { screen: "DeviceDetail", params: { deviceId: d.device.id } })}
+            />
+          ))}
+        </Card>
       </View>
 
-      {trend ? (
+      {/* 7-day statistics */}
+      {bars.length > 0 ? (
         <Card style={{ gap: 14 }}>
           <SectionHeader
             title="7 kunlik statistika"
             actionLabel="Batafsil"
-            onAction={() => navigation.navigate("ActivityTab")}
+            onAction={() =>
+              navigation.navigate("ActivityTab", {
+                screen: "Activity",
+                params: activeDevice ? { deviceId: activeDevice.id } : undefined,
+              })
+            }
           />
-          <WeekBars days={trend} showValues />
-          <Text variant="micro" color={colors.faint}>
-            Eng faol qurilma bo‘yicha · yashil chiziq — o‘rtacha
-          </Text>
-        </Card>
-      ) : (
-        <Button
-          title="Faoliyatni ko‘rish"
-          variant="secondary"
-          icon="activity"
-          onPress={() => navigation.navigate("ActivityTab")}
-        />
-      )}
-
-      {totalUnseen > 0 ? (
-        <Card
-          onPress={() => navigation.navigate("AlertsTab")}
-          style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-        >
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 12,
-              backgroundColor: colors.warningSoft,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Icon name="alert" size={17} color={colors.warning} />
-          </View>
-          <Text variant="label" style={{ flex: 1 }}>
-            {totalUnseen} ta yangi ogohlantirish
-          </Text>
-          <Icon name="chevronRight" size={18} color={colors.faint} />
+          <WeekBars days={bars} showValues showAverage />
+          <Muted>
+            {isAllScope ? "Eng faol qurilma bo‘yicha · " : ""}
+            o‘rtacha {formatMinutes(weekAverage)}
+          </Muted>
         </Card>
       ) : null}
     </Screen>

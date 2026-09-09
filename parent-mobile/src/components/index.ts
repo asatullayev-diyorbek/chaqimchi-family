@@ -35,6 +35,7 @@ export { Meter, RingProgress, WeekBars, SplitBar, DayTimeline, Sparkline } from 
 export {
   ChildCard,
   DeviceCard,
+  DeviceRow,
   StatCard,
   AlertCard,
   AppUsageRow,
@@ -42,6 +43,9 @@ export {
   describeAlert,
 } from "./cards";
 export { ChildSelector, DeviceScopePicker } from "./selectors";
+export { ChildSwitcher } from "./ChildSwitcher";
+export { QuickActions } from "./QuickActions";
+export type { QuickAction } from "./QuickActions";
 export { DurationPickerSheet, TimeRangePickerSheet } from "./pickers";
 export { WheelColumn } from "./WheelPicker";
 export { ToastProvider, useToast } from "./Toast";

@@ -1,90 +1,126 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAlerts } from "../../api/alerts";
-import { getRules, getDailyLimitMinutes } from "../../api/rules";
-import { DayBreakdown, DeviceSummary, getSummary } from "../../api/tracking";
+import { getDailyLimitMinutes, getRules } from "../../api/rules";
+import { DayBreakdown, Device, DeviceSummary, getSummary } from "../../api/tracking";
 import { useFamily } from "../../state/family";
 
-export type ChildGlance = {
-  childId: string;
-  name: string;
-  photoUrl: string;
-  hasDevice: boolean;
-  deviceCount: number;
+export type HomeDevice = {
+  device: Device;
+  summary: DeviceSummary | null;
   online: boolean;
-  /** The child's most-active device today — what the card headlines. */
-  primaryDeviceId: string | null;
   todayMinutes: number;
   limitMinutes: number | null;
-  currentApp: string | null;
-  unseenAlerts: number;
-  weekMinutes: number;
-  /** Primary device's last-7-days breakdown (for the single-child trend). */
+};
+
+export type HomeData = {
+  /** Screen-time figure for the current device scope. */
+  scopeMinutes: number;
+  /** Limit for the current scope — null in "all devices" mode (per-device). */
+  scopeLimit: number | null;
+  /** True when the scope is "all devices" and the child owns more than one. */
+  isAllScope: boolean;
+  /** Per-device rows for the devices section. */
+  devices: HomeDevice[];
+  /** Last-7-days breakdown for the current scope. */
   weekBreakdown: DayBreakdown[];
+  weekAverage: number;
+  unseenAlerts: number;
+  /** The app the scoped device is showing right now, if online. */
+  currentApp: string | null;
 };
 
 /**
- * Home aggregates per child. Screen time is taken from the child's single
- * most-active device today — never summed across devices, which would
- * double-count time on two devices at once (see the audit / useSelectedDevice).
+ * Home is scoped to ONE child (chosen in the header) and ONE device scope
+ * (chosen in the devices section). Screen time is never silently summed:
+ * "Barcha qurilmalar" adds the devices' minutes only with an explicit
+ * "N qurilmada jami" label and drops the per-device limit/progress.
  */
 export function useHomeData() {
-  const { children, linkedDevices, loading: familyLoading, reload: reloadFamily } = useFamily();
-  const [glances, setGlances] = useState<ChildGlance[] | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const {
+    selectedChild,
+    childDevices,
+    activeDevice,
+    allDevices,
+    loading: familyLoading,
+    reload: reloadFamily,
+  } = useFamily();
+
+  const [data, setData] = useState<HomeData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const mounted = useRef(true);
+
+  const deviceKey = childDevices.map((d) => d.id).join(",");
+  const scopeKey = activeDevice?.id ?? (allDevices ? "all" : "none");
 
   const build = useCallback(async () => {
+    if (childDevices.length === 0) {
+      setData(null);
+      return;
+    }
     try {
       setError(null);
-      const result = await Promise.all(
-        children.map(async (child): Promise<ChildGlance> => {
-          const own = linkedDevices.filter((d) => d.child_id === child.id);
-          const [summaries, weekSummaries, alertLists] = await Promise.all([
-            Promise.all(own.map((d) => getSummary(d.id).catch(() => null))),
-            Promise.all(own.map((d) => getSummary(d.id, { range: "week" }).catch(() => null))),
-            Promise.all(own.map((d) => getAlerts(d.id).catch(() => []))),
+      const rows = await Promise.all(
+        childDevices.map(async (device): Promise<HomeDevice> => {
+          const [day, rules] = await Promise.all([
+            getSummary(device.id).catch(() => null),
+            getRules(device.id).catch(() => []),
           ]);
-          const valid = summaries.filter((s): s is DeviceSummary => s != null);
-          const primary =
-            valid.slice().sort((a, b) => b.total_screen_minutes - a.total_screen_minutes)[0] ?? null;
-          const primaryRules = primary
-            ? await getRules(primary.device_id).catch(() => [])
-            : [];
-          const validWeeks = weekSummaries.filter((s): s is DeviceSummary => s != null);
-          const week = validWeeks.reduce(
-            (max, s) => Math.max(max, (s.breakdown ?? []).reduce((t, b) => t + (b.total_minutes || 0), 0)),
-            0,
-          );
-          const primaryWeek =
-            (primary && validWeeks.find((s) => s.device_id === primary.device_id)) ??
-            validWeeks[0] ??
-            null;
           return {
-            childId: child.id,
-            name: child.name,
-            photoUrl: child.photo_url,
-            hasDevice: own.length > 0,
-            deviceCount: own.length,
-            online: valid.some((s) => s.device_status === "online"),
-            primaryDeviceId: primary?.device_id ?? null,
-            todayMinutes: primary?.total_screen_minutes ?? 0,
-            limitMinutes: getDailyLimitMinutes(primaryRules),
-            currentApp:
-              primary && primary.device_status === "online" ? primary.top_apps[0]?.app ?? null : null,
-            unseenAlerts: alertLists.flat().filter((a) => !a.seen).length,
-            weekMinutes: week,
-            weekBreakdown: (primaryWeek?.breakdown ?? []).slice(-7),
+            device,
+            summary: day,
+            online: day?.device_status === "online",
+            todayMinutes: day?.total_screen_minutes ?? 0,
+            limitMinutes: getDailyLimitMinutes(rules),
           };
         }),
       );
-      setGlances(result);
+
+      const scopeDevices = activeDevice ? rows.filter((r) => r.device.id === activeDevice.id) : rows;
+      const scopeMinutes = scopeDevices.reduce((t, r) => t + r.todayMinutes, 0);
+      const scopeLimit = activeDevice ? scopeDevices[0]?.limitMinutes ?? null : null;
+
+      // Week breakdown: the scoped device, or the most-active one in "all".
+      const weekTarget =
+        activeDevice?.id ??
+        rows.slice().sort((a, b) => b.todayMinutes - a.todayMinutes)[0]?.device.id ??
+        null;
+      const week = weekTarget
+        ? await getSummary(weekTarget, { range: "week" }).catch(() => null)
+        : null;
+      const weekBreakdown = (week?.breakdown ?? []).slice(-7);
+      const nonZero = weekBreakdown.map((b) => b.total_minutes || 0).filter((m) => m > 0);
+      const weekAverage = nonZero.length ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length) : 0;
+
+      const alertLists = await Promise.all(
+        childDevices.map((d) => getAlerts(d.id).catch(() => [])),
+      );
+
+      const scopeOnlineSummary = scopeDevices.find((r) => r.online)?.summary ?? null;
+
+      if (mounted.current) {
+        setData({
+          scopeMinutes,
+          scopeLimit,
+          isAllScope: allDevices,
+          devices: rows,
+          weekBreakdown,
+          weekAverage,
+          unseenAlerts: alertLists.flat().filter((a) => !a.seen).length,
+          currentApp: scopeOnlineSummary?.top_apps?.[0]?.app ?? null,
+        });
+      }
     } catch (e: any) {
-      setError(e?.message ?? "Ma'lumot yuklanmadi");
+      if (mounted.current) setError(e?.message ?? "Ma'lumot yuklanmadi");
     }
-  }, [children, linkedDevices]);
+  }, [deviceKey, scopeKey, activeDevice, allDevices, childDevices]);
 
   useEffect(() => {
+    mounted.current = true;
     if (!familyLoading) build();
+    return () => {
+      mounted.current = false;
+    };
   }, [familyLoading, build]);
 
   const refresh = useCallback(async () => {
@@ -95,12 +131,13 @@ export function useHomeData() {
   }, [reloadFamily, build]);
 
   return {
-    glances,
-    loading: familyLoading || glances === null,
+    child: selectedChild,
+    data,
+    loading: familyLoading || (data === null && childDevices.length > 0 && !error),
     refreshing,
     error,
     refresh,
-    hasChildren: children.length > 0,
-    hasAnyDevice: linkedDevices.length > 0,
+    hasDevice: childDevices.length > 0,
+    deviceCount: childDevices.length,
   };
 }
