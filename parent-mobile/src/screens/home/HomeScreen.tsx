@@ -34,9 +34,9 @@ export default function HomeScreen({ navigation }: any) {
 
   const unseen = data?.unseenAlerts ?? 0;
   const header = (
-    <View style={{ gap: 12 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Spino24Wordmark size={19} />
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+      <Spino24Wordmark size={18} />
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
         <View>
           <IconButton
             name="bell"
@@ -65,8 +65,8 @@ export default function HomeScreen({ navigation }: any) {
             </View>
           ) : null}
         </View>
+        <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
       </View>
-      <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
     </View>
   );
 

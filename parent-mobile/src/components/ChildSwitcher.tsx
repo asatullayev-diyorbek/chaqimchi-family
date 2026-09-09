@@ -2,22 +2,21 @@ import React, { useState } from "react";
 import { Pressable, View } from "react-native";
 import { colors, radius } from "../theme";
 import { useFamily } from "../state/family";
-import { childAge } from "../lib/format";
 import { Avatar } from "./Avatar";
 import { Icon } from "./Icon";
 import { Sheet } from "./Sheet";
-import { Divider, Muted, Text } from "./primitives";
+import { Divider, Text } from "./primitives";
 
 /**
- * Global child picker — a full-width dropdown bar. It's the "whose data am I
- * looking at" control; changing it re-scopes the whole Home screen. Tapping
- * opens a bottom sheet with the family + "Farzand qo‘shish".
+ * Global child picker — a compact dropdown pill that lives at the right edge
+ * of the Home header. It's the "whose data am I looking at" control; changing
+ * it re-scopes the whole Home screen. Tapping opens a bottom sheet with the
+ * family + "Farzand qo‘shish".
  */
 export function ChildSwitcher({ onAddChild }: { onAddChild: () => void }) {
   const { children, selectedChild, selectedChildId, setChild } = useFamily();
   const [open, setOpen] = useState(false);
   const single = children.length <= 1;
-  const age = childAge(selectedChild?.birth_date ?? null);
 
   return (
     <>
@@ -29,14 +28,15 @@ export function ChildSwitcher({ onAddChild }: { onAddChild: () => void }) {
           {
             flexDirection: "row",
             alignItems: "center",
-            gap: 12,
-            paddingVertical: 10,
-            paddingLeft: 10,
-            paddingRight: 14,
-            borderRadius: radius.lg,
+            gap: 7,
+            paddingVertical: 5,
+            paddingLeft: 5,
+            paddingRight: single ? 10 : 6,
+            borderRadius: radius.pill,
             borderWidth: 1,
             borderColor: colors.border,
             backgroundColor: colors.surface,
+            maxWidth: 168,
           },
           pressed && !single && { backgroundColor: colors.surfaceMuted },
         ]}
@@ -45,26 +45,23 @@ export function ChildSwitcher({ onAddChild }: { onAddChild: () => void }) {
           name={selectedChild?.name ?? "?"}
           photoUrl={selectedChild?.photo_url}
           seed={selectedChildId ?? undefined}
-          size={34}
+          size={26}
         />
-        <View style={{ flex: 1, gap: 1 }}>
-          <Text variant="h3" numberOfLines={1}>
-            {selectedChild?.name ?? "Farzand"}
-          </Text>
-          <Muted>{age != null ? `${age} yosh` : "Farzand"}</Muted>
-        </View>
+        <Text variant="label" numberOfLines={1} style={{ flexShrink: 1, fontSize: 13.5 }}>
+          {selectedChild?.name ?? "Farzand"}
+        </Text>
         {!single ? (
           <View
             style={{
-              width: 26,
-              height: 26,
-              borderRadius: 13,
+              width: 20,
+              height: 20,
+              borderRadius: 10,
               alignItems: "center",
               justifyContent: "center",
               backgroundColor: colors.surfaceSunken,
             }}
           >
-            <Icon name="chevronDown" size={16} color={colors.body} />
+            <Icon name="chevronDown" size={13} color={colors.body} />
           </View>
         ) : null}
       </Pressable>
