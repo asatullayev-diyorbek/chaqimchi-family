@@ -39,7 +39,9 @@ function HomeStack() {
     <Home.Navigator screenOptions={stackScreenOptions}>
       <Home.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Home.Screen name="ChildOverview" component={ChildOverviewScreen} options={{ title: "Farzand" }} />
+      <Home.Screen name="Devices" component={DevicesScreen} options={{ title: "Qurilmalar" }} />
       <Home.Screen name="DeviceDetail" component={DeviceDetailScreen} options={{ title: "Qurilma" }} />
+      <Home.Screen name="Reports" component={ReportsScreen} options={{ title: "Hisobotlar" }} />
       <Home.Screen name="AddChild" component={AddChildScreen} options={{ title: "Farzand qo‘shish" }} />
       <Home.Screen name="PairDevice" component={PairDeviceScreen} options={{ title: "Qurilma ulash" }} />
     </Home.Navigator>
@@ -104,6 +106,7 @@ export default function AppNavigator() {
   const badge = useAlertBadge();
   return (
     <Tab.Navigator
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.blue,

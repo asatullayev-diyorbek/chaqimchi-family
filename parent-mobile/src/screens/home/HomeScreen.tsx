@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import { colors, spacing } from "../../theme";
+import { colors } from "../../theme";
 import { formatMinutes, shortWeekday } from "../../lib/format";
 import { appDisplay } from "../../lib/appDisplay";
 import { useFamily } from "../../state/family";
@@ -32,24 +32,24 @@ export default function HomeScreen({ navigation }: any) {
   const { setDevice, activeDevice } = useFamily();
   const { child, data, loading, refreshing, error, refresh, hasDevice, deviceCount } = useHomeData();
 
+  const unseen = data?.unseenAlerts ?? 0;
   const header = (
-    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm }}>
-      <Spino24Wordmark size={17} />
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexShrink: 1 }}>
-        <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
+    <View style={{ gap: 12 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <Spino24Wordmark size={19} />
         <View>
           <IconButton
             name="bell"
             onPress={() => navigation.navigate("AlertsTab")}
-            accessibilityLabel="Ogohlantirishlar"
+            accessibilityLabel="Xabarlar"
             color={colors.body}
           />
-          {data && data.unseenAlerts > 0 ? (
+          {unseen > 0 ? (
             <View
               style={{
                 position: "absolute",
-                top: 2,
-                right: 2,
+                top: 1,
+                right: 1,
                 minWidth: 15,
                 height: 15,
                 paddingHorizontal: 3,
@@ -60,12 +60,13 @@ export default function HomeScreen({ navigation }: any) {
               }}
             >
               <Text style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}>
-                {data.unseenAlerts > 9 ? "9+" : data.unseenAlerts}
+                {unseen > 9 ? "9+" : unseen}
               </Text>
             </View>
           ) : null}
         </View>
       </View>
+      <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
     </View>
   );
 
@@ -155,7 +156,7 @@ export default function HomeScreen({ navigation }: any) {
       icon: "chart",
       label: "Hisobot",
       tone: "muted",
-      onPress: () => navigation.navigate("MoreTab", { screen: "Reports" }),
+      onPress: () => navigation.navigate("Reports"),
     },
   ];
 
@@ -223,8 +224,8 @@ export default function HomeScreen({ navigation }: any) {
       <View style={{ gap: 10 }}>
         <SectionHeader
           title={`Qurilmalar (${deviceCount})`}
-          actionLabel="Barchasi"
-          onAction={() => navigation.navigate("MoreTab", { screen: "Devices" })}
+          actionLabel="Boshqarish"
+          onAction={() => navigation.navigate("Devices")}
         />
         {deviceCount > 1 ? <DeviceScopePicker /> : null}
         <Card padded={false} style={{ paddingHorizontal: 16, paddingVertical: 2 }}>
@@ -236,7 +237,7 @@ export default function HomeScreen({ navigation }: any) {
               todayMinutes={d.todayMinutes}
               selected={activeDevice?.id === d.device.id}
               first={i === 0}
-              onPress={() => navigation.navigate("MoreTab", { screen: "DeviceDetail", params: { deviceId: d.device.id } })}
+              onPress={() => navigation.navigate("DeviceDetail", { deviceId: d.device.id })}
             />
           ))}
         </Card>
