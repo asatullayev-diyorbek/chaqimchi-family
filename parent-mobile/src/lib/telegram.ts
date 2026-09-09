@@ -38,6 +38,7 @@ type TelegramWebApp = {
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
   onEvent?: (event: string, cb: () => void) => void;
+  offEvent?: (event: string, cb: () => void) => void;
 };
 
 declare global {
@@ -114,8 +115,29 @@ export function telegramViewportHeight(): number | null {
   return null;
 }
 
-/** Top inset to keep content clear of Telegram's own header controls. */
-export function telegramTopInset(): number {
+/**
+ * Padding to keep content clear of Telegram's chrome: the device safe area
+ * (notch) plus Telegram's own floating header/menu controls. Bot API < 8.0
+ * has no `contentSafeAreaInset` — fall back to a header-sized top inset so
+ * the app title row isn't hidden under the close/menu pills.
+ */
+export function telegramInsets(): { top: number; bottom: number } {
   const wa = getWebApp();
-  return wa?.contentSafeAreaInset?.top ?? wa?.safeAreaInset?.top ?? 0;
+  if (!wa || !isTelegramWebApp()) return { top: 0, bottom: 0 };
+  const safe = wa.safeAreaInset ?? { top: 0, bottom: 0, left: 0, right: 0 };
+  const content = wa.contentSafeAreaInset;
+  // Bot API 8.0+ reports the exact inset from Telegram's chrome — trust it
+  // whenever the field exists (0 is a valid value, e.g. Telegram Desktop).
+  // Older clients have no such field; reserve room for the floating header.
+  const top = content ? safe.top + content.top : safe.top + 52;
+  return { top, bottom: safe.bottom + (content?.bottom ?? 0) };
+}
+
+/** Subscribe to every event that can change the viewport or insets. */
+export function onTelegramLayoutChange(cb: () => void): () => void {
+  const wa = getWebApp() as any;
+  if (!wa?.onEvent) return () => {};
+  const events = ["viewportChanged", "safeAreaChanged", "contentSafeAreaChanged"];
+  events.forEach((e) => wa.onEvent(e, cb));
+  return () => events.forEach((e) => wa.offEvent?.(e, cb));
 }

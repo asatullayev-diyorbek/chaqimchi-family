@@ -16,12 +16,11 @@ import { Divider, Text } from "./primitives";
 export function ChildSwitcher({ onAddChild }: { onAddChild: () => void }) {
   const { children, selectedChild, selectedChildId, setChild } = useFamily();
   const [open, setOpen] = useState(false);
-  const single = children.length <= 1;
 
   return (
     <>
       <Pressable
-        onPress={() => !single && setOpen(true)}
+        onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel="Farzandni tanlash"
         style={({ pressed }) => [
@@ -31,14 +30,14 @@ export function ChildSwitcher({ onAddChild }: { onAddChild: () => void }) {
             gap: 7,
             paddingVertical: 5,
             paddingLeft: 5,
-            paddingRight: single ? 10 : 6,
+            paddingRight: 6,
             borderRadius: radius.pill,
             borderWidth: 1,
             borderColor: colors.border,
             backgroundColor: colors.surface,
             maxWidth: 168,
           },
-          pressed && !single && { backgroundColor: colors.surfaceMuted },
+          pressed && { backgroundColor: colors.surfaceMuted },
         ]}
       >
         <Avatar
@@ -50,20 +49,18 @@ export function ChildSwitcher({ onAddChild }: { onAddChild: () => void }) {
         <Text variant="label" numberOfLines={1} style={{ flexShrink: 1, fontSize: 13.5 }}>
           {selectedChild?.name ?? "Farzand"}
         </Text>
-        {!single ? (
-          <View
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: 10,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: colors.surfaceSunken,
-            }}
-          >
-            <Icon name="chevronDown" size={13} color={colors.body} />
-          </View>
-        ) : null}
+        <View
+          style={{
+            width: 20,
+            height: 20,
+            borderRadius: 10,
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor: colors.surfaceSunken,
+          }}
+        >
+          <Icon name="chevronDown" size={13} color={colors.body} />
+        </View>
       </Pressable>
 
       <Sheet visible={open} onClose={() => setOpen(false)} title="Farzandni tanlang" scroll={false}>

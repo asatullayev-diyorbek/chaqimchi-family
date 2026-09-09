@@ -1,35 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
 import { colors } from "../theme";
-import { getWebApp, telegramViewportHeight } from "../lib/telegram";
+import { onTelegramLayoutChange, telegramInsets, telegramViewportHeight } from "../lib/telegram";
 
 /**
  * On web (Telegram Mini App or a plain browser) the app is framed to a
- * phone-width column, centred on the page background, and its height tracked
- * to Telegram's stable viewport so the tab bar never sits under Telegram's
- * chrome. On native this is a passthrough.
+ * phone-width column, centred on the page background, its height tracked to
+ * Telegram's stable viewport, and padded to clear Telegram's floating
+ * header / device safe area. On native this is a passthrough.
  */
 const MAX_WIDTH = 460;
 
 export function AppFrame({ children }: { children: React.ReactNode }) {
-  const [height, setHeight] = useState<number | null>(telegramViewportHeight());
+  const [layout, setLayout] = useState(() => ({
+    height: telegramViewportHeight(),
+    insets: telegramInsets(),
+  }));
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
 
-    // Paint the surrounding page so the letterboxed area matches the app.
     document.body.style.backgroundColor = colors.background;
     document.documentElement.style.backgroundColor = colors.background;
 
-    const update = () => setHeight(telegramViewportHeight());
+    const update = () =>
+      setLayout({ height: telegramViewportHeight(), insets: telegramInsets() });
     update();
     window.addEventListener("resize", update);
-    const wa = getWebApp();
-    wa?.onEvent?.("viewportChanged", update);
-    return () => window.removeEventListener("resize", update);
+    const unsubscribe = onTelegramLayoutChange(update);
+    return () => {
+      window.removeEventListener("resize", update);
+      unsubscribe();
+    };
   }, []);
 
   if (Platform.OS !== "web") return <>{children}</>;
+
+  const { height, insets } = layout;
 
   return (
     <View style={{ flex: 1, alignItems: "center", backgroundColor: colors.background }}>
@@ -39,6 +46,8 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
           width: "100%",
           maxWidth: MAX_WIDTH,
           height: height ?? undefined,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
           backgroundColor: colors.background,
           overflow: "hidden",
         }}
