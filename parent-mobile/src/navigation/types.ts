@@ -9,7 +9,6 @@ export type AuthStackParams = {
 
 export type HomeStackParams = {
   Home: undefined;
-  ChildOverview: { childId: string };
   DeviceDetail: { deviceId: string };
   AddChild: undefined;
   PairDevice: { childId?: string } | undefined;

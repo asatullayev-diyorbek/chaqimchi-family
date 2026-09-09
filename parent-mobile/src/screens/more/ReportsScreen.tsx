@@ -21,7 +21,11 @@ import {
 
 export default function ReportsScreen() {
   const { childDevices, selectedChild, activeDevice, setDevice } = useFamily();
-  const deviceId = activeDevice?.id ?? childDevices[0]?.id ?? "";
+  // Reports are device-scoped — there is no family-wide report. With several
+  // devices and none picked, ask the parent to choose one.
+  const deviceId =
+    activeDevice?.id ?? (childDevices.length === 1 ? childDevices[0].id : "");
+  const needsDevicePick = !deviceId && childDevices.length > 1;
   const [range, setRange] = useState<"week" | "month">("week");
 
   const fetcher = useCallback(async () => {
@@ -86,6 +90,18 @@ export default function ReportsScreen() {
     </View>
   );
 
+  if (needsDevicePick) {
+    return (
+      <Screen scroll>
+        {header}
+        <EmptyState
+          icon="device"
+          title="Qurilmani tanlang"
+          message="Batafsil hisobot bitta qurilma bo‘yicha tuziladi. Yuqoridan qurilmani tanlang."
+        />
+      </Screen>
+    );
+  }
   if (!deviceId) {
     return (
       <Screen scroll>

@@ -29,7 +29,7 @@ import {
 import type { QuickAction } from "../../components";
 
 export default function HomeScreen({ navigation }: any) {
-  const { setDevice, activeDevice } = useFamily();
+  const { activeDevice } = useFamily();
   const { child, data, loading, refreshing, error, refresh, hasDevice, deviceCount } = useHomeData();
 
   const unseen = data?.unseenAlerts ?? 0;
@@ -68,6 +68,12 @@ export default function HomeScreen({ navigation }: any) {
         <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
       </View>
     </View>
+  );
+
+  const subtitle = (
+    <Text variant="caption" color={colors.muted} style={{ marginTop: -4 }}>
+      Bugungi qisqa ko‘rinish
+    </Text>
   );
 
   if (loading) {
@@ -124,7 +130,10 @@ export default function HomeScreen({ navigation }: any) {
   }
   if (!data) return null;
 
-  const { scopeMinutes, scopeLimit, isAllScope, devices, weekBreakdown, weekAverage, currentApp } = data;
+  const { scopeMinutes, scopeLimit, isAllScope, devices, weekBreakdown, weekAverage, lastApp } = data;
+  const scopeOnline = activeDevice
+    ? devices.find((d) => d.device.id === activeDevice.id)?.online
+    : devices.some((d) => d.online);
   const over = scopeLimit != null && scopeMinutes > scopeLimit;
   const near = scopeLimit != null && !over && scopeMinutes > scopeLimit * 0.85;
   const pct = scopeLimit ? Math.round((scopeMinutes / scopeLimit) * 100) : null;
@@ -169,6 +178,7 @@ export default function HomeScreen({ navigation }: any) {
   return (
     <Screen scroll refreshing={refreshing} onRefresh={refresh}>
       {header}
+      {subtitle}
 
       {/* Today screen time */}
       <Card style={{ gap: 12 }}>
@@ -209,10 +219,19 @@ export default function HomeScreen({ navigation }: any) {
           <Muted>Limit o‘rnatilmagan</Muted>
         )}
 
-        {currentApp ? (
+        {lastApp ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: colors.mint }} />
-            <Muted>Hozir: {appDisplay(currentApp).label}</Muted>
+            <View
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: 3,
+                backgroundColor: scopeOnline ? colors.mint : colors.faint,
+              }}
+            />
+            <Muted>
+              {scopeOnline ? "So‘nggi ilova" : "Oxirgi ishlatilgan"}: {appDisplay(lastApp).label}
+            </Muted>
           </View>
         ) : null}
       </Card>

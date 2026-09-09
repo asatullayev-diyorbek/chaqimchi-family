@@ -56,7 +56,7 @@ export default function ActivityScreen({ route }: any) {
   const [range, setRange] = useState<SummaryRange>("day");
   const [date, setDate] = useState(todayISO());
 
-  // Honour a deep link from Home / ChildOverview.
+  // Honour a deep link from Home / device rows.
   useEffect(() => {
     const id = route.params?.deviceId;
     if (id && childDevices.some((d) => d.id === id)) setDevice(id);

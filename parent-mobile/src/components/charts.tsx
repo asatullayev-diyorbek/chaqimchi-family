@@ -160,13 +160,12 @@ export function WeekBars({
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState<number | null>(null);
 
-  const { maxMin, avg, peak } = useMemo(() => {
+  const { maxMin, avg } = useMemo(() => {
     const vals = days.map((d) => d.minutes);
     const nonZero = vals.filter((v) => v > 0);
     return {
       maxMin: Math.max(60, ...vals),
       avg: nonZero.length ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0,
-      peak: Math.max(0, ...vals),
     };
   }, [days]);
 
@@ -226,10 +225,20 @@ export function WeekBars({
 
             {days.map((d, i) => {
               const x = i * step + step / 2;
-              const isPeak = d.minutes === peak && peak > 0;
+              // The last bar is "today" in a trailing-N-days chart — give it
+              // the strongest fill so the parent's eye lands there first.
+              const isToday = i === days.length - 1;
               const isActive = active === i;
               if (d.minutes <= 0) {
-                return <Circle key={i} cx={x} cy={padTop + plotH - 2} r={2} fill={colors.chartAxis} />;
+                return (
+                  <Circle
+                    key={i}
+                    cx={x}
+                    cy={padTop + plotH - 2}
+                    r={isToday ? 3 : 2}
+                    fill={isToday ? colors.chartBarActive : colors.chartAxis}
+                  />
+                );
               }
               const y = yFor(d.minutes);
               return (
@@ -240,7 +249,7 @@ export function WeekBars({
                   width={barW}
                   height={padTop + plotH - y}
                   rx={Math.min(6, barW / 2)}
-                  fill={isPeak || isActive ? "url(#barActive)" : "url(#barGrad)"}
+                  fill={isToday || isActive ? "url(#barActive)" : "url(#barGrad)"}
                 />
               );
             })}
@@ -260,10 +269,16 @@ export function WeekBars({
                 </Text>
                 <Text
                   variant="micro"
-                  color={active === i ? colors.blue : d.weekend ? colors.warning : colors.chartAxis}
+                  color={
+                    active === i || i === days.length - 1
+                      ? colors.blue
+                      : d.weekend
+                        ? colors.warning
+                        : colors.chartAxis
+                  }
                   style={{ height: axisH }}
                 >
-                  {dense ? (i % 5 === 0 ? d.label : "") : d.label}
+                  {dense ? (i % 5 === 0 || i === days.length - 1 ? d.label : "") : d.label}
                 </Text>
               </Pressable>
             ))}

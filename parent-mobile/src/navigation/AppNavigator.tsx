@@ -7,7 +7,6 @@ import { Icon, IconName } from "../components";
 import { useAlertBadge } from "../hooks/useAlertBadge";
 
 import HomeScreen from "../screens/home/HomeScreen";
-import ChildOverviewScreen from "../screens/home/ChildOverviewScreen";
 import DeviceDetailScreen from "../screens/devices/DeviceDetailScreen";
 import AddChildScreen from "../screens/family/AddChildScreen";
 import PairDeviceScreen from "../screens/enroll/PairDeviceScreen";
@@ -38,7 +37,6 @@ function HomeStack() {
   return (
     <Home.Navigator screenOptions={stackScreenOptions}>
       <Home.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-      <Home.Screen name="ChildOverview" component={ChildOverviewScreen} options={{ title: "Farzand" }} />
       <Home.Screen name="Devices" component={DevicesScreen} options={{ title: "Qurilmalar" }} />
       <Home.Screen name="DeviceDetail" component={DeviceDetailScreen} options={{ title: "Qurilma" }} />
       <Home.Screen name="Reports" component={ReportsScreen} options={{ title: "Hisobotlar" }} />

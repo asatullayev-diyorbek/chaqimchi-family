@@ -25,8 +25,8 @@ export type HomeData = {
   weekBreakdown: DayBreakdown[];
   weekAverage: number;
   unseenAlerts: number;
-  /** The app the scoped device is showing right now, if online. */
-  currentApp: string | null;
+  /** Most-recently-used app on the scoped device (by last_used_at). */
+  lastApp: string | null;
 };
 
 /**
@@ -96,7 +96,14 @@ export function useHomeData() {
         childDevices.map((d) => getAlerts(d.id).catch(() => [])),
       );
 
-      const scopeOnlineSummary = scopeDevices.find((r) => r.online)?.summary ?? null;
+      // Most-recently-used app across the scoped devices, by last_used_at.
+      const apps = scopeDevices
+        .flatMap((r) => r.summary?.top_apps ?? [])
+        .filter((a) => a.last_used_at);
+      apps.sort(
+        (a, b) => new Date(b.last_used_at!).getTime() - new Date(a.last_used_at!).getTime(),
+      );
+      const lastApp = apps[0]?.app ?? null;
 
       if (mounted.current) {
         setData({
@@ -107,7 +114,7 @@ export function useHomeData() {
           weekBreakdown,
           weekAverage,
           unseenAlerts: alertLists.flat().filter((a) => !a.seen).length,
-          currentApp: scopeOnlineSummary?.top_apps?.[0]?.app ?? null,
+          lastApp,
         });
       }
     } catch (e: any) {
