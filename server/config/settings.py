@@ -164,6 +164,16 @@ CHAQIMCHI_PUBLIC_API_URL = os.environ.get(
 # Public parent-web origin, used for deep links in Telegram notifications.
 PARENT_WEB_URL = os.environ.get("PARENT_WEB_URL", "https://guard.chaqimchi-ai.uz")
 
+# Spino24 parent Mini App (Telegram Web App) origin — the bot's menu button
+# and onboarding buttons open this.
+PARENT_MINIAPP_URL = os.environ.get("PARENT_MINIAPP_URL", "https://spino24.chaqimchi-ai.uz")
+
+# Where the bot's onboarding illustrations are served from (parent-web
+# public/bot/). Bot sendPhoto calls reference <base>/<slug>.png.
+BOT_ASSET_BASE_URL = os.environ.get(
+    "BOT_ASSET_BASE_URL", "https://guard.chaqimchi-ai.uz/bot"
+).rstrip("/")
+
 # Telegram login (see apps/accounts/telegram.py). Empty until a bot is
 # created via @BotFather and these are set in the hosting environment.
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")

@@ -119,6 +119,7 @@ class TelegramWebAppLoginView(APIView):
             if updates:
                 user.save(update_fields=updates)
 
+        sub = getattr(user.family, "subscription", None)
         refresh = RefreshToken.for_user(user)
         return Response(
             {
@@ -129,5 +130,10 @@ class TelegramWebAppLoginView(APIView):
                 "username": user.username or "",
                 "full_name": user.full_name or "",
                 "telegram_username": user.telegram_username or "",
+                "phone": user.phone or "",
+                # True until the parent sends a phone number through the bot;
+                # the Mini App shows a "finish in the bot" gate meanwhile.
+                "onboarding_required": user.onboarding_required,
+                "plan": sub.plan if sub is not None else "beta",
             }
         )

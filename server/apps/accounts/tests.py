@@ -13,7 +13,7 @@ WEBHOOK_HEADERS = {"HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN": "test-secret"}
     TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
     TELEGRAM_WEBHOOK_SECRET="test-secret",
 )
-@mock.patch("apps.accounts.telegram._telegram_api_call", return_value=None)
+@mock.patch("apps.accounts.tg_api.call", return_value=None)
 class TelegramLinkTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -92,7 +92,7 @@ class TelegramLinkTests(TestCase):
     TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
     TELEGRAM_WEBHOOK_SECRET="test-secret",
 )
-@mock.patch("apps.accounts.telegram._telegram_api_call", return_value=None)
+@mock.patch("apps.accounts.tg_api.call", return_value=None)
 class TelegramBotCommandTests(TestCase):
     def setUp(self):
         from apps.devices.models import Child, ChildDevice
@@ -120,10 +120,10 @@ class TelegramBotCommandTests(TestCase):
             api.assert_called_once()
             self.assertEqual(api.call_args[0][0], "sendMessage")
 
-    def test_unlinked_sender_is_told_to_link(self, api):
+    def test_unlinked_sender_is_pointed_at_start(self, api):
         self._send("/bugun", from_id=111111)
         text = api.call_args[0][1]["text"]
-        self.assertIn("ulanmagan", text)
+        self.assertIn("/start", text)
 
     def test_start_with_token_is_not_treated_as_a_command(self, api):
         # "/start <uuid>" must still go to the pairing flow, not the bot menu
@@ -135,7 +135,7 @@ class TelegramBotCommandTests(TestCase):
 @override_settings(
     TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="b", TELEGRAM_WEBHOOK_SECRET="test-secret",
 )
-@mock.patch("apps.accounts.telegram._telegram_api_call", return_value=None)
+@mock.patch("apps.accounts.tg_api.call", return_value=None)
 class TelegramAlertSeenCallbackTests(TestCase):
     def setUp(self):
         from apps.devices.models import ChildDevice
@@ -265,3 +265,125 @@ class TelegramWebAppLoginTests(TestCase):
     def test_503_when_bot_not_configured(self):
         r = self.client.post(reverse("telegram-webapp"), {"init_data": "x"}, format="json")
         self.assertEqual(r.status_code, 503)
+
+
+@override_settings(
+    TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
+    TELEGRAM_WEBHOOK_SECRET="test-secret", DIGEST_CRON_SECRET="cron-x",
+)
+@mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
+class OnboardingFlowTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def _send(self, message):
+        return self.client.post(
+            reverse("telegram-webhook"), {"message": message},
+            format="json", **WEBHOOK_HEADERS,
+        )
+
+    def _methods(self, api):
+        return [c[0][0] for c in api.call_args_list]
+
+    def test_cold_start_creates_account_and_asks_for_phone(self, api):
+        self._send({"text": "/start", "chat": {"id": 900}, "from": {"id": 900, "username": "d"}})
+        u = ParentUser.objects.get(telegram_id=900)
+        self.assertTrue(u.onboarding_required)
+        self.assertTrue(u.family.subscription.plan, "beta")
+        self.assertIn("sendPhoto", self._methods(api))  # welcome + phone-trust
+
+    def test_contact_completes_onboarding(self, api):
+        self._send({"text": "/start", "chat": {"id": 901}, "from": {"id": 901}})
+        api.reset_mock()
+        self._send({
+            "chat": {"id": 901}, "from": {"id": 901},
+            "contact": {"user_id": 901, "phone_number": "998901112233"},
+        })
+        u = ParentUser.objects.get(telegram_id=901)
+        self.assertFalse(u.onboarding_required)
+        self.assertEqual(u.phone, "+998901112233")
+
+    def test_forwarded_contact_is_rejected(self, api):
+        self._send({"text": "/start", "chat": {"id": 902}, "from": {"id": 902}})
+        self._send({
+            "chat": {"id": 902}, "from": {"id": 902},
+            "contact": {"user_id": 555, "phone_number": "998900000000"},
+        })
+        self.assertTrue(ParentUser.objects.get(telegram_id=902).onboarding_required)
+
+    def test_commands_blocked_until_phone(self, api):
+        self._send({"text": "/start", "chat": {"id": 903}, "from": {"id": 903}})
+        api.reset_mock()
+        self._send({"text": "/bugun", "chat": {"id": 903}, "from": {"id": 903}})
+        joined = " ".join(str(c) for c in api.call_args_list)
+        self.assertIn("telefon", joined.lower())
+
+    def test_menu_after_onboarding(self, api):
+        self._send({"text": "/start", "chat": {"id": 904}, "from": {"id": 904}})
+        self._send({
+            "chat": {"id": 904}, "from": {"id": 904},
+            "contact": {"user_id": 904, "phone_number": "998900000001"},
+        })
+        api.reset_mock()
+        self._send({"text": "/menyu", "chat": {"id": 904}, "from": {"id": 904}})
+        payload = api.call_args_list[0][0][1]
+        self.assertEqual(api.call_args_list[0][0][0], "sendMessage")
+        self.assertIn("menu:devices", str(payload))
+
+    def test_menu_callback_edits_message(self, api):
+        u = ParentUser.objects.create_user(email="m@e.com", password="supersecret1", telegram_id=905)
+        self.client.post(
+            reverse("telegram-webhook"),
+            {"callback_query": {"id": "c", "data": "menu:devices",
+                                "message": {"chat": {"id": 1}, "message_id": 5}, "from": {"id": 905}}},
+            format="json", **WEBHOOK_HEADERS,
+        )
+        self.assertIn("editMessageText", self._methods(api))
+
+    def test_reminder_schedule(self, api):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        from apps.accounts.onboarding import run_onboarding_reminders
+
+        u = ParentUser.objects.create_telegram_user(telegram_id=906)
+        # brand new — no reminder yet (needs >= 1 day old)
+        self.assertEqual(run_onboarding_reminders()["reminded"], 0)
+
+        ParentUser.objects.filter(pk=u.pk).update(created_at=timezone.now() - timedelta(days=2))
+        self.assertEqual(run_onboarding_reminders()["reminded"], 1)
+        u.refresh_from_db()
+        self.assertEqual(u.onboarding_reminders_sent, 1)
+        # 48h gap — immediate re-run does nothing
+        self.assertEqual(run_onboarding_reminders()["reminded"], 0)
+
+    def test_reminder_stops_after_three(self, api):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        from apps.accounts.onboarding import run_onboarding_reminders
+
+        u = ParentUser.objects.create_telegram_user(telegram_id=907)
+        ParentUser.objects.filter(pk=u.pk).update(
+            created_at=timezone.now() - timedelta(days=30),
+            onboarding_reminders_sent=3,
+        )
+        self.assertEqual(run_onboarding_reminders()["reminded"], 0)
+
+    def test_reminder_endpoint_secret(self, api):
+        r = self.client.post(reverse("onboarding-remind"), HTTP_X_DIGEST_SECRET="wrong")
+        self.assertEqual(r.status_code, 403)
+        r = self.client.post(reverse("onboarding-remind"), HTTP_X_DIGEST_SECRET="cron-x")
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("reminded", r.json())
+
+    def test_completed_parent_not_reminded(self, api):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.accounts.onboarding import run_onboarding_reminders
+
+        u = ParentUser.objects.create_telegram_user(telegram_id=908)
+        ParentUser.objects.filter(pk=u.pk).update(
+            created_at=timezone.now() - timedelta(days=5), onboarding_required=False,
+        )
+        self.assertEqual(run_onboarding_reminders()["reminded"], 0)

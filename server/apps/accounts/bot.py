@@ -1,7 +1,8 @@
-"""Read-only Telegram bot commands for a linked parent.
+"""Read-only Telegram bot commands for an onboarded parent.
 
 Answered synchronously inside the webhook request (one small DB read + one
-sendMessage). No auth beyond the sender's telegram_id matching a ParentUser.
+sendMessage). The caller (telegram._handle_message) has already resolved the
+sender to a ParentUser and checked they finished onboarding.
 """
 
 from django.utils import timezone
@@ -11,30 +12,21 @@ from apps.devices.models import ChildDevice
 from apps.rules.models import Rule
 from apps.tracking.digest import device_state, human_minutes, screen_minutes
 
-from .models import ParentUser
-
 HELP = (
-    "ChaqimchiAI Guard\n\n"
+    "Spino24\n\n"
+    "/menyu — asosiy menyu\n"
     "/bugun — bugungi ekran vaqti va qolgan limit\n"
+    "/qurilmalar — qurilmalar holati\n"
+    "/farzandlar — farzandlar ro'yxati\n"
     "/ogohlantirishlar — oxirgi ogohlantirishlar\n"
-    "/qurilmalar — qurilmalar holati"
+    "/yuklab_olish — o'rnatish qo'llanmasi"
 )
 
 
-def handle_command(text, telegram_id):
-    """Returns the reply text for a bare /command, or None if it isn't one
-    we handle (so the webhook can fall through to its /start <token> logic)."""
-    cmd = text.strip().split()[0].lower().lstrip("/")
-    if cmd not in {"start", "help", "bugun", "ogohlantirishlar", "qurilmalar"}:
-        return None
-    if cmd in {"start", "help"} and text.strip() != f"/{cmd}":
-        return None  # "/start <token>" is the login/link flow, not a command
-
-    parent = ParentUser.objects.filter(telegram_id=telegram_id).first()
-    if parent is None:
-        return "Bu Telegram hisob ChaqimchiAI Guard'ga ulanmagan. Ilova → Bildirishnomalar → Telegram'ni ulash."
-
-    if cmd in {"start", "help"}:
+def handle_command(cmd, parent):
+    """Reply text for a bare /command from an onboarded parent, or None if
+    it isn't one we handle here."""
+    if cmd in ("help", "yordam"):
         return HELP
     if cmd == "bugun":
         return _today(parent)
@@ -42,6 +34,8 @@ def handle_command(text, telegram_id):
         return _alerts(parent)
     if cmd == "qurilmalar":
         return _devices(parent)
+    if cmd == "farzandlar":
+        return _children(parent)
     return None
 
 
@@ -97,7 +91,7 @@ def _alerts(parent):
 def _devices(parent):
     devices = list(_family_devices(parent))
     if not devices:
-        return "Hali bog'langan qurilma yo'q."
+        return "Hali bog'langan qurilma yo'q.\n\nO'rnatish uchun: /yuklab_olish"
     lines = ["💻 Qurilmalar"]
     for d in devices:
         who = (d.child.name if d.child else "") or d.child_name or "Qurilma"
@@ -106,4 +100,34 @@ def _devices(parent):
         if battery is not None:
             bits.append(f"🔋 {battery}%")
         lines.append(f"• {who} — {', '.join(bits)}")
+    return "\n".join(lines)
+
+
+def _children(parent):
+    from datetime import date
+
+    from apps.devices.models import Child
+
+    children = list(
+        Child.objects.filter(family_id=parent.family_id).prefetch_related("devices")
+    )
+    if not children:
+        return "Hali farzand qo'shilmagan.\n\nFarzand qurilmasini ulaganingizda avtomatik qo'shiladi: /yuklab_olish"
+    lines = ["👦 Farzandlar"]
+    for c in children:
+        device_count = sum(
+            1 for d in c.devices.all() if d.status == ChildDevice.STATUS_LINKED
+        )
+        used = sum(
+            screen_minutes(d)
+            for d in c.devices.all()
+            if d.status == ChildDevice.STATUS_LINKED
+        )
+        age = ""
+        if c.birth_date:
+            years = (date.today() - c.birth_date).days // 365
+            age = f", {years} yosh"
+        lines.append(
+            f"• {c.name}{age} — {device_count} qurilma, bugun {human_minutes(used)}"
+        )
     return "\n".join(lines)

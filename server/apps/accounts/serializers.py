@@ -16,6 +16,8 @@ class SignupSerializer(serializers.ModelSerializer):
 
 class ParentUserSerializer(serializers.ModelSerializer):
     telegram_linked = serializers.SerializerMethodField()
+    has_password = serializers.SerializerMethodField()
+    plan = serializers.SerializerMethodField()
 
     class Meta:
         model = ParentUser
@@ -27,17 +29,23 @@ class ParentUserSerializer(serializers.ModelSerializer):
             "telegram_username",
             "telegram_linked",
             "has_password",
+            "phone",
+            "onboarding_required",
+            "plan",
             "family",
             "created_at",
         ]
         read_only_fields = [
-            "id", "email", "username", "telegram_username", "family", "created_at",
+            "id", "email", "username", "telegram_username", "phone",
+            "onboarding_required", "plan", "family", "created_at",
         ]
-
-    has_password = serializers.SerializerMethodField()
 
     def get_telegram_linked(self, obj):
         return obj.telegram_id is not None
 
     def get_has_password(self, obj):
         return obj.has_usable_password()
+
+    def get_plan(self, obj):
+        sub = getattr(obj.family, "subscription", None)
+        return sub.plan if sub is not None else "beta"

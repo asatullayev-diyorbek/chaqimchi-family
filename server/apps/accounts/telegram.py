@@ -21,8 +21,6 @@ Flow:
      a "finish registration" screen (see parent-web's /telegram/complete).
 """
 
-import json
-import urllib.request
 from datetime import timedelta
 
 from django.conf import settings
@@ -34,6 +32,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from . import tg_api
 from .bot import handle_command
 from .models import ParentUser, TelegramLoginToken
 from .serializers import ParentUserSerializer
@@ -44,28 +43,15 @@ ALERT_SEEN_PREFIX = "alertseen:"
 
 
 def _telegram_api_call(method, payload):
-    if not settings.TELEGRAM_BOT_TOKEN:
-        return None
-    url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/{method}"
-    request = urllib.request.Request(
-        url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"}
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            return json.loads(response.read())
-    except Exception:
-        # Best-effort: the browser tab is the source of truth for the user,
-        # a failed Telegram-side message shouldn't fail the login.
-        return None
+    """Thin wrapper kept for backwards compatibility (tests and callers still
+    reference this name); the real work is in apps.accounts.tg_api."""
+    return tg_api.call(method, payload)
 
 
 def send_text(chat_id, text, reply_markup=None):
     """Best-effort push to a Telegram chat, with an optional inline keyboard.
     Returns the API response dict or None; never raises."""
-    payload = {"chat_id": chat_id, "text": text, "disable_web_page_preview": True}
-    if reply_markup is not None:
-        payload["reply_markup"] = reply_markup
-    return _telegram_api_call("sendMessage", payload)
+    return tg_api.send_message(chat_id, text, reply_markup)
 
 
 def _send_confirmation_prompt(chat_id, token, is_link=False):
@@ -149,35 +135,64 @@ class TelegramWebhookView(APIView):
         return Response({"ok": True})
 
     def _handle_message(self, message):
+        from . import botmenu, onboarding
+
         text = (message.get("text") or "").strip()
         chat_id = (message.get("chat") or {}).get("id")
-        from_id = (message.get("from") or {}).get("id")
+        from_user = message.get("from") or {}
+        from_id = from_user.get("id")
 
-        if text.startswith("/") and not text.startswith("/start "):
-            reply = handle_command(text, from_id)
-            if reply is not None and chat_id:
-                _telegram_api_call("sendMessage", {"chat_id": chat_id, "text": reply})
+        # A shared phone number from the request_contact button.
+        if message.get("contact"):
+            onboarding.handle_contact(message)
             return
 
-        if not text.startswith("/start "):
-            return
-
-        payload_token = text.removeprefix("/start ").strip()
-
-        token = _resolve_login_token(payload_token) or _resolve_link_token(payload_token)
-        if token is None:
+        # "/start <token>" is the web login / account-link deep link — keep
+        # it ahead of the command router.
+        if text.startswith("/start ") and len(text.split()) > 1:
+            payload_token = text.split(None, 1)[1].strip()
+            token = _resolve_login_token(payload_token) or _resolve_link_token(payload_token)
+            if token is None:
+                if chat_id:
+                    tg_api.send_message(
+                        chat_id,
+                        "Havola muddati tugagan yoki noto'g'ri. Ilovaga qaytib qaytadan urinib ko'ring.",
+                    )
+                return
             if chat_id:
-                _telegram_api_call(
-                    "sendMessage",
-                    {
-                        "chat_id": chat_id,
-                        "text": "Havola muddati tugagan yoki noto'g'ri. Ilovaga qaytib qaytadan urinib ko'ring.",
-                    },
-                )
+                _send_confirmation_prompt(chat_id, token.token, is_link=token.is_link)
             return
 
-        if chat_id:
-            _send_confirmation_prompt(chat_id, token.token, is_link=token.is_link)
+        if not text.startswith("/"):
+            return
+
+        cmd = text[1:].split()[0].lower().split("@")[0]
+        parent = ParentUser.objects.filter(telegram_id=from_id).first()
+
+        if cmd in ("start", "menyu", "menu"):
+            if parent is None:
+                onboarding.start_onboarding(from_user, chat_id)
+            elif parent.onboarding_required:
+                onboarding.send_phone_prompt(chat_id)
+            else:
+                botmenu.send_menu(chat_id, parent)
+            return
+
+        if cmd in ("yuklab_olish", "yuklab"):
+            onboarding.send_install_guide(chat_id)
+            return
+
+        if parent is None:
+            tg_api.send_message(chat_id, "Boshlash uchun /start buyrug'ini yuboring.")
+            return
+        if parent.onboarding_required:
+            tg_api.send_message(chat_id, onboarding.NEED_PHONE_TEXT)
+            onboarding.send_phone_prompt(chat_id)
+            return
+
+        reply = handle_command(cmd, parent)
+        if reply is not None and chat_id:
+            tg_api.send_message(chat_id, reply)
 
     def _handle_callback_query(self, callback_query):
         callback_id = callback_query.get("id")
@@ -189,6 +204,19 @@ class TelegramWebhookView(APIView):
 
         if data.startswith(ALERT_SEEN_PREFIX):
             self._mark_alert_seen(data.removeprefix(ALERT_SEEN_PREFIX), from_user, callback_id, chat_id, message_id)
+            return
+
+        if data == "onbrd:guide":
+            from . import onboarding
+
+            tg_api.answer_callback(callback_id)
+            onboarding.send_install_guide(chat_id)
+            return
+
+        if data.startswith("menu:"):
+            from . import botmenu
+
+            botmenu.handle_menu_callback(callback_query)
             return
 
         if data.startswith(CONFIRM_PREFIX):
@@ -231,15 +259,23 @@ class TelegramWebhookView(APIView):
             login_token.telegram_id = telegram_id
             login_token.telegram_username = telegram_username
             login_token.save(update_fields=["user", "telegram_id", "telegram_username", "is_new_user"])
-            result_text = "✅ Tasdiqlandi! Endi brauzeringizga qaytishingiz mumkin."
+            if user.onboarding_required:
+                result_text = "✅ Tasdiqlandi! Davom etish uchun telefon raqamingizni yuboring."
+            else:
+                result_text = "✅ Tasdiqlandi! Endi brauzeringizga qaytishingiz mumkin."
 
         if callback_id:
-            _telegram_api_call("answerCallbackQuery", {"callback_query_id": callback_id})
+            tg_api.answer_callback(callback_id)
         if chat_id and message_id:
-            _telegram_api_call(
-                "editMessageText",
-                {"chat_id": chat_id, "message_id": message_id, "text": result_text},
-            )
+            tg_api.edit_message_text(chat_id, message_id, result_text)
+        # A web-login user still owes a phone number — prompt for it here so
+        # they don't have to hunt for the bot again.
+        if action == "confirm" and not login_token.is_link and chat_id:
+            user = login_token.user
+            if user and user.onboarding_required:
+                from . import onboarding
+
+                onboarding.send_phone_prompt(chat_id)
 
     @staticmethod
     def _mark_alert_seen(alert_id, from_user, callback_id, chat_id, message_id):

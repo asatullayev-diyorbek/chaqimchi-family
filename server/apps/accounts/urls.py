@@ -6,6 +6,7 @@ from .account_views import (
     PasswordResetStartView,
     PasswordResetVerifyView,
 )
+from .onboarding_views import OnboardingRemindView
 from .telegram_webapp import TelegramWebAppLoginView
 from .telegram import (
     TelegramCompleteView,
@@ -34,4 +35,5 @@ urlpatterns = [
     path("telegram/link/start/", TelegramLinkStartView.as_view(), name="telegram-link-start"),
     path("telegram/link/status/<uuid:token>/", TelegramLinkStatusView.as_view(), name="telegram-link-status"),
     path("telegram/unlink/", TelegramUnlinkView.as_view(), name="telegram-unlink"),
+    path("onboarding/remind/", OnboardingRemindView.as_view(), name="onboarding-remind"),
 ]
