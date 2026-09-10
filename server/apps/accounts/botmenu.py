@@ -1,10 +1,10 @@
-"""The bot's inline mini-menu for an onboarded parent. One message, edited
-in place as the parent taps between sections."""
+"""The bot's main menu for an onboarded parent — a persistent reply
+keyboard (buttons under the input box). Tapping a button sends its label as
+a plain message, which telegram._handle_message routes back here."""
 
 from . import tg_api
 from .bot import _alerts, _children, _devices, _today
-from .models import ParentUser
-from .onboarding import miniapp_url
+from .onboarding import img, miniapp_url
 
 AI_TEXT = (
     "🔎 AI tahlil — tez kunda\n\n"
@@ -12,23 +12,28 @@ AI_TEXT = (
     "odatlari bo'yicha tushunarli tavsiyalar beradi. Ustida ishlayapmiz."
 )
 
+# Button label (lower-cased) -> section key.
+LABELS = {
+    "💻 qurilmalar": "devices",
+    "👦 farzandlar": "children",
+    "📊 bugungi statistika": "today",
+    "🔎 ai tahlil": "ai",
+    "📖 qo'llanma": "guide",
+    "📖 qo‘llanma": "guide",
+}
 
-def _root_markup() -> dict:
+
+def menu_keyboard() -> dict:
     return {
-        "inline_keyboard": [
-            [
-                {"text": "💻 Qurilmalar", "callback_data": "menu:devices"},
-                {"text": "👦 Farzandlar", "callback_data": "menu:children"},
-            ],
-            [{"text": "📊 Bugungi statistika", "callback_data": "menu:today"}],
-            [{"text": "🔎 AI tahlil", "callback_data": "menu:ai"}],
-            [{"text": "📱 Ota-ona panelini ochish", "web_app": {"url": miniapp_url()}}],
-        ]
+        "keyboard": [
+            [{"text": "💻 Qurilmalar"}, {"text": "👦 Farzandlar"}],
+            [{"text": "📊 Bugungi statistika"}],
+            [{"text": "🔎 AI tahlil"}, {"text": "📖 Qo'llanma"}],
+            [{"text": "📱 Ota-ona paneli", "web_app": {"url": miniapp_url()}}],
+        ],
+        "resize_keyboard": True,
+        "is_persistent": True,
     }
-
-
-def _back_markup() -> dict:
-    return {"inline_keyboard": [[{"text": "⬅️ Menyu", "callback_data": "menu:root"}]]}
 
 
 def _root_text(parent) -> str:
@@ -36,42 +41,37 @@ def _root_text(parent) -> str:
     sub = getattr(parent.family, "subscription", None)
     if sub is not None:
         plan = sub.plan_label
-    return f"Spino24 — ota-ona paneli\n\nTarif: {plan}\n\nBo'limni tanlang:"
-
-
-def _section(section: str, parent):
-    """(text, markup) for one menu section."""
-    if section == "devices":
-        return _devices(parent), _back_markup()
-    if section == "children":
-        return _children(parent), _back_markup()
-    if section == "today":
-        return _today(parent), _back_markup()
-    if section == "ai":
-        return AI_TEXT, _back_markup()
-    return _root_text(parent), _root_markup()
+    return (
+        "Spino24 — ota-ona paneli\n\n"
+        f"Tarif: {plan}\n\n"
+        "Pastdagi tugmalar orqali boshqaring. To'liq panel: "
+        f"{miniapp_url()}"
+    )
 
 
 def send_menu(chat_id, parent):
-    tg_api.send_message(chat_id, _root_text(parent), reply_markup=_root_markup())
+    tg_api.send_photo(
+        chat_id, img("menu-banner"),
+        caption=_root_text(parent),
+        reply_markup=menu_keyboard(),
+    )
 
 
-def handle_menu_callback(callback_query: dict):
-    data = callback_query.get("data", "")
-    callback_id = callback_query.get("id")
-    message = callback_query.get("message") or {}
-    chat_id = (message.get("chat") or {}).get("id")
-    message_id = message.get("message_id")
-    from_id = (callback_query.get("from") or {}).get("id")
+def matches(text: str) -> str | None:
+    """Section key for a menu button label, or None."""
+    return LABELS.get((text or "").strip().lower())
 
-    parent = ParentUser.objects.filter(telegram_id=from_id).first()
-    if parent is None or parent.onboarding_required:
-        tg_api.answer_callback(callback_id, "Avval /start bosing.")
-        return
 
-    section = data.split(":", 1)[1] if ":" in data else "root"
-    text, markup = _section(section, parent)
+def handle_menu_button(section: str, chat_id, parent):
+    if section == "devices":
+        tg_api.send_message(chat_id, _devices(parent))
+    elif section == "children":
+        tg_api.send_message(chat_id, _children(parent))
+    elif section == "today":
+        tg_api.send_message(chat_id, _today(parent))
+    elif section == "ai":
+        tg_api.send_photo(chat_id, img("ai-analysis-teaser"), caption=AI_TEXT)
+    elif section == "guide":
+        from .onboarding import send_install_guide
 
-    tg_api.answer_callback(callback_id)
-    if chat_id and message_id:
-        tg_api.edit_message_text(chat_id, message_id, text, reply_markup=markup)
+        send_install_guide(chat_id)

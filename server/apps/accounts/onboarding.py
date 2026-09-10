@@ -42,27 +42,17 @@ def _welcome_keyboard() -> dict:
     return {
         "inline_keyboard": [
             [{"text": "📥 Windows uchun yuklab olish", "url": download_url()}],
-            [{"text": "📖 O'rnatish qo'llanmasi", "callback_data": "onbrd:guide"}],
         ]
     }
 
 
 def _phone_keyboard() -> dict:
-    # Mandatory — no skip button. resize + one-time so it doesn't linger.
+    # Mandatory — no skip button.
     return {
         "keyboard": [[{"text": "📱 Telefon raqamni yuborish", "request_contact": True}]],
         "resize_keyboard": True,
         "one_time_keyboard": True,
         "is_persistent": False,
-    }
-
-
-def _panel_keyboard() -> dict:
-    return {
-        "inline_keyboard": [
-            [{"text": "📥 Yuklab olish", "url": download_url()}],
-            [{"text": "📱 Ota-ona panelini ochish", "web_app": {"url": miniapp_url()}}],
-        ]
     }
 
 
@@ -199,8 +189,7 @@ def handle_contact(message: dict) -> bool:
     parent.save(update_fields=["phone", "onboarding_required"])
 
     tg_api.send_message(chat_id, PHONE_THANKS_TEXT, reply_markup={"remove_keyboard": True})
-    tg_api.send_photo(chat_id, img("install-windows-steps"), caption=install_guide_text(),
-                      reply_markup=_panel_keyboard())
+    tg_api.send_photo(chat_id, img("install-windows-steps"), caption=install_guide_text())
 
     from .botmenu import send_menu  # lazy: botmenu imports onboarding helpers
     send_menu(chat_id, parent)
@@ -208,8 +197,7 @@ def handle_contact(message: dict) -> bool:
 
 
 def send_install_guide(chat_id):
-    tg_api.send_photo(chat_id, img("install-windows-steps"), caption=install_guide_text(),
-                      reply_markup=_panel_keyboard())
+    tg_api.send_photo(chat_id, img("install-windows-steps"), caption=install_guide_text())
 
 
 # ---------------------------------------------------------------------------

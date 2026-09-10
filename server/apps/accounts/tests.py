@@ -326,19 +326,16 @@ class OnboardingFlowTests(TestCase):
         })
         api.reset_mock()
         self._send({"text": "/menyu", "chat": {"id": 904}, "from": {"id": 904}})
-        payload = api.call_args_list[0][0][1]
-        self.assertEqual(api.call_args_list[0][0][0], "sendMessage")
-        self.assertIn("menu:devices", str(payload))
+        method, payload = api.call_args_list[0][0][0], api.call_args_list[0][0][1]
+        self.assertEqual(method, "sendPhoto")  # menu-banner + reply keyboard
+        self.assertIn("Qurilmalar", str(payload["reply_markup"]))
 
-    def test_menu_callback_edits_message(self, api):
+    def test_menu_button_tap_replies(self, api):
         u = ParentUser.objects.create_user(email="m@e.com", password="supersecret1", telegram_id=905)
-        self.client.post(
-            reverse("telegram-webhook"),
-            {"callback_query": {"id": "c", "data": "menu:devices",
-                                "message": {"chat": {"id": 1}, "message_id": 5}, "from": {"id": 905}}},
-            format="json", **WEBHOOK_HEADERS,
-        )
-        self.assertIn("editMessageText", self._methods(api))
+        api.reset_mock()
+        self._send({"text": "💻 Qurilmalar", "chat": {"id": 1}, "from": {"id": 905}})
+        self.assertIn("sendMessage", self._methods(api))
+        self.assertIn("qurilma", str(api.call_args_list[-1]).lower())
 
     def test_reminder_schedule(self, api):
         from datetime import timedelta

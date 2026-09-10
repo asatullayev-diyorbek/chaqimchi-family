@@ -163,6 +163,18 @@ class TelegramWebhookView(APIView):
                 _send_confirmation_prompt(chat_id, token.token, is_link=token.is_link)
             return
 
+        # A tap on one of the persistent menu buttons arrives as plain text.
+        section = botmenu.matches(text)
+        if section:
+            parent = ParentUser.objects.filter(telegram_id=from_id).first()
+            if parent is None:
+                tg_api.send_message(chat_id, "Boshlash uchun /start bosing.")
+            elif parent.onboarding_required:
+                onboarding.send_phone_prompt(chat_id)
+            else:
+                botmenu.handle_menu_button(section, chat_id, parent)
+            return
+
         if not text.startswith("/"):
             return
 
@@ -204,19 +216,6 @@ class TelegramWebhookView(APIView):
 
         if data.startswith(ALERT_SEEN_PREFIX):
             self._mark_alert_seen(data.removeprefix(ALERT_SEEN_PREFIX), from_user, callback_id, chat_id, message_id)
-            return
-
-        if data == "onbrd:guide":
-            from . import onboarding
-
-            tg_api.answer_callback(callback_id)
-            onboarding.send_install_guide(chat_id)
-            return
-
-        if data.startswith("menu:"):
-            from . import botmenu
-
-            botmenu.handle_menu_callback(callback_query)
             return
 
         if data.startswith(CONFIRM_PREFIX):
