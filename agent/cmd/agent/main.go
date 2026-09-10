@@ -26,6 +26,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -34,6 +35,7 @@ import (
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/endpoint"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/rules"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/screenshot"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/service"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/session"
 	syncpkg "github.com/chaqimchi/chaqimchi-family/agent/internal/sync"
@@ -101,16 +103,22 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	// Live status shared with the local IPC endpoint (and through it the
 	// tray status window). Updated from the poll loop and the uploader.
 	var (
-		statusMu       sync.Mutex
-		statusToday    float64
-		statusLimit    int
-		statusLastSync string
-		statusOnline   bool
+		statusMu           sync.Mutex
+		statusToday        float64
+		statusLimit        int
+		statusLastSync     string
+		statusOnline       bool
+		statusScreenshotAt string
 	)
 	setLastSync := func() {
 		statusMu.Lock()
 		statusLastSync = time.Now().UTC().Format(time.RFC3339)
 		statusOnline = true
+		statusMu.Unlock()
+	}
+	setScreenshotAt := func(t time.Time) {
+		statusMu.Lock()
+		statusScreenshotAt = t.UTC().Format(time.RFC3339)
 		statusMu.Unlock()
 	}
 
@@ -194,6 +202,19 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 		},
 	)
 
+	// On-demand screenshots. The service polls the backend for a parent's
+	// capture request and gets a presigned R2 URL; in service mode the
+	// actual grab happens in the user session (Session 0 can't see the
+	// screen) — the coordinator hands the job to the -foreground-reporter
+	// helper over local IPC and confirms when it reports back. Interactive
+	// runs capture in-process.
+	shotCoord := screenshot.NewCoordinator(
+		screenshot.NewClient(baseURL, deviceID, deviceSecret),
+	)
+	shotCoord.Local = interactive
+	shotCoord.OnCaptured = setScreenshotAt
+	go shotCoord.Run(ctx)
+
 	// The local IPC status endpoint is what the user-session Desktop app
 	// reads — for the tray status window and, now, the block overlay. Served
 	// only once the enforcer exists so status() can report ActiveBlock().
@@ -201,19 +222,21 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 		if err := localipc.Serve(ctx, func() localipc.Status {
 			statusMu.Lock()
 			today, limit, lastSync, online := int(statusToday), statusLimit, statusLastSync, statusOnline
+			shotAt := statusScreenshotAt
 			statusMu.Unlock()
 			s := localipc.Status{
 				Service: "running", Version: version, StartedAt: startedAt,
 				LastSyncAt: lastSync, Online: online,
 				TodayMinutes: today, DailyLimitMinutes: limit,
-				Monitoring: []string{"Ekran vaqti", "Ilova nomlari", "Qurilma holati"},
-				RecentLogs: []string{"Service Started: " + startedAt, "Automatic updates: disabled until signed-update support"},
+				ScreenshotAt: shotAt,
+				Monitoring:   []string{"Ekran vaqti", "Ilova nomlari", "Qurilma holati"},
+				RecentLogs:   []string{"Service Started: " + startedAt, "Automatic updates: disabled until signed-update support"},
 			}
 			if reason, message, blocked := enforcer.ActiveBlock(); blocked {
 				s.Block = &localipc.BlockDirective{Reason: reason, Message: message}
 			}
 			return s
-		}, foregroundCh, iconCh, onAdultAccess); err != nil && ctx.Err() == nil {
+		}, foregroundCh, iconCh, onAdultAccess, shotCoord.Job, shotCoord.SubmitResult); err != nil && ctx.Err() == nil {
 			log.Printf("local desktop IPC: %v", err)
 		}
 	}()
@@ -424,10 +447,49 @@ func runForegroundReporter(parentPID int) {
 			}
 			continue
 		}
+		// A queued screenshot request rides back on the check-in response.
+		var fr localipc.ForegroundResponse
+		if resp.StatusCode == http.StatusOK {
+			_ = json.NewDecoder(resp.Body).Decode(&fr)
+		}
 		resp.Body.Close()
 		if resp.StatusCode/100 == 2 && report.IconAppID != "" {
 			delete(pendingIcons, report.IconAppID)
 		}
 		fails = 0
+
+		if fr.Screenshot != nil && shotInFlight.CompareAndSwap(false, true) {
+			job := *fr.Screenshot
+			go func() {
+				defer shotInFlight.Store(false)
+				handleScreenshotJob(client, job)
+			}()
+		}
+	}
+}
+
+// shotInFlight guards against the helper starting a second capture while one
+// is still uploading (the service keeps returning the same job until it gets
+// a result).
+var shotInFlight atomic.Bool
+
+// handleScreenshotJob captures the screen, PUTs it to the presigned R2 URL
+// in the job, and reports the outcome back to the service's local IPC.
+func handleScreenshotJob(client *http.Client, job localipc.ScreenshotJob) {
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+
+	res := screenshot.CaptureAndUpload(ctx, job.UploadURL)
+	res.ID = job.ID
+	reporterLog("screenshot %s: ok=%v size=%d err=%s", job.ID, res.OK, res.SizeBytes, res.Error)
+
+	body, _ := json.Marshal(res)
+	req, err := http.NewRequest(http.MethodPost, "http://"+localipc.Address+"/v1/screenshot-result", bytes.NewReader(body))
+	if err != nil {
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if resp, err := client.Do(req); err == nil {
+		resp.Body.Close()
 	}
 }

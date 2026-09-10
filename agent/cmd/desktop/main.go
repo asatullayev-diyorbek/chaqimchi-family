@@ -133,6 +133,7 @@ func main() {
 	var blocker blockController
 	go func() {
 		client := &http.Client{Timeout: 3 * time.Second}
+		var lastShotSeen string
 		for {
 			resp, err := client.Get(*endpoint)
 			if err != nil {
@@ -153,6 +154,12 @@ func main() {
 				tray.SetStatus(ui.StatusOK)
 				// Raise or dismiss the block overlay to match the service.
 				blocker.apply(status.Block)
+				// Spino24 never captures the screen without telling the
+				// child: show a plain notice each time the parent does.
+				if status.ScreenshotAt != "" && status.ScreenshotAt != lastShotSeen {
+					lastShotSeen = status.ScreenshotAt
+					tray.Notify("Spino24: ota-onangiz hozir ekran rasmini oldi")
+				}
 			}
 			// Short interval: this is loopback and the overlay must appear
 			// promptly once a rule (daily limit, quiet hours) trips.

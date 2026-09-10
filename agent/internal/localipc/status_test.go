@@ -23,7 +23,7 @@ func testServer(t *testing.T, foreground chan<- string) *httptest.Server {
 
 func testServerWithIcons(t *testing.T, foreground chan<- string, icons chan<- AppIconReport) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, foreground, icons, nil))
+	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, foreground, icons, nil, nil, nil))
 	t.Cleanup(srv.Close)
 	return srv
 }
@@ -126,7 +126,7 @@ func TestForegroundReportNeverBlocks(t *testing.T) {
 func TestStatusCarriesBlockDirective(t *testing.T) {
 	want := &BlockDirective{Reason: "daily_limit", Message: "Bugungi ekran vaqting tugadi"}
 	srv := httptest.NewServer(Handler(
-		func() Status { return Status{Service: "running", Block: want} }, nil, nil, nil))
+		func() Status { return Status{Service: "running", Block: want} }, nil, nil, nil, nil, nil))
 	t.Cleanup(srv.Close)
 
 	resp, err := http.Get(srv.URL + "/v1/status")
@@ -145,7 +145,7 @@ func TestStatusCarriesBlockDirective(t *testing.T) {
 }
 
 func TestStatusOmitsBlockWhenNil(t *testing.T) {
-	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, nil, nil, nil))
+	srv := httptest.NewServer(Handler(func() Status { return Status{Service: "running"} }, nil, nil, nil, nil, nil))
 	t.Cleanup(srv.Close)
 
 	resp, err := http.Get(srv.URL + "/v1/status")
