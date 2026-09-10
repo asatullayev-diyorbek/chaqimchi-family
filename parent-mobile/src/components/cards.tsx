@@ -10,6 +10,7 @@ import { AppIcon, SiteIcon } from "./AppIcon";
 import { Icon, IconName } from "./Icon";
 import { Card, Muted, Text } from "./primitives";
 import { Meter, Sparkline } from "./charts";
+import { BatteryGauge, batteryColor, PlatformGlyph } from "./PlatformGlyph";
 
 // --- ChildCard (Home) ------------------------------------------------
 
@@ -144,7 +145,7 @@ export function DeviceCard({
             justifyContent: "center",
           }}
         >
-          <Icon name={device.platform === "windows" ? "laptop" : "phone"} size={20} color={colors.blue} />
+          <PlatformGlyph platform={device.platform} size={20} color={colors.blue} />
         </View>
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="label">{device.child_name || "Qurilma"}</Text>
@@ -156,9 +157,9 @@ export function DeviceCard({
             <Muted>{isOnline ? "Onlayn" : "Oflayn"}</Muted>
           </View>
           {typeof battery === "number" ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Icon name="battery" size={13} color={colors.faint} />
-              <Text variant="micro" color={colors.faint}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <BatteryGauge level={battery} width={22} />
+              <Text variant="micro" color={batteryColor(battery)}>
                 {battery}%
               </Text>
             </View>
@@ -174,8 +175,6 @@ export function DeviceCard({
 }
 
 // --- DeviceRow (compact, for the Home devices list) ---------------
-
-const PLATFORM_ICON = { windows: "laptop", ios: "tablet", android: "phone" } as const;
 
 /** One device as an inset panel — icon tile, name, status + today's minutes,
  *  battery (only when the agent reports it) or last-activity time. */
@@ -228,7 +227,7 @@ export function DeviceRow({
           backgroundColor: selected ? colors.blue : colors.blueSoft,
         }}
       >
-        <Icon name={PLATFORM_ICON[device.platform]} size={19} color={selected ? "#fff" : colors.blue} />
+        <PlatformGlyph platform={device.platform} size={19} color={selected ? "#fff" : colors.blue} />
       </View>
 
       <View style={{ flex: 1, gap: 3 }}>
@@ -245,9 +244,9 @@ export function DeviceRow({
 
       <View style={{ alignItems: "flex-end", gap: 2 }}>
         {online && typeof battery === "number" ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Icon name="battery" size={14} color={colors.muted} />
-            <Text variant="caption" color={colors.body}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            <BatteryGauge level={battery} width={24} />
+            <Text variant="caption" color={batteryColor(battery)}>
               {battery}%
             </Text>
           </View>

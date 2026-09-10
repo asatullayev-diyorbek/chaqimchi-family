@@ -21,6 +21,8 @@ import {
   StatusDot,
   Text,
   useToast,
+  BatteryGauge,
+  batteryColor,
 } from "../../components";
 
 export default function DeviceDetailScreen({ route, navigation }: any) {
@@ -139,7 +141,20 @@ export default function DeviceDetailScreen({ route, navigation }: any) {
         </View>
         <View style={{ paddingHorizontal: 16 }}>
           {typeof summary?.battery_percent === "number" ? (
-            <ListRow first icon="battery" title="Batareya" subtitle={formatDate(summary.battery_updated_at ?? "", true)} right={<Text variant="label">{summary.battery_percent}%</Text>} />
+            <ListRow
+              first
+              icon="battery"
+              title="Batareya"
+              subtitle={formatDate(summary.battery_updated_at ?? "", true)}
+              right={
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <BatteryGauge level={summary.battery_percent} width={26} />
+                  <Text variant="label" color={batteryColor(summary.battery_percent)}>
+                    {summary.battery_percent}%
+                  </Text>
+                </View>
+              }
+            />
           ) : null}
           <ListRow
             first={typeof summary?.battery_percent !== "number"}

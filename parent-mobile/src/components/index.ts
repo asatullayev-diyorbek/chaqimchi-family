@@ -30,6 +30,7 @@ export { Spino24Logo, Spino24Mark, Spino24Wordmark, Spino24Badge, Spino24Mascot 
 export { AppHeader, TabHeader } from "./AppHeader";
 export { Hero, TrendPill } from "./Hero";
 export { Avatar, PlatformBadge, StatusDot } from "./Avatar";
+export { PlatformGlyph, BatteryGauge, batteryColor } from "./PlatformGlyph";
 export { AppIcon, SiteIcon } from "./AppIcon";
 export { Meter, RingProgress, WeekBars, SplitBar, DayTimeline, Sparkline } from "./charts";
 export {
