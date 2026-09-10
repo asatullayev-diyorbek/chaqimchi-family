@@ -44,8 +44,23 @@ def screen_minutes(device, on_date=None):
 
 
 def screen_minutes_by_device(device_ids, on_date=None):
-    """{device_id: rounded foreground minutes} for a local date, in one
-    query — for the bot's /bugun and /farzandlar over a whole family."""
+    """{device_id: rounded foreground minutes} for a local date, in one query."""
+    return {k: v["minutes"] for k, v in today_usage_by_device(device_ids, on_date).items()}
+
+
+def _app_name(payload):
+    return (
+        payload.get("app_name")
+        or payload.get("app_id")
+        or payload.get("app")
+        or ""
+    )
+
+
+def today_usage_by_device(device_ids, on_date=None):
+    """One Event scan → {device_id: {"minutes": int, "top_app": str,
+    "top_minutes": int}} for a local date. Powers the bot's /bugun,
+    /farzandlar and /qurilmalar."""
     device_ids = list(device_ids)
     if not device_ids:
         return {}
@@ -53,13 +68,49 @@ def screen_minutes_by_device(device_ids, on_date=None):
     day = on_date or timezone.localtime(timezone.now(), tz).date()
     start = timezone.make_aware(datetime.combine(day, time.min), tz)
     end = timezone.make_aware(datetime.combine(day, time.max), tz)
-    totals = defaultdict(float)
+
+    per_device = defaultdict(float)
+    per_app = defaultdict(lambda: defaultdict(float))  # device -> app -> minutes
     for device_id, payload in Event.objects.filter(
         device_id__in=device_ids, event_type="app_usage",
         occurred_at__gte=start, occurred_at__lte=end,
     ).values_list("device_id", "payload"):
-        totals[device_id] += _event_minutes(payload or {})
-    return {k: round(v) for k, v in totals.items()}
+        payload = payload or {}
+        mins = _event_minutes(payload)
+        per_device[device_id] += mins
+        name = _app_name(payload)
+        if name:
+            per_app[device_id][name] += mins
+
+    out = {}
+    for device_id in device_ids:
+        apps = per_app.get(device_id) or {}
+        top_app, top_min = ("", 0)
+        if apps:
+            top_app, raw = max(apps.items(), key=lambda kv: kv[1])
+            top_min = round(raw)
+        out[device_id] = {
+            "minutes": round(per_device.get(device_id, 0)),
+            "top_app": top_app,
+            "top_minutes": top_min,
+        }
+    return out
+
+
+def human_ago(dt):
+    """'hozir' / '5 daqiqa oldin' / '3 soat oldin' / '2 kun oldin'."""
+    if not dt:
+        return "noma'lum"
+    secs = (timezone.now() - dt).total_seconds()
+    if secs < 90:
+        return "hozirgina"
+    mins = secs / 60
+    if mins < 60:
+        return f"{int(mins)} daqiqa oldin"
+    hours = mins / 60
+    if hours < 24:
+        return f"{int(hours)} soat oldin"
+    return f"{int(hours / 24)} kun oldin"
 
 
 def device_state(device):

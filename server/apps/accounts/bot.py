@@ -12,9 +12,46 @@ from apps.devices.models import ChildDevice
 from apps.rules.models import Rule
 from apps.tracking.digest import (
     device_state,
+    human_ago,
     human_minutes,
-    screen_minutes_by_device,
+    today_usage_by_device,
 )
+
+_ALERT_ICON = {
+    "limit_reached": "🔴",
+    "blocked_app_opened": "🚫",
+    "settings_panel_access": "⚙️",
+}
+
+
+def _bar(used, limit, width=8):
+    """Text progress bar: ▓▓▓░░░░░ (all empty when there's no limit)."""
+    if not limit or limit <= 0:
+        return "░" * width
+    filled = min(width, round(width * used / limit))
+    return "▓" * filled + "░" * (width - filled)
+
+
+def _pretty_app(name):
+    if not name:
+        return ""
+    if name.lower().endswith(".exe"):
+        return name[:-4].replace("_", " ").title()
+    return name
+
+
+def _child_of(device):
+    return (device.child.name if device.child_id else "") or device.child_name or "Qurilma"
+
+
+def _short_date(dt):
+    local = timezone.localtime(dt)
+    today = timezone.localtime(timezone.now()).date()
+    if local.date() == today:
+        return f"Bugun {local:%H:%M}"
+    if (today - local.date()).days == 1:
+        return f"Kecha {local:%H:%M}"
+    return f"{local:%d.%m %H:%M}"
 
 HELP = (
     "Spino24\n\n"
@@ -60,56 +97,124 @@ def _daily_limits_by_device(device_ids):
     return out
 
 
+_NO_DEVICES = (
+    "Hali birorta qurilma ulanmagan.\n\n"
+    "Farzandingiz kompyuteriga Spino24'ni o'rnatib ulash uchun «📖 Qo'llanma» "
+    "bo'limini oching — 4 qadam."
+)
+
+
 def _today(parent):
     devices = list(_family_devices(parent))
     if not devices:
-        return "Hali bog'langan qurilma yo'q."
+        return "📊 Bugungi ekran vaqti\n\n" + _NO_DEVICES
+
     ids = [d.id for d in devices]
-    mins = screen_minutes_by_device(ids)
+    usage = today_usage_by_device(ids)
     limits = _daily_limits_by_device(ids)
-    lines = ["📊 Bugun"]
+
+    # Group devices by child so a child with a laptop + a phone shows once.
+    by_child = {}
     for d in devices:
-        who = (d.child.name if d.child else "") or d.child_name or "Qurilma"
-        used = mins.get(d.id, 0)
-        limit = limits.get(d.id)
+        key = d.child_id or f"dev:{d.id}"
+        entry = by_child.setdefault(key, {"name": _child_of(d), "used": 0, "limit": 0, "top": ("", 0)})
+        u = usage.get(d.id, {})
+        entry["used"] += u.get("minutes", 0)
+        lim = limits.get(d.id)
+        if lim:
+            entry["limit"] = max(entry["limit"], lim)
+        if u.get("top_minutes", 0) > entry["top"][1]:
+            entry["top"] = (u.get("top_app", ""), u.get("top_minutes", 0))
+
+    lines = ["📊 Bugungi ekran vaqti", ""]
+    family_total = 0
+    for e in by_child.values():
+        family_total += e["used"]
+        used, limit = e["used"], e["limit"]
+        lines.append(f"👤 {e['name']}")
         if limit:
             left = max(0, limit - used)
-            lines.append(f"• {who}: {human_minutes(used)} / {human_minutes(limit)} ({human_minutes(left)} qoldi)")
+            status = "✅ limit ichida" if used < limit else "🔴 limit oshdi"
+            lines.append(f"{_bar(used, limit)}  {human_minutes(used)} / {human_minutes(limit)}")
+            lines.append(f"{status}  ·  {human_minutes(left)} qoldi")
         else:
-            lines.append(f"• {who}: {human_minutes(used)} (limit yo'q)")
-    return "\n".join(lines)
+            lines.append(f"{_bar(used, 0)}  {human_minutes(used)}  ·  limit o'rnatilmagan")
+        if e["top"][0]:
+            lines.append(f"Eng ko'p: {_pretty_app(e['top'][0])} ({human_minutes(e['top'][1])})")
+        lines.append("")
+
+    if len(by_child) > 1:
+        lines.append(f"Oilada bugun jami: {human_minutes(family_total)}")
+    return "\n".join(lines).strip()
 
 
 def _alerts(parent):
-    rows = (
+    from datetime import datetime, time
+
+    rows = list(
         Alert.objects.filter(device__family_id=parent.family_id)
         .select_related("device", "device__child")
-        .order_by("-triggered_at")[:5]
+        .order_by("-triggered_at")[:6]
     )
     if not rows:
-        return "🔔 Ogohlantirish yo'q."
-    lines = ["🔔 Oxirgi ogohlantirishlar"]
+        return "🔔 Ogohlantirishlar\n\nHozircha ogohlantirish yo'q — hammasi joyida. ✅"
+
+    tz = timezone.get_current_timezone()
+    day_start = timezone.make_aware(datetime.combine(timezone.localdate(), time.min), tz)
+    today_count = sum(1 for a in rows if a.triggered_at >= day_start)
+    unseen = sum(1 for a in rows if not a.seen)
+
+    lines = ["🔔 Ogohlantirishlar", ""]
+    summary = []
+    if today_count:
+        summary.append(f"Bugun: {today_count}")
+    if unseen:
+        summary.append(f"ko'rilmagan: {unseen}")
+    if summary:
+        lines.append("  ·  ".join(summary))
+        lines.append("")
+
     for a in rows:
-        who = (a.device.child.name if a.device.child else "") or a.device.child_name or "Qurilma"
+        icon = _ALERT_ICON.get(a.alert_type, "🔔")
+        who = _child_of(a.device)
         label = ALERT_LABELS.get(a.alert_type, a.alert_type)
-        mark = "" if a.seen else " • yangi"
-        lines.append(f"• {timezone.localtime(a.triggered_at):%d.%m %H:%M} {who}: {label}{mark}")
-    return "\n".join(lines)
+        extra = ""
+        app = (a.payload or {}).get("app_name") or (a.payload or {}).get("app")
+        if a.alert_type == "blocked_app_opened" and app:
+            extra = f": {_pretty_app(app)}"
+        lines.append(f"{icon} {_short_date(a.triggered_at)} — {who}")
+        lines.append(f"{label}{extra}")
+        lines.append("")
+
+    lines.append("Barchasini «📱 Ota-ona paneli»da ko'ring.")
+    return "\n".join(lines).strip()
 
 
 def _devices(parent):
     devices = list(_family_devices(parent))
     if not devices:
-        return "Hali bog'langan qurilma yo'q.\n\nO'rnatish uchun: /yuklab_olish"
-    lines = ["💻 Qurilmalar"]
+        return "💻 Qurilmalar\n\n" + _NO_DEVICES
+
+    usage = today_usage_by_device([d.id for d in devices])
+    lines = [f"💻 Qurilmalar ({len(devices)})", ""]
     for d in devices:
-        who = (d.child.name if d.child else "") or d.child_name or "Qurilma"
         online, battery = device_state(d)
-        bits = ["🟢 onlayn" if online else "⚪ oflayn"]
-        if battery is not None:
-            bits.append(f"🔋 {battery}%")
-        lines.append(f"• {who} — {', '.join(bits)}")
-    return "\n".join(lines)
+        plat = {"windows": "Windows", "android": "Android", "ios": "iPad"}.get(d.platform, d.platform)
+        lines.append(f"🖥 {_child_of(d)} — {plat}")
+        if online:
+            row = "🟢 Onlayn"
+            if battery is not None:
+                row += f"  ·  🔋 {battery}%"
+        else:
+            row = f"⚪ Oflayn  ·  oxirgi aloqa: {human_ago(d.last_sync)}"
+        lines.append(row)
+        today = usage.get(d.id, {}).get("minutes", 0)
+        bits = [f"bugun {human_minutes(today)}"]
+        if d.agent_version:
+            bits.append(f"Guard v{d.agent_version}")
+        lines.append("  ·  ".join(bits))
+        lines.append("")
+    return "\n".join(lines).strip()
 
 
 def _children(parent):
@@ -121,24 +226,34 @@ def _children(parent):
         Child.objects.filter(family_id=parent.family_id).prefetch_related("devices")
     )
     if not children:
-        return "Hali farzand qo'shilmagan.\n\nFarzand qurilmasini ulaganingizda avtomatik qo'shiladi: /yuklab_olish"
+        return (
+            "👦 Farzandlar\n\n"
+            "Hali farzand qo'shilmagan. Qurilma ulaganingizda farzand avtomatik "
+            "qo'shiladi — ismi va yoshini keyin panelda tahrirlaysiz."
+        )
 
     linked = {
         c.id: [d for d in c.devices.all() if d.status == ChildDevice.STATUS_LINKED]
         for c in children
     }
-    mins = screen_minutes_by_device(d.id for ds in linked.values() for d in ds)
+    all_ids = [d.id for ds in linked.values() for d in ds]
+    usage = today_usage_by_device(all_ids)
+    limits = _daily_limits_by_device(all_ids)
 
-    lines = ["👦 Farzandlar"]
+    lines = [f"👦 Farzandlar ({len(children)})", ""]
     for c in children:
         devs = linked[c.id]
-        device_count = len(devs)
-        used = sum(mins.get(d.id, 0) for d in devs)
+        used = sum(usage.get(d.id, {}).get("minutes", 0) for d in devs)
+        limit = max((limits.get(d.id, 0) for d in devs), default=0)
         age = ""
         if c.birth_date:
-            years = (date.today() - c.birth_date).days // 365
-            age = f", {years} yosh"
-        lines.append(
-            f"• {c.name}{age} — {device_count} qurilma, bugun {human_minutes(used)}"
-        )
-    return "\n".join(lines)
+            age = f" · {(date.today() - c.birth_date).days // 365} yosh"
+        lines.append(f"👤 {c.name}{age}")
+        lines.append(f"{len(devs)} qurilma  ·  bugun {human_minutes(used)}")
+        if limit:
+            lines.append("✅ Limit ichida" if used < limit else "🔴 Limit oshdi")
+            lines.append(f"Kunlik limit: {human_minutes(limit)}")
+        else:
+            lines.append("Limit o'rnatilmagan")
+        lines.append("")
+    return "\n".join(lines).strip()
