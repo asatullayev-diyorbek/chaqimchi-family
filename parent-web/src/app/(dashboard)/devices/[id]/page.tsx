@@ -9,6 +9,7 @@ import { toast } from "react-hot-toast";
 import TopbarActions from "@/components/layout/TopbarActions";
 import AppIcon from "@/components/AppIcon";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import ScreenshotPanel from "@/components/ScreenshotPanel";
 import { appDisplay } from "@/lib/appDisplay";
 import { uzDateTime } from "@/lib/uzDate";
 
@@ -282,6 +283,8 @@ function DeviceDetailContent() {
               Qoidalarni sozlash
             </Link>
           </div>
+
+          <ScreenshotPanel deviceId={device.id} online={isOnline} />
 
           <div className="card device-detail-footer">
             <button className="danger-btn" onClick={() => setConfirmUnlink(true)} disabled={unlinking}>
