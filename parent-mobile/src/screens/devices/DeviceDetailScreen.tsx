@@ -5,6 +5,7 @@ import { formatDate, relativeTime } from "../../lib/format";
 import { useFamily } from "../../state/family";
 import { getSummary, unlinkDevice, updateDevice } from "../../api/tracking";
 import { useQuery } from "../../hooks/useQuery";
+import ScreenshotPanel from "./ScreenshotPanel";
 import {
   Button,
   Card,
@@ -187,6 +188,8 @@ export default function DeviceDetailScreen({ route, navigation }: any) {
           <ListRow icon="trash" title="Qurilmani uzish" danger onPress={() => setConfirmUnlink(true)} />
         </View>
       </Card>
+
+      <ScreenshotPanel deviceId={deviceId} online={online} />
 
       <Muted style={{ textAlign: "center" }}>
         «Darhol bloklash» va «Internetni to‘xtatish» kabi tezkor buyruqlar hozircha mavjud emas — qoidalar

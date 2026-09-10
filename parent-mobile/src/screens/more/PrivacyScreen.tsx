@@ -14,7 +14,7 @@ const COLLECTED = [
 const NOT_COLLECTED = [
   "Yozishmalar, xabarlar va parollar",
   "To‘liq web-manzillar (URL) va sahifa mazmuni",
-  "Skrinshotlar yoki ekran yozuvi",
+  "Uzluksiz ekran yozuvi yoki avtomatik skrinshot",
   "Mikrofon yoki kamera",
   "Klaviatura bosishlari (keylogging)",
   "Joylashuv (hozircha yig‘ilmaydi)",
@@ -48,6 +48,26 @@ export default function PrivacyScreen() {
         </View>
         {NOT_COLLECTED.map((t) => (
           <Row key={t} text={t} icon="close" color={colors.success} />
+        ))}
+      </Card>
+
+      <Card style={{ gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Icon name="camera" size={18} color={colors.blue} />
+          <Text variant="h3">Ekran rasmi (so‘rov bo‘yicha)</Text>
+        </View>
+        <Text variant="body" color={colors.body}>
+          Qurilma sahifasidan «Ekran rasmini olish» tugmasini bosganingizda
+          ayni damdagi ekran rasmi bir marta olinadi. Bu avtomatik emas —
+          faqat siz bosganingizda ishlaydi.
+        </Text>
+        {[
+          "Farzand har safar buni ko‘radi — qurilmasida bildirishnoma chiqadi",
+          "Rasm siz tanlagan muddat saqlanadi: 1 kun, 1 hafta yoki 1 oy",
+          "Muddat o‘tgach rasm butunlay o‘chiriladi; istalgan vaqtda o‘zingiz ham o‘chira olasiz",
+          "Soatiga 6 martadan ko‘p so‘rab bo‘lmaydi",
+        ].map((t) => (
+          <Row key={t} text={t} icon="check" color={colors.blue} />
         ))}
       </Card>
 
