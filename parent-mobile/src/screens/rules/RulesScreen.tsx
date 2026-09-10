@@ -15,10 +15,9 @@ import {
 } from "../../api/rules";
 import { useQuery } from "../../hooks/useQuery";
 import {
-  AppHeader,
   Button,
   Card,
-  ChildSelector,
+  TabHeader,
   ComingSoonCard,
   ConfirmSheet,
   DurationPickerSheet,
@@ -37,9 +36,9 @@ import {
   useToast,
 } from "../../components";
 
-export default function RulesScreen() {
+export default function RulesScreen({ navigation }: any) {
   const toast = useToast();
-  const { childDevices, selectedChild, activeDevice, setDevice, loading: familyLoading } = useFamily();
+  const { childDevices, activeDevice, setDevice, loading: familyLoading } = useFamily();
 
   // Rules always target one device. If the child has several and none is
   // picked, default to the first so the screen is never empty.
@@ -149,8 +148,11 @@ export default function RulesScreen() {
 
   const header = (
     <View style={{ gap: 12 }}>
-      <AppHeader title="Qoidalar" subtitle={selectedChild?.name} />
-      <ChildSelector />
+      <TabHeader
+        title="Qoidalar"
+        childSwitcher
+        onAddChild={() => navigation.navigate("HomeTab", { screen: "AddChild" })}
+      />
       {childDevices.length > 1 ? (
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
           {childDevices.map((d) => {

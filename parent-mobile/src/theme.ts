@@ -23,6 +23,8 @@ const lightColors = {
   faint: "#9aa6b6",
   border: "#e7ebf2",
   borderStrong: "#d8dEe9",
+  /** Hairline on a shadowed card — near-invisible on the light gradient. */
+  cardBorder: "rgba(255,255,255,0.9)",
   overlay: "rgba(20,28,44,0.42)",
 
   // Accents
@@ -72,17 +74,20 @@ const lightColors = {
 
 const darkColors: typeof lightColors = {
   ...lightColors,
-  background: "#111827",
-  surface: "#1b2534",
-  surfaceMuted: "#16202e",
-  surfaceSunken: "#141c28",
+  background: "#101725",
+  surface: "#1a2436",
+  surfaceMuted: "#161f2f",
+  surfaceSunken: "#131b28",
+  blue: "#4b8bf5",
+  blueDark: "#3b82f6",
   text: "#e8edf5",
   body: "#b9c4d2",
   muted: "#94a3b8",
   faint: "#7b8798",
   border: "#2b3648",
   borderStrong: "#38455a",
-  overlay: "rgba(0,0,0,0.55)",
+  cardBorder: "rgba(255,255,255,0.06)",
+  overlay: "rgba(0,0,0,0.6)",
   blueSoft: "rgba(37,99,235,0.18)",
   mintSoft: "rgba(47,191,166,0.16)",
   warningSoft: "rgba(242,138,58,0.16)",
@@ -96,10 +101,26 @@ const darkColors: typeof lightColors = {
 };
 
 export const palettes = { light: lightColors, dark: darkColors };
-
-// Mobile ships light-only. Swap here (or wire a context) to enable dark.
-export const colors = palettes.light;
 export type Palette = typeof lightColors;
+
+// The active palette is swapped at runtime by <ThemeProvider>. Components
+// keep importing `colors` as before; the Proxy resolves each token against
+// whichever palette is live, so a mode change + re-render is all it takes.
+let _mode: ThemeMode = "light";
+let _active: Palette = palettes.light;
+
+export function setThemeMode(mode: ThemeMode): void {
+  _mode = mode;
+  _active = palettes[mode];
+}
+export function getThemeMode(): ThemeMode {
+  return _mode;
+}
+
+export const colors: Palette = new Proxy({} as Palette, {
+  get: (_t, key) => (_active as Record<string, unknown>)[key as string],
+  set: () => true,
+}) as Palette;
 
 export const spacing = {
   xs: 4,

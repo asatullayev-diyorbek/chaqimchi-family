@@ -24,18 +24,20 @@ import SettingsScreen from "../screens/more/SettingsScreen";
 import PrivacyScreen from "../screens/more/PrivacyScreen";
 import HelpScreen from "../screens/more/HelpScreen";
 
-const stackScreenOptions: NativeStackNavigationOptions = {
+// A function, not a const — colours must be read at render so a theme
+// change (which remounts the navigator) picks up the new palette.
+const stackScreenOptions = (): NativeStackNavigationOptions => ({
   headerShadowVisible: false,
   headerStyle: { backgroundColor: colors.background },
   headerTitleStyle: { ...typography.h3, color: colors.text },
   headerTintColor: colors.blue,
   contentStyle: { backgroundColor: colors.background },
-};
+});
 
 const Home = createNativeStackNavigator();
 function HomeStack() {
   return (
-    <Home.Navigator screenOptions={stackScreenOptions}>
+    <Home.Navigator screenOptions={stackScreenOptions()}>
       <Home.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Home.Screen name="Devices" component={DevicesScreen} options={{ title: "Qurilmalar" }} />
       <Home.Screen name="DeviceDetail" component={DeviceDetailScreen} options={{ title: "Qurilma" }} />
@@ -49,7 +51,7 @@ function HomeStack() {
 const Activity = createNativeStackNavigator();
 function ActivityStack() {
   return (
-    <Activity.Navigator screenOptions={stackScreenOptions}>
+    <Activity.Navigator screenOptions={stackScreenOptions()}>
       <Activity.Screen name="Activity" component={ActivityScreen} options={{ headerShown: false }} />
     </Activity.Navigator>
   );
@@ -58,7 +60,7 @@ function ActivityStack() {
 const Rules = createNativeStackNavigator();
 function RulesStack() {
   return (
-    <Rules.Navigator screenOptions={stackScreenOptions}>
+    <Rules.Navigator screenOptions={stackScreenOptions()}>
       <Rules.Screen name="Rules" component={RulesScreen} options={{ headerShown: false }} />
     </Rules.Navigator>
   );
@@ -67,7 +69,7 @@ function RulesStack() {
 const Alerts = createNativeStackNavigator();
 function AlertsStack() {
   return (
-    <Alerts.Navigator screenOptions={stackScreenOptions}>
+    <Alerts.Navigator screenOptions={stackScreenOptions()}>
       <Alerts.Screen name="Alerts" component={AlertsScreen} options={{ headerShown: false }} />
       <Alerts.Screen name="AlertDetail" component={AlertDetailScreen} options={{ title: "Ogohlantirish" }} />
     </Alerts.Navigator>
@@ -77,7 +79,7 @@ function AlertsStack() {
 const More = createNativeStackNavigator();
 function MoreStack() {
   return (
-    <More.Navigator screenOptions={stackScreenOptions}>
+    <More.Navigator screenOptions={stackScreenOptions()}>
       <More.Screen name="More" component={MoreScreen} options={{ headerShown: false }} />
       <More.Screen name="Children" component={ChildrenScreen} options={{ title: "Farzandlar" }} />
       <More.Screen name="ChildDetail" component={ChildDetailScreen} options={{ title: "Farzand" }} />

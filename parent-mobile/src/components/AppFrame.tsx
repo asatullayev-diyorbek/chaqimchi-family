@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
-import { colors } from "../theme";
+import { palettes } from "../theme";
+import { useTheme } from "../state/theme";
 import { onTelegramLayoutChange, telegramInsets, telegramViewportHeight } from "../lib/telegram";
 
 /**
@@ -12,6 +13,8 @@ import { onTelegramLayoutChange, telegramInsets, telegramViewportHeight } from "
 const MAX_WIDTH = 460;
 
 export function AppFrame({ children }: { children: React.ReactNode }) {
+  const { mode } = useTheme();
+  const bg = palettes[mode].background;
   const [layout, setLayout] = useState(() => ({
     height: telegramViewportHeight(),
     insets: telegramInsets(),
@@ -19,10 +22,6 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (Platform.OS !== "web" || typeof window === "undefined") return;
-
-    document.body.style.backgroundColor = colors.background;
-    document.documentElement.style.backgroundColor = colors.background;
-
     const update = () =>
       setLayout({ height: telegramViewportHeight(), insets: telegramInsets() });
     update();
@@ -39,7 +38,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
   const { height, insets } = layout;
 
   return (
-    <View style={{ flex: 1, alignItems: "center", backgroundColor: colors.background }}>
+    <View style={{ flex: 1, alignItems: "center", backgroundColor: bg }}>
       <View
         style={{
           flex: 1,
@@ -48,7 +47,7 @@ export function AppFrame({ children }: { children: React.ReactNode }) {
           height: height ?? undefined,
           paddingTop: insets.top,
           paddingBottom: insets.bottom,
-          backgroundColor: colors.background,
+          backgroundColor: bg,
           overflow: "hidden",
         }}
       >

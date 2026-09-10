@@ -27,7 +27,7 @@ export {
   ComingSoonCard,
 } from "./states";
 export { Spino24Logo, Spino24Mark, Spino24Wordmark, Spino24Badge, Spino24Mascot } from "./brand";
-export { AppHeader } from "./AppHeader";
+export { AppHeader, TabHeader } from "./AppHeader";
 export { Hero, TrendPill } from "./Hero";
 export { Avatar, PlatformBadge, StatusDot } from "./Avatar";
 export { AppIcon, SiteIcon } from "./AppIcon";
@@ -42,7 +42,7 @@ export {
   WebsiteUsageRow,
   describeAlert,
 } from "./cards";
-export { ChildSelector, DeviceScopePicker } from "./selectors";
+export { DeviceScopePicker } from "./selectors";
 export { ChildSwitcher } from "./ChildSwitcher";
 export { QuickActions } from "./QuickActions";
 export type { QuickAction } from "./QuickActions";

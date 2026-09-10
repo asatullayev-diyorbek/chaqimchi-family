@@ -3,6 +3,8 @@ import { View } from "react-native";
 import { colors } from "../../theme";
 import { changePassword, updateProfile } from "../../api/auth";
 import { useSession } from "../../state/session";
+import { ThemePref, useTheme } from "../../state/theme";
+import { Icon } from "../../components/Icon";
 import {
   Button,
   Card,
@@ -16,10 +18,18 @@ import {
   useToast,
 } from "../../components";
 
+const THEME_OPTIONS: { pref: ThemePref; label: string; icon: "settings" | "sun" | "moon" }[] = [
+  { pref: "system", label: "Tizim bo‘yicha", icon: "settings" },
+  { pref: "light", label: "Yorug‘", icon: "sun" },
+  { pref: "dark", label: "Qorong‘i", icon: "moon" },
+];
+
 export default function SettingsScreen() {
   const toast = useToast();
   const { user, refreshUser } = useSession();
+  const { pref, setPref } = useTheme();
 
+  const [themeOpen, setThemeOpen] = useState(false);
   const [nameOpen, setNameOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [pwOpen, setPwOpen] = useState(false);
@@ -94,10 +104,38 @@ export default function SettingsScreen() {
         </View>
         <View style={{ paddingHorizontal: 16 }}>
           <ListRow first icon="info" title="Til" subtitle="O‘zbekcha" right={<Muted>Yagona</Muted>} />
-          <ListRow icon="sun" title="Ko‘rinish" subtitle="Yorug‘" right={<Muted>Yagona</Muted>} />
+          <ListRow
+            icon="sun"
+            title="Ko‘rinish"
+            subtitle={THEME_OPTIONS.find((o) => o.pref === pref)?.label}
+            onPress={() => setThemeOpen(true)}
+          />
           <ListRow icon="info" title="Versiya" right={<Muted>0.1.0</Muted>} />
         </View>
       </Card>
+
+      <Sheet visible={themeOpen} onClose={() => setThemeOpen(false)} title="Ko‘rinish" scroll={false}>
+        <View>
+          {THEME_OPTIONS.map((o) => (
+            <ListRow
+              key={o.pref}
+              first={o.pref === "system"}
+              icon={o.icon}
+              title={o.label}
+              right={
+                pref === o.pref ? <Icon name="check" size={18} color={colors.blue} /> : undefined
+              }
+              onPress={() => {
+                setPref(o.pref);
+                setThemeOpen(false);
+              }}
+            />
+          ))}
+          <Muted style={{ marginTop: 8 }}>
+            «Tizim bo‘yicha» — Telegram yoki telefon mavzusiga moslashadi.
+          </Muted>
+        </View>
+      </Sheet>
 
       <Sheet visible={nameOpen} onClose={() => setNameOpen(false)} title="Ism" scroll={false}>
         <View style={{ gap: 14 }}>

@@ -8,64 +8,30 @@ import { Sheet } from "./Sheet";
 import { Muted, Text } from "./primitives";
 
 /**
- * Horizontal child picker. Hidden when the family has one child — there's
- * nothing to switch between.
- */
-export function ChildSelector() {
-  const { children, selectedChildId, setChild } = useFamily();
-  if (children.length < 2) return null;
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8, paddingRight: 4 }}
-    >
-      {children.map((c) => {
-        const active = c.id === selectedChildId;
-        return (
-          <Pressable
-            key={c.id}
-            onPress={() => setChild(c.id)}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              paddingVertical: 6,
-              paddingHorizontal: 10,
-              borderRadius: radius.pill,
-              borderWidth: 1,
-              borderColor: active ? colors.blue : colors.border,
-              backgroundColor: active ? colors.blueSoft : colors.surface,
-            }}
-          >
-            <Avatar name={c.name} photoUrl={c.photo_url} seed={c.id} size={24} />
-            <Text
-              variant="label"
-              color={active ? colors.blue : colors.body}
-              style={{ fontSize: 13 }}
-            >
-              {c.name}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </ScrollView>
-  );
-}
-
-/**
  * Device scope picker for the Activity screen. Shows the current scope as a
  * pill; tapping opens a sheet with "Barcha qurilmalar" + each device. When the
  * child has a single device the picker is inert (just shows the device name).
  */
+const PLAT: Record<string, string> = { windows: "Windows", android: "Android", ios: "iPad" };
+
+/** How to label one device — its custom name if it isn't just the child's name. */
+function deviceLabel(d: { child_name?: string; platform: string }, childName?: string): string {
+  const n = d.child_name?.trim();
+  if (n && n.toLowerCase() !== (childName ?? "").trim().toLowerCase()) return n;
+  return PLAT[d.platform] ?? "Qurilma";
+}
+
 export function DeviceScopePicker() {
-  const { childDevices, selectedDeviceId, setDevice, activeDevice, allDevices } = useFamily();
+  const { childDevices, selectedDeviceId, setDevice, activeDevice, allDevices, selectedChild } =
+    useFamily();
   const [open, setOpen] = useState(false);
 
   if (childDevices.length === 0) return null;
   const label = allDevices
     ? "Barcha qurilmalar"
-    : activeDevice?.child_name || activeDevice?.platform || "Qurilma";
+    : activeDevice
+      ? deviceLabel(activeDevice, selectedChild?.name)
+      : "Qurilma";
 
   const single = childDevices.length === 1;
 
@@ -107,8 +73,8 @@ export function DeviceScopePicker() {
           {childDevices.map((d) => (
             <ScopeRow
               key={d.id}
-              label={d.child_name || d.platform}
-              hint={d.platform === "windows" ? "Windows" : d.platform === "android" ? "Android" : "iPhone"}
+              label={deviceLabel(d, selectedChild?.name)}
+              hint={PLAT[d.platform] ?? d.platform}
               active={selectedDeviceId === d.id}
               onPress={() => {
                 setDevice(d.id);

@@ -27,7 +27,7 @@ export function Screen({
   const pad = gutter ? spacing.xl : 0;
   if (scroll) {
     return (
-      <SafeAreaView style={styles.safe} edges={edges}>
+      <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={edges}>
         <ScrollView
           contentContainerStyle={[
             { padding: pad, paddingBottom: pad + 24, gap: spacing.lg, flexGrow: 1 },
@@ -52,12 +52,12 @@ export function Screen({
     );
   }
   return (
-    <SafeAreaView style={styles.safe} edges={edges}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]} edges={edges}>
       <View style={[{ flex: 1, padding: pad, gap: spacing.lg }, contentStyle]}>{children}</View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1 },
 });

@@ -46,12 +46,12 @@ export function Card({
   tone?: "surface" | "muted" | "hero";
 }) {
   const bg =
-    tone === "muted" ? colors.surfaceMuted : tone === "hero" ? "#f8fbff" : colors.surface;
+    tone === "muted" || tone === "hero" ? colors.surfaceMuted : colors.surface;
   const body = (
     <View
       style={[
         styles.card,
-        { backgroundColor: bg, padding: padded ? spacing.lg : 0 },
+        { backgroundColor: bg, borderColor: colors.cardBorder, padding: padded ? spacing.lg : 0 },
         style as ViewStyle,
       ]}
     >
@@ -95,7 +95,7 @@ export function Button({
   const off = disabled || loading;
   const skin: Record<ButtonVariant, { bg: string; fg: string; border?: string }> = {
     primary: { bg: colors.blue, fg: "#fff" },
-    secondary: { bg: colors.blueSoft, fg: colors.blue, border: "#c9d8fb" },
+    secondary: { bg: colors.blueSoft, fg: colors.blue, border: colors.blueSoft },
     ghost: { bg: "transparent", fg: colors.body, border: colors.border },
     danger: { bg: colors.dangerSoft, fg: colors.danger },
   };
@@ -175,6 +175,7 @@ export function Field({
         {...props}
         style={[
           styles.field,
+          { borderColor: colors.border, backgroundColor: colors.surface, color: colors.text },
           error ? { borderColor: colors.danger } : null,
           style,
         ]}
@@ -376,9 +377,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radius.xl,
     borderWidth: 1,
-    // Cards carry a soft shadow now, so the border is a barely-there hairline
-    // that just crisps the edge over the page gradient.
-    borderColor: "rgba(255,255,255,0.9)",
     ...shadow.card,
   },
   button: {
@@ -401,9 +399,6 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    color: colors.text,
     paddingHorizontal: 14,
     fontSize: 16,
   },

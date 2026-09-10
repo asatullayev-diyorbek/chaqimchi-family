@@ -59,12 +59,12 @@ export function Sheet({
 
   return (
     <Modal transparent visible={mounted} onRequestClose={onClose} animationType="none" statusBarTranslucent>
-      <Animated.View style={[styles.scrim, { opacity: anim }]}>
+      <Animated.View style={[styles.scrim, { backgroundColor: colors.overlay, opacity: anim }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Yopish" />
       </Animated.View>
-      <Animated.View style={[styles.sheet, { transform: [{ translateY }] }]}>
+      <Animated.View style={[styles.sheet, { backgroundColor: colors.surface, transform: [{ translateY }] }]}>
         <SafeAreaView edges={["bottom"]}>
-          <View style={styles.handle} />
+          <View style={[styles.handle, { backgroundColor: colors.borderStrong }]} />
           {title ? (
             <View style={styles.header}>
               <Text variant="h2">{title}</Text>
@@ -126,7 +126,7 @@ export function ConfirmSheet({
 }
 
 const styles = StyleSheet.create({
-  scrim: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.overlay },
+  scrim: { ...StyleSheet.absoluteFillObject },
   sheet: {
     position: "absolute",
     left: 0,
@@ -135,7 +135,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: "100%",
     maxWidth: 460,
-    backgroundColor: colors.surface,
     borderTopLeftRadius: radius.xl + 6,
     borderTopRightRadius: radius.xl + 6,
     ...shadow.sheet,
@@ -146,7 +145,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.borderStrong,
     marginTop: 10,
     marginBottom: 6,
   },

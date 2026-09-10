@@ -16,10 +16,8 @@ import { getActivityTimeline, getSites, getSummary, SummaryRange } from "../../a
 import { useQuery } from "../../hooks/useQuery";
 import { appDisplay } from "../../lib/appDisplay";
 import {
-  AppHeader,
   AppUsageRow,
   Card,
-  ChildSelector,
   DayTimeline,
   DeviceScopePicker,
   EmptyState,
@@ -31,6 +29,7 @@ import {
   SectionHeader,
   SkeletonCard,
   SplitBar,
+  TabHeader,
   Text,
   WebsiteUsageRow,
   WeekBars,
@@ -49,7 +48,7 @@ const RANGES: { key: SummaryRange; label: string }[] = [
   { key: "month", label: "Oy" },
 ];
 
-export default function ActivityScreen({ route }: any) {
+export default function ActivityScreen({ route, navigation }: any) {
   const family = useFamily();
   const { activeDevice, allDevices, childDevices, selectedChild, setDevice } = family;
   const [tab, setTab] = useState<Tab>("screen");
@@ -87,8 +86,11 @@ export default function ActivityScreen({ route }: any) {
 
   const header = (
     <View style={{ gap: 12 }}>
-      <AppHeader title="Faoliyat" subtitle={selectedChild?.name} />
-      <ChildSelector />
+      <TabHeader
+        title="Faoliyat"
+        childSwitcher
+        onAddChild={() => navigation.navigate("HomeTab", { screen: "AddChild" })}
+      />
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
         <DeviceScopePicker />
         {tab === "timeline" || range === "day" ? (

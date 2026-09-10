@@ -14,6 +14,16 @@ if (Platform.OS !== "web") {
   SecureStore = require("expo-secure-store");
 }
 
+/** Synchronous read — web localStorage only; returns null on native. */
+export function storageGetSync(key: string): string | null {
+  if (Platform.OS !== "web") return null;
+  try {
+    return typeof localStorage !== "undefined" ? localStorage.getItem(key) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function storageGet(key: string): Promise<string | null> {
   try {
     if (Platform.OS === "web") {

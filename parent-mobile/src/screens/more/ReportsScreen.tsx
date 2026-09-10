@@ -8,7 +8,7 @@ import { getSites, getSummary } from "../../api/tracking";
 import { useQuery } from "../../hooks/useQuery";
 import {
   Card,
-  ChildSelector,
+  ChildSwitcher,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -19,7 +19,7 @@ import {
   WeekBars,
 } from "../../components";
 
-export default function ReportsScreen() {
+export default function ReportsScreen({ navigation }: any) {
   const { childDevices, selectedChild, activeDevice, setDevice } = useFamily();
   // Reports are device-scoped — there is no family-wide report. With several
   // devices and none picked, ask the parent to choose one.
@@ -42,7 +42,12 @@ export default function ReportsScreen() {
 
   const header = (
     <View style={{ gap: 12 }}>
-      <ChildSelector />
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <Text variant="label" color={colors.muted}>
+          Farzand
+        </Text>
+        <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
+      </View>
       {childDevices.length > 1 ? (
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
           {childDevices.map((d) => {
