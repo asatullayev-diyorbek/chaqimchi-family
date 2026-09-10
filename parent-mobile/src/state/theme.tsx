@@ -1,4 +1,12 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Appearance, Platform } from "react-native";
 import { palettes, setThemeMode, ThemeMode } from "../theme";
 import { getWebApp } from "../lib/telegram";
@@ -33,6 +41,8 @@ const ThemeCtx = createContext<Ctx | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [pref, setPrefState] = useState<ThemePref>(initialPref);
   const [mode, setMode] = useState<ThemeMode>(resolve(initialPref));
+  const prefRef = useRef(pref);
+  prefRef.current = pref;
 
   // Load the stored preference on native (web already had it synchronously).
   useEffect(() => {
@@ -43,13 +53,21 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Follow the system / Telegram scheme while on "system".
+  // Follow the system / Telegram scheme — but only while the preference is
+  // "system". Both listeners must be torn down when it isn't, or a stray
+  // themeChanged event will override an explicit Light/Dark choice.
   useEffect(() => {
     if (pref !== "system") return;
-    const sub = Appearance.addChangeListener(() => setMode(resolve("system")));
+    const onChange = () => {
+      if (prefRef.current === "system") setMode(resolve("system"));
+    };
+    const sub = Appearance.addChangeListener(onChange);
     const wa = getWebApp() as any;
-    wa?.onEvent?.("themeChanged", () => setMode(resolve("system")));
-    return () => sub.remove();
+    wa?.onEvent?.("themeChanged", onChange);
+    return () => {
+      sub.remove();
+      wa?.offEvent?.("themeChanged", onChange);
+    };
   }, [pref]);
 
   // Push the resolved mode into the theme module + the surrounding chrome.
