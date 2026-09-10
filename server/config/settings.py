@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "apps.rules",
     "apps.alerts",
     "apps.deploy",
+    "apps.screenshots",
 ]
 
 MIDDLEWARE = [
@@ -173,6 +174,26 @@ TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
 # the daily Telegram digest can fire without a paid scheduler.
 DIGEST_CRON_SECRET = os.environ.get("DIGEST_CRON_SECRET", "")
 TELEGRAM_TOKEN_TTL_MINUTES = 10
+
+# --- Real-time screenshot feature -------------------------------------------
+# Cloudflare R2 (S3-compatible) holds the captured images — PythonAnywhere
+# Free's disk is too small and they're large/short-lived. Empty until the
+# R2_* vars are set in the hosting env; every screenshot endpoint returns
+# 503 (not 500) while unset. The bucket is PRIVATE: the agent uploads with a
+# presigned PUT, the parent views with a short-TTL presigned GET.
+R2_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL", "")
+R2_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID", "")
+R2_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY", "")
+R2_SCREENSHOT_BUCKET = os.environ.get("R2_SCREENSHOT_BUCKET", "spino24-screenshots")
+
+# Max accepted JPEG size and how often one parent may capture one device.
+SCREENSHOT_MAX_BYTES = int(os.environ.get("SCREENSHOT_MAX_BYTES", str(8 * 1024 * 1024)))
+SCREENSHOT_RATE_PER_HOUR = int(os.environ.get("SCREENSHOT_RATE_PER_HOUR", "6"))
+
+# Shared secret an external cron sends to POST /api/screenshots/cleanup/
+# (header X-Screenshots-Secret). Falls back to the digest secret so a single
+# cron credential can drive both jobs if desired.
+SCREENSHOTS_CRON_SECRET = os.environ.get("SCREENSHOTS_CRON_SECRET", "") or DIGEST_CRON_SECRET
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
