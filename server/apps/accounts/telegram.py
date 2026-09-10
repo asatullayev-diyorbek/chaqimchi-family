@@ -21,6 +21,7 @@ Flow:
      a "finish registration" screen (see parent-web's /telegram/complete).
 """
 
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -36,6 +37,8 @@ from . import tg_api
 from .bot import handle_command
 from .models import ParentUser, TelegramLoginToken
 from .serializers import ParentUserSerializer
+
+logger = logging.getLogger(__name__)
 
 CONFIRM_PREFIX = "tglogin_confirm:"
 REJECT_PREFIX = "tglogin_reject:"
@@ -127,10 +130,15 @@ class TelegramWebhookView(APIView):
         if not settings.TELEGRAM_WEBHOOK_SECRET or secret != settings.TELEGRAM_WEBHOOK_SECRET:
             raise PermissionDenied("Invalid webhook secret")
 
-        if request.data.get("callback_query"):
-            self._handle_callback_query(request.data["callback_query"])
-        else:
-            self._handle_message(request.data.get("message") or {})
+        try:
+            if request.data.get("callback_query"):
+                self._handle_callback_query(request.data["callback_query"])
+            else:
+                self._handle_message(request.data.get("message") or {})
+        except Exception:
+            # Never 500 a webhook: Telegram would retry the same poison
+            # update for ~24h against this single-worker host.
+            logger.exception("telegram webhook handler failed")
 
         return Response({"ok": True})
 
@@ -138,73 +146,76 @@ class TelegramWebhookView(APIView):
         from . import botmenu, onboarding
 
         text = (message.get("text") or "").strip()
-        chat_id = (message.get("chat") or {}).get("id")
+        chat = message.get("chat") or {}
+        chat_id = chat.get("id")
         from_user = message.get("from") or {}
         from_id = from_user.get("id")
+
+        if not chat_id:
+            return
+
+        # "/start <token>" is the web login / account-link deep link — the
+        # token is the credential, so this runs before the per-user gating.
+        if text.startswith("/start ") and len(text.split()) > 1:
+            payload_token = text.split(None, 1)[1].strip()
+            token = _resolve_login_token(payload_token) or _resolve_link_token(payload_token)
+            if token is None:
+                tg_api.send_message(
+                    chat_id,
+                    "Havola muddati tugagan yoki noto'g'ri. Ilovaga qaytib qaytadan urinib ko'ring.",
+                )
+            else:
+                _send_confirmation_prompt(chat_id, token.token, is_link=token.is_link)
+            return
+
+        # Everything else needs a real user id in a private chat —
+        # filter(telegram_id=None) would otherwise match an arbitrary
+        # email-registered account.
+        if not from_id or chat.get("type", "private") != "private":
+            return
 
         # A shared phone number from the request_contact button.
         if message.get("contact"):
             onboarding.handle_contact(message)
             return
 
-        # "/start <token>" is the web login / account-link deep link — keep
-        # it ahead of the command router.
-        if text.startswith("/start ") and len(text.split()) > 1:
-            payload_token = text.split(None, 1)[1].strip()
-            token = _resolve_login_token(payload_token) or _resolve_link_token(payload_token)
-            if token is None:
-                if chat_id:
-                    tg_api.send_message(
-                        chat_id,
-                        "Havola muddati tugagan yoki noto'g'ri. Ilovaga qaytib qaytadan urinib ko'ring.",
-                    )
-                return
-            if chat_id:
-                _send_confirmation_prompt(chat_id, token.token, is_link=token.is_link)
-            return
+        cmd = text[1:].split()[0].lower().split("@")[0] if text.startswith("/") else ""
+        menu_cmd = cmd in ("start", "menyu", "menu")
 
-        # A tap on one of the persistent menu buttons arrives as plain text.
-        section = botmenu.matches(text)
-        if section:
-            parent = ParentUser.objects.filter(telegram_id=from_id).first()
-            if parent is None:
-                tg_api.send_message(chat_id, "Boshlash uchun /start bosing.")
-            elif parent.onboarding_required:
-                onboarding.send_phone_prompt(chat_id)
-            else:
-                botmenu.handle_menu_button(section, chat_id, parent)
-            return
-
-        if not text.startswith("/"):
-            return
-
-        cmd = text[1:].split()[0].lower().split("@")[0]
         parent = ParentUser.objects.filter(telegram_id=from_id).first()
 
-        if cmd in ("start", "menyu", "menu"):
-            if parent is None:
+        if parent is None:
+            if menu_cmd:
                 onboarding.start_onboarding(from_user, chat_id)
-            elif parent.onboarding_required:
-                onboarding.send_phone_prompt(chat_id)
             else:
-                botmenu.send_menu(chat_id, parent)
+                tg_api.send_message(chat_id, "Boshlash uchun /start bosing.")
             return
 
+        # Still owes a phone number — every route leads back to the prompt.
+        if parent.onboarding_required:
+            if menu_cmd:
+                onboarding.start_onboarding(from_user, chat_id)  # re-send welcome + phone
+            else:
+                onboarding.send_phone_prompt(chat_id)
+            return
+
+        # Onboarded.
+        if menu_cmd:
+            botmenu.send_menu(chat_id, parent)
+            return
         if cmd in ("yuklab_olish", "yuklab"):
             onboarding.send_install_guide(chat_id)
             return
 
-        if parent is None:
-            tg_api.send_message(chat_id, "Boshlash uchun /start buyrug'ini yuboring.")
-            return
-        if parent.onboarding_required:
-            tg_api.send_message(chat_id, onboarding.NEED_PHONE_TEXT)
-            onboarding.send_phone_prompt(chat_id)
+        section = botmenu.matches(text)
+        if section:
+            botmenu.handle_menu_button(section, chat_id, parent)
             return
 
-        reply = handle_command(cmd, parent)
-        if reply is not None and chat_id:
-            tg_api.send_message(chat_id, reply)
+        if cmd:
+            reply = handle_command(cmd, parent)
+            if reply is not None:
+                tg_api.send_message(chat_id, reply)
 
     def _handle_callback_query(self, callback_query):
         callback_id = callback_query.get("id")
@@ -213,6 +224,8 @@ class TelegramWebhookView(APIView):
         chat_id = (message.get("chat") or {}).get("id")
         message_id = message.get("message_id")
         from_user = callback_query.get("from") or {}
+        if not from_user.get("id"):
+            return
 
         if data.startswith(ALERT_SEEN_PREFIX):
             self._mark_alert_seen(data.removeprefix(ALERT_SEEN_PREFIX), from_user, callback_id, chat_id, message_id)
@@ -280,7 +293,10 @@ class TelegramWebhookView(APIView):
     def _mark_alert_seen(alert_id, from_user, callback_id, chat_id, message_id):
         from apps.alerts.models import Alert
 
-        parent = ParentUser.objects.filter(telegram_id=from_user.get("id")).first()
+        from_id = from_user.get("id")
+        if not from_id:
+            return
+        parent = ParentUser.objects.filter(telegram_id=from_id).first()
         alert = Alert.objects.filter(id=alert_id).select_related("device").first() if parent else None
         if alert is None or alert.device.family_id != parent.family_id:
             if callback_id:

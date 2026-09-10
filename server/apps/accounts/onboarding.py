@@ -30,21 +30,9 @@ def miniapp_url() -> str:
     return settings.PARENT_MINIAPP_URL
 
 
-def bot_url() -> str:
-    return f"https://t.me/{settings.TELEGRAM_BOT_USERNAME}"
-
-
 # ---------------------------------------------------------------------------
 # Keyboards
 # ---------------------------------------------------------------------------
-
-def _welcome_keyboard() -> dict:
-    return {
-        "inline_keyboard": [
-            [{"text": "📥 Windows uchun yuklab olish", "url": download_url()}],
-        ]
-    }
-
 
 def _phone_keyboard() -> dict:
     # Mandatory — no skip button.
@@ -61,12 +49,11 @@ def _phone_keyboard() -> dict:
 # ---------------------------------------------------------------------------
 
 WELCOME_TEXT = (
-    "Spino24 — oilaviy raqamli farovonlik xizmati.\n\n"
+    "Spino24 — oilaviy raqamli farovonlik xizmatiga xush kelibsiz.\n\n"
     "Farzandingiz nima qilayotganini emas, qancha va qanday vaqt sarflayotganini "
     "ko'rsatadi: ekran vaqti, ilovalar, qoidalar, ogohlantirishlar va so'rov "
     "bo'yicha ekran rasmi.\n\n"
-    "Yig'ilmaydi: yozishmalar, parollar, kamera va mikrofon, klaviatura bosishlari.\n\n"
-    "Boshlash uchun pastdan telefon raqamingizni yuboring."
+    "Yig'ilmaydi: yozishmalar, parollar, kamera va mikrofon, klaviatura bosishlari."
 )
 
 PHONE_PROMPT_TEXT = (
@@ -160,8 +147,7 @@ def start_onboarding(from_user: dict, chat_id):
         # Already onboarded — nothing to do here; caller shows the menu.
         return parent
 
-    tg_api.send_photo(chat_id, img("welcome-hero"), caption=WELCOME_TEXT,
-                      reply_markup=_welcome_keyboard())
+    tg_api.send_photo(chat_id, img("welcome-hero"), caption=WELCOME_TEXT)
     send_phone_prompt(chat_id)
     return parent
 
@@ -192,7 +178,7 @@ def handle_contact(message: dict) -> bool:
     tg_api.send_photo(chat_id, img("install-windows-steps"), caption=install_guide_text())
 
     from .botmenu import send_menu  # lazy: botmenu imports onboarding helpers
-    send_menu(chat_id, parent)
+    send_menu(chat_id, parent, with_banner=True)
     return True
 
 
@@ -224,12 +210,16 @@ def run_onboarding_reminders(now=None) -> dict:
         if age_days < REMINDER_DAY_THRESHOLDS[sent]:
             continue
 
-        tg_api.send_photo(
-            parent.telegram_id,
-            img("onboarding-reminder"),
-            caption=REMINDER_TEXTS[sent],
-            reply_markup=_phone_keyboard(),
-        )
+        if sent == 0:
+            tg_api.send_photo(
+                parent.telegram_id, img("onboarding-reminder"),
+                caption=REMINDER_TEXTS[sent], reply_markup=_phone_keyboard(),
+            )
+        else:
+            # Later nudges are text-only — a repeated 1.5 MB image reads as spam.
+            tg_api.send_message(
+                parent.telegram_id, REMINDER_TEXTS[sent], reply_markup=_phone_keyboard()
+            )
         parent.onboarding_reminders_sent = sent + 1
         parent.last_onboarding_reminder_at = now
         parent.save(update_fields=["onboarding_reminders_sent", "last_onboarding_reminder_at"])

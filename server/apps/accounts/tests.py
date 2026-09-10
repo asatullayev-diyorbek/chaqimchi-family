@@ -325,9 +325,9 @@ class OnboardingFlowTests(TestCase):
             "contact": {"user_id": 904, "phone_number": "998900000001"},
         })
         api.reset_mock()
-        self._send({"text": "/menyu", "chat": {"id": 904}, "from": {"id": 904}})
-        method, payload = api.call_args_list[0][0][0], api.call_args_list[0][0][1]
-        self.assertEqual(method, "sendPhoto")  # menu-banner + reply keyboard
+        self._send({"text": "/menyu", "chat": {"id": 904, "type": "private"}, "from": {"id": 904}})
+        method, payload = api.call_args_list[-1][0][0], api.call_args_list[-1][0][1]
+        self.assertEqual(method, "sendMessage")  # text menu + persistent reply keyboard
         self.assertIn("Qurilmalar", str(payload["reply_markup"]))
 
     def test_menu_button_tap_replies(self, api):
@@ -384,3 +384,41 @@ class OnboardingFlowTests(TestCase):
             created_at=timezone.now() - timedelta(days=5), onboarding_required=False,
         )
         self.assertEqual(run_onboarding_reminders()["reminded"], 0)
+
+
+@override_settings(
+    TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
+    TELEGRAM_WEBHOOK_SECRET="test-secret",
+)
+@mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
+class WebhookRobustnessTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def _post(self, body):
+        return self.client.post(
+            reverse("telegram-webhook"), body, format="json", **WEBHOOK_HEADERS
+        )
+
+    def test_handler_exception_still_returns_ok(self, api):
+        api.side_effect = RuntimeError("boom")
+        r = self._post({"message": {"text": "/menyu", "chat": {"id": 1, "type": "private"}, "from": {"id": 1}}})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.json(), {"ok": True})
+
+    def test_message_without_from_is_ignored(self, api):
+        # filter(telegram_id=None) must not match a random email account
+        ParentUser.objects.create_user(email="e@x.com", password="supersecret1")
+        r = self._post({"message": {"text": "/bugun", "chat": {"id": 1, "type": "private"}}})
+        self.assertEqual(r.status_code, 200)
+        api.assert_not_called()
+
+    def test_group_chat_is_ignored(self, api):
+        r = self._post({"message": {"text": "/menyu", "chat": {"id": -100, "type": "group"}, "from": {"id": 5}}})
+        api.assert_not_called()
+
+    def test_onboarding_user_random_text_gets_phone_prompt(self, api):
+        u = ParentUser.objects.create_telegram_user(telegram_id=9100)
+        self._post({"message": {"text": "salom", "chat": {"id": 9100, "type": "private"}, "from": {"id": 9100}}})
+        methods = [c[0][0] for c in api.call_args_list]
+        self.assertIn("sendPhoto", methods)  # phone-trust re-prompt

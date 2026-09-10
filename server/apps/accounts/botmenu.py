@@ -17,6 +17,7 @@ LABELS = {
     "💻 qurilmalar": "devices",
     "👦 farzandlar": "children",
     "📊 bugungi statistika": "today",
+    "🔔 ogohlantirishlar": "alerts",
     "🔎 ai tahlil": "ai",
     "📖 qo'llanma": "guide",
     "📖 qo‘llanma": "guide",
@@ -27,7 +28,7 @@ def menu_keyboard() -> dict:
     return {
         "keyboard": [
             [{"text": "💻 Qurilmalar"}, {"text": "👦 Farzandlar"}],
-            [{"text": "📊 Bugungi statistika"}],
+            [{"text": "📊 Bugungi statistika"}, {"text": "🔔 Ogohlantirishlar"}],
             [{"text": "🔎 AI tahlil"}, {"text": "📖 Qo'llanma"}],
             [{"text": "📱 Ota-ona paneli", "web_app": {"url": miniapp_url()}}],
         ],
@@ -49,12 +50,10 @@ def _root_text(parent) -> str:
     )
 
 
-def send_menu(chat_id, parent):
-    tg_api.send_photo(
-        chat_id, img("menu-banner"),
-        caption=_root_text(parent),
-        reply_markup=menu_keyboard(),
-    )
+def send_menu(chat_id, parent, with_banner: bool = False):
+    if with_banner:
+        tg_api.send_photo(chat_id, img("menu-banner"))
+    tg_api.send_message(chat_id, _root_text(parent), reply_markup=menu_keyboard())
 
 
 def matches(text: str) -> str | None:
@@ -69,6 +68,8 @@ def handle_menu_button(section: str, chat_id, parent):
         tg_api.send_message(chat_id, _children(parent))
     elif section == "today":
         tg_api.send_message(chat_id, _today(parent))
+    elif section == "alerts":
+        tg_api.send_message(chat_id, _alerts(parent))
     elif section == "ai":
         tg_api.send_photo(chat_id, img("ai-analysis-teaser"), caption=AI_TEXT)
     elif section == "guide":
