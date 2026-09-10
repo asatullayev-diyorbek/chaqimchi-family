@@ -7,8 +7,8 @@ import "./style.css";
 
 
 export const metadata: Metadata = {
-  title: "ChaqimchiAI Family",
-  description: "Bolalar qurilmalarini monitoring qilish tizimi",
+  title: "Spino24",
+  description: "Oilangizning raqamli hayoti — bir joyda. Ekran vaqti, qoidalar va ogohlantirishlar.",
 };
 
 export const viewport: Viewport = {

@@ -1,6 +1,6 @@
-# ChaqimchiAI Family
+# Spino24
 
-Shaffof va oilaviy parental-control monorepo. Mahsulot ota-ona uchun boshqaruv
+Spino24 — shaffof, oilaviy parental-control platformasi (monorepo). Mahsulot ota-ona uchun boshqaruv
 paneli, bola uchun ko'rinadigan Windows status qatlami hamda ochiq installer
 oqimidan iborat. Asosiy mahsulot va dizayn yo'nalishi
 [`docs/chaqimchiai-family-loyiha-konsepsiyasi.md`](docs/chaqimchiai-family-loyiha-konsepsiyasi.md)

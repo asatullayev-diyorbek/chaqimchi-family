@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   },
   description:
     "Bolalar kompyuteridan foydalanishni oilada ochiq kelishilgan qoidalar bilan boshqaring: kunlik limit, dam olish vaqti, ilova cheklovlari, faoliyat va Telegram xabarlar. Yashirin kuzatuv emas.",
-  keywords: ["parental control", "ekran vaqti", "ota-ona nazorati", "ChaqimchiAI", "bola kompyuter", "screen time"],
+  keywords: ["parental control", "ekran vaqti", "ota-ona nazorati", "Spino24", "bola kompyuter", "screen time"],
   openGraph: {
     type: "website",
     locale: "uz_UZ",

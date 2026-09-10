@@ -3,14 +3,14 @@ import LegalPage from "@/components/LegalPage";
 
 export const metadata: Metadata = {
   title: "Maxfiylik siyosati",
-  description: "ChaqimchiAI Family qanday ma’lumot to’playdi va nimani hech qachon to’plamaydi.",
+  description: "Spino24 qanday ma’lumot to’playdi va nimani hech qachon to’plamaydi.",
 };
 
 export default function Page() {
   return (
     <LegalPage title="Maxfiylik siyosati" updated="2026-09-03">
       <p>
-        ChaqimchiAI Family — ota-ona va bola o’rtasidagi ekran-vaqt qoidalarini
+        Spino24 — ota-ona va bola o’rtasidagi ekran-vaqt qoidalarini
         ochiq boshqarish vositasi. Biz faqat shu vazifa uchun zarur bo’lgan
         ma’lumotni to’playmiz.
       </p>

@@ -100,9 +100,7 @@
 }
 
 .logo:hover img{
-
-    transform:rotate(-6deg)
-              scale(1.08);
+    transform: scale(1.03);
 }
 
 /* ===== Floating Animation ===== */
@@ -922,8 +920,8 @@ transition:all .35s ease;
 
 }
 .logo img{
-    width:42px;
-    height:42px;
+    width:auto;
+    height:30px;
     transition:background 0.2s ease,color 0.2s ease,border-color 0.2s ease,box-shadow 0.2s ease,transform 0.2s ease,opacity 0.2s ease;
     filter:
 
@@ -3589,11 +3587,10 @@ body:has(.auth-page) .auth-brand{
 
 body:has(.auth-page) .auth-brand-logo{
     display:block;
-    width:min(100%, 330px);
+    width:min(100%, 300px);
     height:auto;
     object-fit:contain;
     object-position:left center;
-    mix-blend-mode:multiply;
 }
 
 body:has(.auth-page) .auth-card{

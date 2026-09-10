@@ -2,7 +2,7 @@
 // uses, so copy changes don't mean hunting through components.
 
 export const SITE = {
-  name: "ChaqimchiAI Family",
+  name: "Spino24",
   domain: "https://chaqimchi-ai.uz",
   tagline: "Oila uchun ochiq ekran-vaqt qoidalari — yashirin kuzatuv emas.",
   appUrl: "https://guard.chaqimchi-ai.uz",

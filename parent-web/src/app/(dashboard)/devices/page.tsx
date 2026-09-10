@@ -146,7 +146,7 @@ export default function DevicesPage() {
       const linked = await verifyEnrollCode(code, selectedChildId);
       await load();
 
-      setLinkedDeviceName(`Windows Guard · ${linked.device_id.slice(0, 8)}`);
+      setLinkedDeviceName(`Windows · ${linked.device_id.slice(0, 8)}`);
       setLinkStep(3);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Qurilma bog'lanmadi");
@@ -330,7 +330,7 @@ export default function DevicesPage() {
               {linkStep === 2 && (
                 <div className="add-device-step active">
                   <p className="step-intro">
-                    Farzandingiz kompyuterida ChaqimchiAI dasturini o'rnating. Ekranda chiqqan 6 xonali kodni shu yerga kiriting.
+                    Farzandingiz kompyuterida Spino24 dasturini o'rnating. Ekranda chiqqan 6 xonali kodni shu yerga kiriting.
                   </p>
                   <div className="qr-placeholder">
                     <iconify-icon icon="solar:laptop-linear"></iconify-icon>

@@ -1,4 +1,4 @@
-/* ChaqimchiAI Family — marketing landing.
+/* Spino24 — marketing landing.
    Design language mirrors parent-web: Liquid Glass, blue #2563eb brand,
    teal accent, Inter. Self-contained — shares no CSS with the app. */
 
@@ -361,9 +361,9 @@ p.lead {
 }
 
 .brand-logo {
-  width: 36px;
-  height: 36px;
-  color: var(--brand);
+  height: 26px;
+  width: auto;
+  display: block;
 }
 
 .nav-links {

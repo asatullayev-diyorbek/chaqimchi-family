@@ -3,14 +3,14 @@ import LegalPage from "@/components/LegalPage";
 
 export const metadata: Metadata = {
   title: "Foydalanish shartlari",
-  description: "ChaqimchiAI Family MVP/Beta davridagi foydalanish shartlari.",
+  description: "Spino24 MVP/Beta davridagi foydalanish shartlari.",
 };
 
 export default function Page() {
   return (
     <LegalPage title="Foydalanish shartlari" updated="2026-09-03">
       <p>
-        ChaqimchiAI Family hozircha MVP/Beta bosqichida. Xizmatdan foydalanish
+        Spino24 hozircha MVP/Beta bosqichida. Xizmatdan foydalanish
         orqali quyidagilarga rozilik bildirasiz.
       </p>
 
@@ -42,7 +42,7 @@ export default function Page() {
 
       <h2>Javobgarlik</h2>
       <p>
-        ChaqimchiAI xizmatdan foydalanish natijasida yuzaga kelgan bilvosita
+        Spino24 xizmatdan foydalanish natijasida yuzaga kelgan bilvosita
         zararlar uchun javobgar emas. Xizmat ota-ona nazoratini o’rnini
         bosmaydi — u yordamchi vosita.
       </p>

@@ -37,7 +37,7 @@ export default function OgImage() {
           >
             C
           </div>
-          <div style={{ fontSize: 30, fontWeight: 700, color: "#1f2b3a" }}>ChaqimchiAI Family</div>
+          <div style={{ fontSize: 30, fontWeight: 700, color: "#1f2b3a" }}>Spino24</div>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

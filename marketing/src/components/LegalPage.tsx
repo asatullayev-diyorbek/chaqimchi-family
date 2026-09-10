@@ -16,7 +16,7 @@ export default function LegalPage({
         <div className="wrap nav-inner">
           <Link className="brand" href="/">
             <span className="brand-mark">C</span>
-            ChaqimchiAI Family
+            Spino24
           </Link>
           <div className="nav-cta">
             <Link className="btn btn-ghost" href="/">Bosh sahifa</Link>
@@ -33,7 +33,7 @@ export default function LegalPage({
       </main>
       <footer>
         <div className="wrap foot-grid">
-          <div>© {new Date().getFullYear()} ChaqimchiAI · Toshkent</div>
+          <div>© {new Date().getFullYear()} Spino24 · Toshkent</div>
           <div className="foot-links">
             <Link href="/">Bosh sahifa</Link>
             <Link href={SITE.privacyUrl}>Maxfiylik</Link>

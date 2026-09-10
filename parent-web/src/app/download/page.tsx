@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Yuklab olish — ChaqimchiAI Guard",
-  description: "ChaqimchiAI Guard Windows dasturini yuklab olish.",
+  title: "Yuklab olish — Spino24",
+  description: "Spino24 Windows dasturini yuklab olish.",
 };
 
 // release.json is written by scripts/windows/build-guard-setup.ps1 from the
@@ -23,7 +23,7 @@ export default function DownloadPage() {
       <div className="auth-shell" style={{ justifyContent: "center" }}>
         <div className="auth-card" style={{ maxWidth: 480, textAlign: "center", gap: "1.5rem" }}>
           <div className="auth-form-heading">
-            <h2>ChaqimchiAI Guard</h2>
+            <h2>Spino24 · Windows</h2>
             <p>Windows uchun nazorat dasturini yuklab oling va farzandingiz qurilmasiga o&apos;rnating.</p>
           </div>
 
@@ -72,8 +72,8 @@ export default function DownloadPage() {
                 shart emas va tavsiya qilinmaydi.
               </li>
               <li>Shaffoflik va rozilik oynasini o&apos;qib, tasdiqlang.</li>
-              <li>Ekranda chiqadigan QR kodni ChaqimchiAI Family mobil ilovasi orqali skanerlang (yoki 6 xonali kodni qo&apos;lda kiriting).</li>
-              <li>Bog&apos;lash tasdiqlangach, Guard xizmati avtomatik o&apos;rnatiladi.</li>
+              <li>Ekranda chiqadigan QR kodni Spino24 mobil ilovasi orqali skanerlang (yoki 6 xonali kodni qo&apos;lda kiriting).</li>
+              <li>Bog&apos;lash tasdiqlangach, kuzatuv xizmati avtomatik o&apos;rnatiladi.</li>
             </ol>
           </div>
 

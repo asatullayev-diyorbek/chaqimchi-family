@@ -62,9 +62,9 @@ export default function TelegramCompletePage() {
   return (
     <div className="auth-page">
       <div className="auth-shell">
-        <section className="auth-visual" aria-label="ChaqimchiAI Family haqida">
+        <section className="auth-visual" aria-label="Spino24 haqida">
           <div className="auth-brand">
-            <Image className="auth-brand-logo" src="/assets/chaqimchi-family-logo.png" alt="ChaqimchiAI Family" width={420} height={202} priority />
+            <Image className="auth-brand-logo" src="/assets/logo.png" alt="Spino24" width={360} height={119} priority />
           </div>
           <div className="auth-copy">
             <h1>Ro'yxatdan o'tishni<br />yakunlang</h1>

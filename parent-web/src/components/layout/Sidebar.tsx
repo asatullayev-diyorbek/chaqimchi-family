@@ -38,11 +38,7 @@ export default function Sidebar() {
     <aside className="sidebar">
       {/* Logo */}
       <div className="logo">
-        <Image src="/assets/logo.png" alt="ChaqimchiAI" width={48} height={48} priority />
-        <div>
-          <h3>ChaqimchiAI</h3>
-          <span>Family</span>
-        </div>
+        <Image src="/assets/logo.png" alt="Spino24" width={132} height={44} priority />
       </div>
 
       {/* Navigation */}

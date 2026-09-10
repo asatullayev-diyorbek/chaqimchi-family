@@ -172,7 +172,7 @@ export default function Page() {
         <section>
           <div className="wrap">
             <Reveal>
-              <span className="eyebrow">Nega ChaqimchiAI</span>
+              <span className="eyebrow">Nega Spino24</span>
               <h2>Ota-ona uchun xotirjamlik, bola uchun ochiq qoidalar</h2>
             </Reveal>
             <div className="grid grid-3">
@@ -221,7 +221,7 @@ export default function Page() {
                   <span className="eyebrow">Muhim</span>
                   <h2>Bu yashirin kuzatuv yoki jazolash vositasi emas</h2>
                   <p className="section-lead">
-                    ChaqimchiAI oilalarga bola kompyuteridan foydalanish bo&apos;yicha
+                    Spino24 oilalarga bola kompyuteridan foydalanish bo&apos;yicha
                     <b> ochiq kelishilgan </b> raqamli tartibni boshqarishga yordam beradi.
                   </p>
                   <ul className="band-mini">
@@ -537,7 +537,7 @@ export default function Page() {
         <div className="wrap foot-main">
           <div className="foot-brand">
             <div className="brand">
-              <Logo className="brand-logo" /> ChaqimchiAI Family
+              <Logo className="brand-logo" />
             </div>
             <p>Ota-ona va bola o&apos;rtasidagi ekran-vaqt qoidalarini ochiq boshqarish vositasi.</p>
           </div>
@@ -565,7 +565,7 @@ export default function Page() {
           </div>
         </div>
         <div className="wrap foot-bottom">
-          © {new Date().getFullYear()} ChaqimchiAI · Toshkent
+          © {new Date().getFullYear()} Spino24 · Toshkent
         </div>
       </footer>
     </>

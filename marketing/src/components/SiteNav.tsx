@@ -29,7 +29,6 @@ export default function SiteNav() {
       <div className="wrap nav-inner">
         <Link className="brand" href="/" onClick={() => setOpen(false)}>
           <Logo className="brand-logo" />
-          ChaqimchiAI Family
         </Link>
 
         <nav className="nav-links">
