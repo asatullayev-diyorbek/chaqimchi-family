@@ -76,7 +76,14 @@ export default function ScreenshotPanel({
         await refresh();
         toast.success("So‘rov yuborildi");
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "So‘rov yuborilmadi");
+        const raw = err instanceof Error ? err.message : "";
+        // apiFetch turns a 5xx HTML error page into its message — don't dump
+        // that into a toast.
+        const clean =
+          !raw || raw.length > 160 || raw.includes("<")
+            ? "Server javob bermadi. Birozdan so‘ng qayta urinib ko‘ring."
+            : raw;
+        toast.error(clean);
       } finally {
         setRequesting(false);
       }

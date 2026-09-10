@@ -94,12 +94,15 @@ export default function ScreenshotPanel({
         await refresh();
         toast.success("So‘rov yuborildi");
       } catch (e) {
+        const status = e instanceof ApiError ? e.status : 0;
         const msg =
-          e instanceof ApiError && e.status === 429
+          status === 429
             ? "Soatiga 6 martadan ko‘p so‘rab bo‘lmaydi"
-            : e instanceof ApiError && e.status === 503
+            : status === 503
               ? "Ekran rasmi xizmati hali ulanmagan"
-              : (e as Error)?.message ?? "So‘rov yuborilmadi";
+              : status >= 500 || status === 0
+                ? "Server javob bermadi. Birozdan so‘ng qayta urinib ko‘ring."
+                : (e as Error)?.message ?? "So‘rov yuborilmadi";
         toast.error(msg);
       } finally {
         setRequesting(false);
