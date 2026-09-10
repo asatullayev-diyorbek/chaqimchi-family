@@ -91,6 +91,12 @@ export function getInitData(): string {
   return getWebApp()?.initData ?? "";
 }
 
+/** The Telegram user id of whoever opened the Mini App, as a string. */
+export function getTelegramUserId(): string | null {
+  const id = getWebApp()?.initDataUnsafe?.user?.id;
+  return id ? String(id) : null;
+}
+
 /** ready() + expand(), lock the header/background to the app's page colour,
  *  and stop Telegram's pull-to-close gesture from fighting our scroll. */
 export function initTelegramUI(backgroundColor: string): void {

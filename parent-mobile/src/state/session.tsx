@@ -9,13 +9,18 @@ import {
 import { CurrentUser, getCurrentUser, logout as apiLogout, telegramWebAppLogin } from "../api/auth";
 import {
   getInitData,
+  getTelegramUserId,
   initTelegramUI,
   isTelegramWebApp,
   loadTelegramSdk,
 } from "../lib/telegram";
-import { storageGet, storageSet } from "../platform/storage";
+import { storageDelete, storageGet, storageSet } from "../platform/storage";
 
 const SEEN_KEY = "spino24_seen";
+// Which Telegram account the persisted tokens belong to. Telegram's Mini App
+// WebView shares storage across the accounts on one device, so a stored
+// session must be re-checked against whoever actually opened the app.
+const TG_ID_KEY = "spino24_tg_id";
 // On a brand-new install/open, hold the splash at least this long so the
 // Spino24 launch moment is visible even though auto-login is near-instant.
 const FIRST_RUN_SPLASH_MS = 1600;
@@ -67,19 +72,39 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const firstRun = (await storageGet(SEEN_KEY)) === null;
       const splashFloor = firstRun ? sleep(FIRST_RUN_SPLASH_MS) : Promise.resolve();
 
-      const had = await hydrateTokens();
-      if (had) {
-        await loadUser();
-      } else if (inTelegram) {
-        // Silent auto-login from the Telegram-signed initData.
-        try {
-          await telegramWebAppLogin(getInitData());
-          await loadUser();
-        } catch {
-          if (mounted.current) setStatus("signedOut");
+      if (inTelegram) {
+        // Inside Telegram, the signed initData is the source of truth for
+        // *who* is using the app — a persisted session from another Telegram
+        // account on the same device (shared WebView storage) must not carry
+        // over.
+        const currentTgId = getTelegramUserId();
+        const storedTgId = await storageGet(TG_ID_KEY);
+        const sameUser = Boolean(storedTgId && currentTgId && storedTgId === currentTgId);
+        if (storedTgId && currentTgId && storedTgId !== currentTgId) {
+          await clearTokens();
         }
-      } else if (mounted.current) {
-        setStatus("signedOut");
+        const had = await hydrateTokens();
+
+        if (had && sameUser) {
+          // Fast path: a stored session for this exact Telegram account.
+          await loadUser();
+        } else {
+          try {
+            await telegramWebAppLogin(getInitData());
+            if (currentTgId) await storageSet(TG_ID_KEY, currentTgId);
+            await loadUser();
+          } catch {
+            if (had && (!storedTgId || !currentTgId || storedTgId === currentTgId)) {
+              await loadUser();
+            } else if (mounted.current) {
+              setStatus("signedOut");
+            }
+          }
+        }
+      } else {
+        const had = await hydrateTokens();
+        if (had) await loadUser();
+        else if (mounted.current) setStatus("signedOut");
       }
 
       await splashFloor;
@@ -108,6 +133,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     setStatus("loading");
     try {
       await telegramWebAppLogin(getInitData());
+      const id = getTelegramUserId();
+      if (id) await storageSet(TG_ID_KEY, id);
       await loadUser();
     } catch {
       if (mounted.current) setStatus("signedOut");
@@ -117,6 +144,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await apiLogout();
     await clearTokens();
+    await storageDelete(TG_ID_KEY);
     setUser(null);
     // Inside Telegram there is nothing to sign out to — re-auth on next open.
     setStatus("signedOut");
