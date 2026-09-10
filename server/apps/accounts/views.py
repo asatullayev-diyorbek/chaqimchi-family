@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import ParentUser
+from .notify_admin import notify_new_parent
 from .serializers import ParentUserSerializer, SignupSerializer
 
 
@@ -12,6 +13,10 @@ class SignupView(generics.CreateAPIView):
     queryset = ParentUser.objects.all()
     serializer_class = SignupSerializer
     permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        parent = serializer.save()
+        notify_new_parent(parent, "Email ro'yxatdan o'tish")
 
 
 class LoginView(APIView):

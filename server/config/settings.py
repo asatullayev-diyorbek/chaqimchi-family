@@ -183,6 +183,11 @@ TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
 # Shared secret an external cron sends to POST /api/tracking/digest/run/ so
 # the daily Telegram digest can fire without a paid scheduler.
 DIGEST_CRON_SECRET = os.environ.get("DIGEST_CRON_SECRET", "")
+
+# Telegram user ids that get an operator DM when a new parent finishes
+# onboarding or a device is linked. Comma-separated; default is the
+# founder's account (@diyorbek_asatullayev). Override per environment.
+ADMIN_TELEGRAM_IDS = os.environ.get("ADMIN_TELEGRAM_IDS", "5547740249")
 TELEGRAM_TOKEN_TTL_MINUTES = 10
 
 # --- Real-time screenshot feature -------------------------------------------

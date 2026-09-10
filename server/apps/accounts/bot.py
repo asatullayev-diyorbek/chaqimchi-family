@@ -10,7 +10,11 @@ from django.utils import timezone
 from apps.alerts.models import ALERT_LABELS, Alert
 from apps.devices.models import ChildDevice
 from apps.rules.models import Rule
-from apps.tracking.digest import device_state, human_minutes, screen_minutes
+from apps.tracking.digest import (
+    device_state,
+    human_minutes,
+    screen_minutes_by_device,
+)
 
 HELP = (
     "Spino24\n\n"
@@ -45,24 +49,29 @@ def _family_devices(parent):
     ).select_related("child")
 
 
-def _daily_limit(device):
-    rule = Rule.objects.filter(device=device, rule_type="daily_limit_minutes").first()
-    if rule and isinstance(rule.value, dict):
-        m = rule.value.get("minutes")
-        if isinstance(m, (int, float)):
-            return int(m)
-    return None
+def _daily_limits_by_device(device_ids):
+    """{device_id: minutes} for the daily_limit_minutes rule, in one query."""
+    out = {}
+    for device_id, value in Rule.objects.filter(
+        device_id__in=list(device_ids), rule_type="daily_limit_minutes"
+    ).values_list("device_id", "value"):
+        if isinstance(value, dict) and isinstance(value.get("minutes"), (int, float)):
+            out[device_id] = int(value["minutes"])
+    return out
 
 
 def _today(parent):
     devices = list(_family_devices(parent))
     if not devices:
         return "Hali bog'langan qurilma yo'q."
+    ids = [d.id for d in devices]
+    mins = screen_minutes_by_device(ids)
+    limits = _daily_limits_by_device(ids)
     lines = ["📊 Bugun"]
     for d in devices:
         who = (d.child.name if d.child else "") or d.child_name or "Qurilma"
-        used = screen_minutes(d)
-        limit = _daily_limit(d)
+        used = mins.get(d.id, 0)
+        limit = limits.get(d.id)
         if limit:
             left = max(0, limit - used)
             lines.append(f"• {who}: {human_minutes(used)} / {human_minutes(limit)} ({human_minutes(left)} qoldi)")
@@ -113,16 +122,18 @@ def _children(parent):
     )
     if not children:
         return "Hali farzand qo'shilmagan.\n\nFarzand qurilmasini ulaganingizda avtomatik qo'shiladi: /yuklab_olish"
+
+    linked = {
+        c.id: [d for d in c.devices.all() if d.status == ChildDevice.STATUS_LINKED]
+        for c in children
+    }
+    mins = screen_minutes_by_device(d.id for ds in linked.values() for d in ds)
+
     lines = ["👦 Farzandlar"]
     for c in children:
-        device_count = sum(
-            1 for d in c.devices.all() if d.status == ChildDevice.STATUS_LINKED
-        )
-        used = sum(
-            screen_minutes(d)
-            for d in c.devices.all()
-            if d.status == ChildDevice.STATUS_LINKED
-        )
+        devs = linked[c.id]
+        device_count = len(devs)
+        used = sum(mins.get(d.id, 0) for d in devs)
         age = ""
         if c.birth_date:
             years = (date.today() - c.birth_date).days // 365

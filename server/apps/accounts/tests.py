@@ -422,3 +422,63 @@ class WebhookRobustnessTests(TestCase):
         self._post({"message": {"text": "salom", "chat": {"id": 9100, "type": "private"}, "from": {"id": 9100}}})
         methods = [c[0][0] for c in api.call_args_list]
         self.assertIn("sendPhoto", methods)  # phone-trust re-prompt
+
+
+@override_settings(
+    TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
+    TELEGRAM_WEBHOOK_SECRET="test-secret", ADMIN_TELEGRAM_IDS="999",
+)
+@mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
+class AdminNotifyTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    def _sent_to(self, api, chat_id):
+        return [
+            c for c in api.call_args_list
+            if c[0][0] == "sendMessage" and c[0][1].get("chat_id") == chat_id
+        ]
+
+    def test_admin_pinged_when_parent_completes_onboarding(self, api):
+        self.client.post(
+            reverse("telegram-webhook"),
+            {"message": {"text": "/start", "chat": {"id": 700, "type": "private"}, "from": {"id": 700}}},
+            format="json", **WEBHOOK_HEADERS,
+        )
+        self.client.post(
+            reverse("telegram-webhook"),
+            {"message": {"chat": {"id": 700, "type": "private"}, "from": {"id": 700},
+                         "contact": {"user_id": 700, "phone_number": "998900000009"}}},
+            format="json", **WEBHOOK_HEADERS,
+        )
+        pings = self._sent_to(api, 999)
+        self.assertTrue(pings)
+        self.assertIn("Yangi foydalanuvchi", pings[0][0][1]["text"])
+
+    def test_admin_pinged_on_email_signup(self, api):
+        r = self.client.post(reverse("signup"), {"email": "n@x.com", "password": "supersecret1"}, format="json")
+        self.assertEqual(r.status_code, 201)
+        self.assertTrue(self._sent_to(api, 999))
+
+
+class ScreenMinutesBulkTests(TestCase):
+    def test_bulk_matches_per_device(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from apps.devices.models import ChildDevice
+        from apps.tracking.models import Event, EventBatch
+        from apps.tracking.digest import screen_minutes, screen_minutes_by_device
+
+        d1 = ChildDevice.objects.create(status=ChildDevice.STATUS_LINKED)
+        d2 = ChildDevice.objects.create(status=ChildDevice.STATUS_LINKED)
+        now = timezone.now()
+        b = EventBatch.objects.create(device=d1, batch_id="b1")
+        for dev, secs in ((d1, 600), (d1, 300), (d2, 1200)):
+            Event.objects.create(
+                batch=b, device=dev, event_type="app_usage",
+                payload={"duration_seconds": secs}, occurred_at=now,
+            )
+        bulk = screen_minutes_by_device([d1.id, d2.id])
+        self.assertEqual(bulk[d1.id], screen_minutes(d1))
+        self.assertEqual(bulk[d2.id], screen_minutes(d2))
+        self.assertEqual(screen_minutes_by_device([]), {})

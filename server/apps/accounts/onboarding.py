@@ -177,6 +177,10 @@ def handle_contact(message: dict) -> bool:
     tg_api.send_message(chat_id, PHONE_THANKS_TEXT, reply_markup={"remove_keyboard": True})
     tg_api.send_photo(chat_id, img("install-windows-steps"), caption=install_guide_text())
 
+    from .notify_admin import notify_new_parent
+
+    notify_new_parent(parent, "Telegram bot")
+
     from .botmenu import send_menu  # lazy: botmenu imports onboarding helpers
     send_menu(chat_id, parent, with_banner=True)
     return True

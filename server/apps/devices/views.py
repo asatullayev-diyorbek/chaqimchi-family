@@ -159,6 +159,10 @@ class VerifyCodeView(APIView):
             {"type": "enroll.linked", "event": "linked"},
         )
 
+        from apps.accounts.notify_admin import notify_new_device
+
+        notify_new_device(device)
+
         return Response({"device_id": device.id, "status": device.status})
 
 

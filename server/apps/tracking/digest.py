@@ -2,6 +2,7 @@
 commands and the daily digest. Kept separate from views.py so neither the
 bot nor a management command has to import a DRF view module."""
 
+from collections import defaultdict
 from datetime import datetime, time, timedelta
 
 from django.utils import timezone
@@ -40,6 +41,25 @@ def screen_minutes(device, on_date=None):
     ).only("payload"):
         total += _event_minutes(event.payload or {})
     return round(total)
+
+
+def screen_minutes_by_device(device_ids, on_date=None):
+    """{device_id: rounded foreground minutes} for a local date, in one
+    query — for the bot's /bugun and /farzandlar over a whole family."""
+    device_ids = list(device_ids)
+    if not device_ids:
+        return {}
+    tz = timezone.get_current_timezone()
+    day = on_date or timezone.localtime(timezone.now(), tz).date()
+    start = timezone.make_aware(datetime.combine(day, time.min), tz)
+    end = timezone.make_aware(datetime.combine(day, time.max), tz)
+    totals = defaultdict(float)
+    for device_id, payload in Event.objects.filter(
+        device_id__in=device_ids, event_type="app_usage",
+        occurred_at__gte=start, occurred_at__lte=end,
+    ).values_list("device_id", "payload"):
+        totals[device_id] += _event_minutes(payload or {})
+    return {k: round(v) for k, v in totals.items()}
 
 
 def device_state(device):
