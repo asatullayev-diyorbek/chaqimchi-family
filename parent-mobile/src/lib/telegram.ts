@@ -37,8 +37,13 @@ type TelegramWebApp = {
   disableVerticalSwipes?: () => void;
   setHeaderColor?: (color: string) => void;
   setBackgroundColor?: (color: string) => void;
-  onEvent?: (event: string, cb: () => void) => void;
-  offEvent?: (event: string, cb: () => void) => void;
+  onEvent?: (event: string, cb: (payload?: any) => void) => void;
+  offEvent?: (event: string, cb: (payload?: any) => void) => void;
+  showScanQrPopup?: (
+    params: { text?: string },
+    callback?: (text: string) => boolean | void,
+  ) => void;
+  closeScanQrPopup?: () => void;
 };
 
 declare global {
@@ -95,6 +100,41 @@ export function getInitData(): string {
 export function getTelegramUserId(): string | null {
   const id = getWebApp()?.initDataUnsafe?.user?.id;
   return id ? String(id) : null;
+}
+
+/** Whether Telegram's native QR scanner is available. */
+export function canScanQr(): boolean {
+  return typeof getWebApp()?.showScanQrPopup === "function";
+}
+
+/**
+ * Open Telegram's native QR scanner. Resolves with the scanned text, or null
+ * if the user cancelled / it isn't available.
+ */
+export function scanQrWithTelegram(prompt = "QR-kodni kameraga tuting"): Promise<string | null> {
+  const wa = getWebApp() as any;
+  if (typeof wa?.showScanQrPopup !== "function") return Promise.resolve(null);
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value: string | null) => {
+      if (settled) return;
+      settled = true;
+      wa.offEvent?.("qrTextReceived", onText);
+      wa.offEvent?.("scanQrPopupClosed", onClosed);
+      resolve(value);
+    };
+    const onText = (payload: { data?: string }) => {
+      wa.closeScanQrPopup?.();
+      finish(payload?.data ?? null);
+    };
+    const onClosed = () => finish(null);
+    wa.onEvent?.("qrTextReceived", onText);
+    wa.onEvent?.("scanQrPopupClosed", onClosed);
+    wa.showScanQrPopup({ text: prompt }, (text: string) => {
+      finish(text);
+      return true;
+    });
+  });
 }
 
 /** ready() + expand(), lock the header/background to the app's page colour,

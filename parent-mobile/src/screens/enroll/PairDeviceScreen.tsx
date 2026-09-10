@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import { colors, radius } from "../../theme";
 import { verifyEnrollCode } from "../../api/children";
 import { useFamily } from "../../state/family";
+import { canScanQr, scanQrWithTelegram } from "../../lib/telegram";
 import {
   Button,
   Card,
@@ -18,14 +19,18 @@ import {
   useToast,
 } from "../../components";
 
-// expo-barcode-scanner is deprecated on SDK 52 but still bundled; load it
-// lazily so a missing native module degrades to manual entry, not a crash.
+// expo-barcode-scanner only works on a native build (it throws on web). Load
+// it lazily and only use it off-web; inside Telegram we use the native QR
+// scanner, and on a plain browser we fall back to manual entry.
 let BarCodeScanner: any = null;
-try {
-  BarCodeScanner = require("expo-barcode-scanner").BarCodeScanner;
-} catch {
-  BarCodeScanner = null;
+if (Platform.OS !== "web") {
+  try {
+    BarCodeScanner = require("expo-barcode-scanner").BarCodeScanner;
+  } catch {
+    BarCodeScanner = null;
+  }
 }
+const NATIVE_SCAN = Platform.OS !== "web" && Boolean(BarCodeScanner);
 
 function extractCode(payload: string): string {
   const m = payload.match(/(\d{6})/);
@@ -57,15 +62,23 @@ export default function PairDeviceScreen({ route, navigation }: any) {
     return () => clearTimeout(t);
   }, [done, reload, navigation]);
 
+  const canTgScan = canScanQr();
+
   async function openScanner() {
-    if (!BarCodeScanner) {
-      toast.error("Skaner mavjud emas — kodni qo‘lda kiriting");
+    if (canTgScan) {
+      // Telegram's own full-screen camera scanner.
+      const text = await scanQrWithTelegram("Farzand ilovasidagi QR-kodni skanerlang");
+      if (text) await link(text);
       return;
     }
-    const { status } = await BarCodeScanner.requestPermissionsAsync();
-    setScanPerm(status === "granted");
-    scannedRef.current = false;
-    setScanOpen(true);
+    if (NATIVE_SCAN) {
+      const { status } = await BarCodeScanner.requestPermissionsAsync();
+      setScanPerm(status === "granted");
+      scannedRef.current = false;
+      setScanOpen(true);
+      return;
+    }
+    toast.error("Skaner mavjud emas — kodni qo‘lda kiriting");
   }
 
   async function link(raw: string) {
@@ -151,7 +164,9 @@ export default function PairDeviceScreen({ route, navigation }: any) {
         />
         <ErrorText message={error} />
         <Button title="Tasdiqlash" onPress={() => link(code)} loading={busy} disabled={code.length < 6} />
-        <Button title="QR-kodni skanerlash" variant="ghost" icon="qr" onPress={openScanner} />
+        {canTgScan || NATIVE_SCAN ? (
+          <Button title="QR-kodni skanerlash" variant="ghost" icon="qr" onPress={openScanner} />
+        ) : null}
       </Card>
 
       <Sheet visible={childPickerOpen} onClose={() => setChildPickerOpen(false)} title="Farzandni tanlang" scroll={false}>
