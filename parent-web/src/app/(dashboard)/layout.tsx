@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
+import OnboardingGate from "@/components/OnboardingGate";
 import { getAccessToken } from "@/api/client";
+import { getCurrentUser } from "@/api/auth";
 
 // The token lives in localStorage, which doesn't exist while rendering on the
 // server. useSyncExternalStore is the sanctioned way to read that: it takes a
@@ -28,17 +30,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const signedIn = useSyncExternalStore(noSubscribe, hasTokenNow, hasTokenOnServer);
 
+  // undefined = not checked yet, null = check failed / no answer
+  const [onboardingRequired, setOnboardingRequired] = useState<boolean | undefined>(undefined);
+
   useEffect(() => {
     // Read the token fresh rather than trusting `signedIn` from this render.
     // On a page load the first client render still holds the *server*
     // snapshot (false), and this effect runs in that same commit — using it
     // would bounce every refresh through /login and straight back.
-    if (!getAccessToken()) router.replace("/login");
+    if (!getAccessToken()) {
+      router.replace("/login");
+      return;
+    }
+    let alive = true;
+    getCurrentUser()
+      .then((me) => alive && setOnboardingRequired(me.onboarding_required))
+      .catch(() => alive && setOnboardingRequired(false));
+    return () => {
+      alive = false;
+    };
   }, [signedIn, router]);
 
   // Render nothing without a token — otherwise a logged-out visitor sees a
   // flash of the dashboard before the redirect lands.
   if (!signedIn) return null;
+  if (onboardingRequired === undefined) return null; // brief: waiting on /me/
+  if (onboardingRequired) return <OnboardingGate onDone={() => setOnboardingRequired(false)} />;
 
   return <AppShell>{children}</AppShell>;
 }
