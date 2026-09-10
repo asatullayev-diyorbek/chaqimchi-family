@@ -44,6 +44,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const prefRef = useRef(pref);
   prefRef.current = pref;
 
+  // Point the `colors` Proxy at the new palette during THIS render — a plain
+  // idempotent module assignment, so anything reading `colors` further down
+  // this render (including the navigator's freshly-computed screenOptions)
+  // already sees the new mode. Real side effects stay in the effect below.
+  setThemeMode(mode);
+
   // Load the stored preference on native (web already had it synchronously).
   useEffect(() => {
     if (Platform.OS === "web") return;
@@ -70,9 +76,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     };
   }, [pref]);
 
-  // Push the resolved mode into the theme module + the surrounding chrome.
+  // Paint the surrounding chrome (web page + Telegram) to match.
   useEffect(() => {
-    setThemeMode(mode);
     const bg = palettes[mode].background;
     if (Platform.OS === "web" && typeof document !== "undefined") {
       document.body.style.backgroundColor = bg;
