@@ -44,8 +44,8 @@ def _root_text(parent) -> str:
     return (
         "Spino24 — ota-ona paneli\n\n"
         f"Tarif: {plan}\n\n"
-        "Pastdagi tugmalar orqali boshqaring. To'liq panel: "
-        f"{miniapp_url()}"
+        "Pastdagi tugmalar orqali boshqaring. To'liq ko'rinish uchun "
+        "«📱 Ota-ona paneli» tugmasini bosing."
     )
 
 
