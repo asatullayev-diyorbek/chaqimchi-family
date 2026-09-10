@@ -44,6 +44,8 @@ type TelegramWebApp = {
     callback?: (text: string) => boolean | void,
   ) => void;
   closeScanQrPopup?: () => void;
+  openTelegramLink?: (url: string) => void;
+  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void;
 };
 
 declare global {
@@ -105,6 +107,17 @@ export function getTelegramUserId(): string | null {
 /** Whether Telegram's native QR scanner is available. */
 export function canScanQr(): boolean {
   return typeof getWebApp()?.showScanQrPopup === "function";
+}
+
+/** Open a t.me link. Inside Telegram this switches to the bot chat; on a
+ *  plain browser / native it's a normal navigation the caller handles. */
+export function openTelegramLink(url: string): boolean {
+  const wa = getWebApp();
+  if (typeof wa?.openTelegramLink === "function") {
+    wa.openTelegramLink(url);
+    return true;
+  }
+  return false;
 }
 
 /**

@@ -8,6 +8,11 @@ export type CurrentUser = {
   telegram_username: string;
   telegram_linked: boolean;
   has_password: boolean;
+  phone: string;
+  /** True until the parent sends a phone number through the bot — the app
+   *  shows the onboarding gate meanwhile. */
+  onboarding_required: boolean;
+  plan: string;
   family: string;
   created_at: string;
 };
