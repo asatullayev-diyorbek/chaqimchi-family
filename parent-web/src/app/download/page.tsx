@@ -20,7 +20,7 @@ const mb = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1);
 export default function DownloadPage() {
   return (
     <div className="auth-page">
-      <div className="auth-shell" style={{ justifyContent: "center" }}>
+      <div className="auth-shell auth-shell--doc">
         <div className="auth-card" style={{ maxWidth: 480, textAlign: "center", gap: "1.5rem" }}>
           <div className="auth-form-heading">
             <h2>Spino24 · Windows</h2>

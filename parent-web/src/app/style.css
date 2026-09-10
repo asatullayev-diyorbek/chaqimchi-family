@@ -3279,11 +3279,27 @@ tbody td:first-child{
     max-height:1000px;
     display:grid;
     grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
-    overflow:hidden;
+    /* Scroll tall forms instead of clipping them — a fixed-height panel with
+       overflow:hidden meant a long card (e.g. an error state) was only
+       readable after zooming the whole page out. */
+    overflow-y:auto;
+    overflow-x:hidden;
     border:1px solid rgba(255,255,255,.85);
     border-radius:22px;
     background:rgba(255,255,255,.72);
     box-shadow:0 16px 40px rgba(80,110,170,.12);
+}
+
+/* Single-column, content-heavy pages (e.g. /download): the panel sizes to
+   its content and the page scrolls, rather than the content being trapped
+   inside a viewport-height box. */
+.auth-shell.auth-shell--doc{
+    grid-template-columns:1fr !important;
+    height:auto;
+    min-height:0;
+    max-height:none;
+    max-width:520px;
+    overflow:visible;
 }
 
 .auth-visual{
@@ -3382,7 +3398,10 @@ tbody td:first-child{
     font-weight:800;
 }
 .auth-card{
-    justify-content:center;
+    /* `safe center` centers the form while it fits and falls back to the
+       top when it's taller than the panel, so no content is trapped above
+       an unreachable scroll origin. */
+    justify-content:safe center;
     max-width:460px;
     padding:48px 40px;
     border-radius:0;

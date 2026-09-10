@@ -49,7 +49,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="auth-page">
-      <div className="auth-shell" style={{ justifyContent: "center" }}>
+      <div className="auth-shell auth-shell--doc">
         <form onSubmit={step === "ask" ? sendCode : reset} className="auth-card">
           <div className="auth-form-heading">
             <h2>Parolni tiklash</h2>
