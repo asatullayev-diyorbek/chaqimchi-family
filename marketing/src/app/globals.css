@@ -3359,3 +3359,39 @@ footer {
 .bp-col.no span {
   color: var(--muted);
 }
+/* Three-across pricing (Beta/Mini/Max) reusing the single-card .price
+   look — each plan just fills its grid cell instead of centering with a
+   fixed max-width, and the feature list drops to one column since the
+   card is narrower than the original single-plan layout. */
+.pricing-grid {
+  align-items: stretch;
+  margin-top: 40px;
+}
+
+.pricing-grid .price {
+  max-width: none;
+  margin: 0;
+  display: flex;
+}
+
+.pricing-grid .price-inner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.pricing-grid .price ul {
+  grid-template-columns: 1fr;
+  flex: 1;
+}
+
+.pricing-grid .price-highlight {
+  background: linear-gradient(150deg, var(--accent), var(--brand));
+  transform: scale(1.03);
+}
+
+@media (max-width: 900px) {
+  .pricing-grid .price-highlight {
+    transform: none;
+  }
+}

@@ -12,7 +12,7 @@ import {
   FEATURE_BLOCKS,
   FEATURE_CARDS,
   STEPS,
-  PRICING,
+  PLANS,
   PLATFORMS,
   FAQ,
   DEMO_APPS,
@@ -479,23 +479,45 @@ export default function Page() {
           <div className="wrap center">
             <Reveal>
               <span className="eyebrow">Narx</span>
-              <h2>MVP/Beta davrida bepul</h2>
+              <h2>Oilangizga mos tarifni tanlang</h2>
+              <p className="lead" style={{ maxWidth: 560, margin: "0 auto" }}>
+                Beta hamisha bepul qoladi. To&apos;lov Telegram bot ichida, Payme yoki Click orqali.
+              </p>
             </Reveal>
-            <Reveal as="div" className="price">
-              <div className="price-inner">
-                <div className="price-top">
-                  <span className="pill">MVP / Beta</span>
-                  <div className="amt">0 <span>so&apos;m / oy</span></div>
-                  <p>Sinov davri. Keyingi narx aniqlanganda oldindan xabar beramiz.</p>
-                </div>
-                <ul>
-                  {PRICING.map((item) => (
-                    <li key={item}><Check /> {item}</li>
-                  ))}
-                </ul>
-                <a className="btn btn-primary btn-lg" href={SITE.botUrl}>Telegram orqali boshlash</a>
-              </div>
-            </Reveal>
+            <div className="grid grid-3 pricing-grid">
+              {PLANS.map((plan, i) => (
+                <Reveal
+                  as="div"
+                  className={`price${plan.highlight ? " price-highlight" : ""}`}
+                  key={plan.id}
+                  delay={i * 90}
+                >
+                  <div className="price-inner">
+                    <div className="price-top">
+                      {plan.highlight && <span className="pill">Tavsiya etiladi</span>}
+                      <h3>{plan.name}</h3>
+                      <div className="amt">
+                        {plan.price.toLocaleString("uz-UZ")} <span>so&apos;m{plan.period !== "hamisha bepul" ? ` / ${plan.period}` : " / hamisha bepul"}</span>
+                      </div>
+                    </div>
+                    <ul>
+                      {plan.points.map((point) => (
+                        <li key={point}><Check /> {point}</li>
+                      ))}
+                    </ul>
+                    <a
+                      className={`btn ${plan.highlight ? "btn-primary" : "btn-ghost"} btn-lg`}
+                      href={SITE.botUrl}
+                    >
+                      {plan.cta}
+                    </a>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+            <p className="hero-note" style={{ marginTop: 20 }}>
+              Mini/Max sotib olish botdagi «💳 Obuna» tugmasi orqali — to&apos;lov usullari ulanmagan bo&apos;lsa, bot shuni ochiq aytadi.
+            </p>
           </div>
         </section>
 
