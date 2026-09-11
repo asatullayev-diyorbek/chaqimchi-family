@@ -10,7 +10,6 @@ import {
   Card,
   ChildSwitcher,
   DeviceRow,
-  DeviceScopePicker,
   EmptyState,
   ErrorState,
   Icon,
@@ -69,12 +68,6 @@ export default function HomeScreen({ navigation }: any) {
         <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
       </View>
     </View>
-  );
-
-  const subtitle = (
-    <Text variant="caption" color={colors.muted} style={{ marginTop: -4 }}>
-      Bugungi qisqa ko‘rinish
-    </Text>
   );
 
   if (loading) {
@@ -179,7 +172,6 @@ export default function HomeScreen({ navigation }: any) {
   return (
     <Screen scroll refreshing={refreshing} onRefresh={refresh}>
       {header}
-      {subtitle}
 
       {/* Today screen time */}
       <Card style={{ gap: 10, overflow: "hidden" }}>
@@ -247,13 +239,7 @@ export default function HomeScreen({ navigation }: any) {
 
       {/* Devices */}
       <Card style={{ gap: 12 }}>
-        <SectionHeader
-          icon="device"
-          title={`Qurilmalar (${deviceCount})`}
-          actionLabel="Barchasini ko‘rish"
-          onAction={() => navigation.navigate("Devices")}
-        />
-        {deviceCount > 1 ? <DeviceScopePicker /> : null}
+        <SectionHeader icon="device" title={`Qurilmalar (${deviceCount})`} />
         <View style={{ gap: 10 }}>
           {devices.map((d) => (
             <DeviceRow
