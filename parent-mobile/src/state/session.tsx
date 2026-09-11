@@ -15,6 +15,7 @@ import {
   loadTelegramSdk,
 } from "../lib/telegram";
 import { storageDelete, storageGet, storageSet } from "../platform/storage";
+import { SELECTED_CHILD_KEY, SELECTED_DEVICE_KEY } from "./family";
 
 const SEEN_KEY = "spino24_seen";
 // Which Telegram account the persisted tokens belong to. Telegram's Mini App
@@ -145,6 +146,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     await apiLogout();
     await clearTokens();
     await storageDelete(TG_ID_KEY);
+    // A different account signing in on this device must not inherit
+    // whichever child/device the previous one had picked.
+    await storageDelete(SELECTED_CHILD_KEY);
+    await storageDelete(SELECTED_DEVICE_KEY);
     setUser(null);
     // Inside Telegram there is nothing to sign out to — re-auth on next open.
     setStatus("signedOut");

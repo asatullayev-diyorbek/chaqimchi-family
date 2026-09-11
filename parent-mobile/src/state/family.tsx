@@ -9,6 +9,14 @@ import React, {
 } from "react";
 import { Child, getChildren } from "../api/children";
 import { Device, getDevices } from "../api/tracking";
+import { storageDelete, storageGet, storageSet } from "../platform/storage";
+
+// Remembered across launches so a parent doesn't have to re-pick the same
+// child/device every time a screen needs one scoped. Exported so session.tsx
+// can clear them on sign-out (a different account signing in on the same
+// device must not inherit someone else's pick).
+export const SELECTED_CHILD_KEY = "spino24_selected_child_id";
+export const SELECTED_DEVICE_KEY = "spino24_selected_device_id";
 
 /**
  * Child is the primary entity; a device is one source inside it (a child can
@@ -68,6 +76,16 @@ export function FamilyProvider({ children: node }: { children: React.ReactNode }
 
   useEffect(() => {
     mounted.current = true;
+    // Restore the last child/device pick in parallel with the data fetch —
+    // a stale id (child removed, device unlinked) is harmless: the
+    // effectiveChildId/childDevices logic below just falls back silently.
+    Promise.all([storageGet(SELECTED_CHILD_KEY), storageGet(SELECTED_DEVICE_KEY)]).then(
+      ([storedChild, storedDevice]) => {
+        if (!mounted.current) return;
+        if (storedChild) setSelectedChildId(storedChild);
+        if (storedDevice) setSelectedDeviceId(storedDevice);
+      },
+    );
     reload();
     return () => {
       mounted.current = false;
@@ -106,6 +124,14 @@ export function FamilyProvider({ children: node }: { children: React.ReactNode }
   const setChild = useCallback((id: string) => {
     setSelectedChildId(id);
     setSelectedDeviceId(null); // a new child invalidates the device pick
+    storageSet(SELECTED_CHILD_KEY, id);
+    storageDelete(SELECTED_DEVICE_KEY);
+  }, []);
+
+  const setDevice = useCallback((id: string | null) => {
+    setSelectedDeviceId(id);
+    if (id) storageSet(SELECTED_DEVICE_KEY, id);
+    else storageDelete(SELECTED_DEVICE_KEY);
   }, []);
 
   const value = useMemo<FamilyState>(
@@ -122,7 +148,7 @@ export function FamilyProvider({ children: node }: { children: React.ReactNode }
       activeDevice,
       allDevices,
       setChild,
-      setDevice: setSelectedDeviceId,
+      setDevice,
       reload,
     }),
     [
@@ -138,6 +164,7 @@ export function FamilyProvider({ children: node }: { children: React.ReactNode }
       activeDevice,
       allDevices,
       setChild,
+      setDevice,
       reload,
     ],
   );
