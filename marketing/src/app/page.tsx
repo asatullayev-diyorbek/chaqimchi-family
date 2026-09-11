@@ -137,8 +137,8 @@ export default function Page() {
                 Kundalik limit, dam olish soatlari va ilova cheklovlarini oddiy tilda boshqaring. Bola ham qoidalarni va qolgan vaqtini ekranda ko'radi.
               </p>
               <div className="hero-cta">
-                <a className="btn btn-primary btn-lg btn-glow" href={SITE.downloadUrl}>{DownloadIcon}Windows`ga yuklab olish</a>
-                <a className="btn btn-ghost btn-lg" href={SITE.signupUrl}>Bepul boshlash</a>
+                <a className="btn btn-primary btn-lg btn-glow" href={SITE.botUrl}>Telegram orqali boshlash</a>
+                <a className="btn btn-ghost btn-lg" href={SITE.downloadUrl}>{DownloadIcon}Windows`ga yuklab olish</a>
               </div>
               <p className="hero-note">
                 Jozibali yoki jazolash vositasi emas <span className="sep" /> Offline ham ishlaydi <span className="sep" /> Bir necha bola va qurilma
@@ -463,7 +463,7 @@ export default function Page() {
                       <div className="pv-browser"><span className="pv-bar"><i /><i /><i /></span><div className="pv-grid"><span /><span /><span /><span /></div></div>
                     )}
                     {i === 2 && (
-                      <div className="pv-phone"><div className="pv-notch" /><div className="pv-soon">Tez orada</div></div>
+                      <div className="pv-phone"><div className="pv-notch" /><div className="pv-soon">Telegram ichida</div></div>
                     )}
                   </div>
                   <h3>{p.title}</h3>
@@ -493,7 +493,7 @@ export default function Page() {
                     <li key={item}><Check /> {item}</li>
                   ))}
                 </ul>
-                <a className="btn btn-primary btn-lg" href={SITE.signupUrl}>Bepul boshlash</a>
+                <a className="btn btn-primary btn-lg" href={SITE.botUrl}>Telegram orqali boshlash</a>
               </div>
             </Reveal>
           </div>
@@ -524,7 +524,7 @@ export default function Page() {
               <h2>Farzandingizning ekran vaqtini bugundan tartibga soling</h2>
               <p>Ochiq qoidalar. Xotirjam nazorat. Kerakli ma&apos;lumotlar — bir joyda.</p>
               <div className="hero-cta">
-                <a className="btn btn-primary btn-lg" href={SITE.signupUrl}>Bepul boshlash</a>
+                <a className="btn btn-primary btn-lg" href={SITE.botUrl}>Telegram orqali boshlash</a>
                 <a className="btn btn-ghost btn-lg" href={SITE.downloadUrl}>{DownloadIcon}Windows uchun yuklab olish</a>
               </div>
             </Reveal>

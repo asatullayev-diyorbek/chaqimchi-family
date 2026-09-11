@@ -123,10 +123,17 @@ export const FEATURE_CARDS = [
   },
   {
     tag: "Telegram",
-    title: "Telegram bot + kunlik hisobot",
+    title: "Telegram bot — to'liq mini-panel",
     body:
-      "Panelni ochmasdan @ChaqimchiGuardBot orqali bugungi holat, qurilmalar va har oqshom qisqa hisobot.",
+      "@ChaqimchiGuardBot'da /menyu: Qurilmalar, Farzandlar, Bugungi statistika, Ogohlantirishlar — tugmalar bilan, panelni ochmasdan. Har oqshom qisqa hisobot ham shu yerga keladi.",
     icon: "solar:plain-2-linear",
+  },
+  {
+    tag: "Ekran rasmi",
+    title: "So'rov bo'yicha ekran rasmi",
+    body:
+      "Bir marta bosib, ayni damdagi ekran rasmini ko'ring. Avtomatik emas — faqat siz so'raganda, va bola har safar buni bildirishnoma orqali ko'radi. 1 kun / 1 hafta / 1 oy saqlanadi, keyin o'zi o'chadi.",
+    icon: "solar:camera-linear",
   },
 ];
 
@@ -162,10 +169,11 @@ export const DATA_COLLECTED = [
   "Ilova nomi",
   "Tashrif buyurilgan sayt domeni",
   "Qurilma holati",
+  "Ekran rasmi — faqat siz so'raganda, bola bildirishnoma orqali ko'radi",
 ];
 
 export const DATA_NOT_COLLECTED = [
-  "Skrinshot",
+  "Doimiy ekran yozuvi yoki avtomatik skrinshot",
   "Klaviatura yozuvi",
   "Mikrofon",
   "To'liq havolalar va sahifa mazmuni",
@@ -205,8 +213,8 @@ export const PLATFORMS = [
     tag: "Ota-ona",
     title: "Mobil ilova",
     body:
-      "Telefondan bir qarashda kunlik holat, haftalik statistika va xabarlar. Hozir yopiq sinovda.",
-    status: "Tez orada",
+      "Telegram botni oching — ilova o'zi ichida ochiladi, alohida o'rnatish shart emas. Kunlik holat, haftalik statistika, qurilmalar va xabarlar bir joyda.",
+    status: "Mavjud",
   },
 ];
 
@@ -219,7 +227,7 @@ export const FAQ = [
   {
     q: "Skrinshot yoki klaviatura yozuvi olinadimi?",
     a:
-      "Yo'q. Skrinshot, klaviatura bosilishi, mikrofon, to'liq havolalar, sahifa mazmuni va shaxsiy xabarlar hech qachon yozilmaydi.",
+      "Doimiy ekran yozuvi yoki avtomatik skrinshot — yo'q. Klaviatura bosilishi, mikrofon, to'liq havolalar, sahifa mazmuni va shaxsiy xabarlar hech qachon yozilmaydi. Faqat bitta imkoniyat bor: siz istalgan vaqt bitta tugma bosib ayni damdagi ekran rasmini ko'rishingiz mumkin — bu avtomatik emas, bola har safar buni ko'radi, va rasm siz tanlagan muddatdan (1 kun/hafta/oy) keyin o'zi o'chadi.",
   },
   {
     q: "Bola dasturni o'chira oladimi?",
@@ -242,9 +250,14 @@ export const FAQ = [
       "Bitta oila hisobiga bir nechta bola va qurilma bog'lanadi. Panelda har bola alohida ko'rinadi, haftalik solishtirma bilan.",
   },
   {
-    q: "Mobil ilova qachon chiqadi?",
+    q: "Mobil ilova qanday o'rnatiladi?",
     a:
-      "Ota-ona uchun mobil ilova hozir yopiq sinovda. Hozircha nazoratni web panel va Telegram bot orqali to'liq amalga oshirasiz.",
+      "Alohida o'rnatish shart emas — @ChaqimchiGuardBot'ni oching, «Ota-ona paneli» tugmasini bosing, ilova Telegram ichida ochiladi. App Store yoki Play Market kerak emas.",
+  },
+  {
+    q: "Ro'yxatdan qanday o'taman, nega telefon raqami so'raladi?",
+    a:
+      "@ChaqimchiGuardBot'da /start bosing — hisobingiz shu zahoti yaratiladi. Telefon raqamini Telegram'ning o'z tugmasi orqali yuborasiz (yozib kiritilmaydi) — bu hisobingizni himoyalaydi va kerak bo'lganda yordam ko'rsatish uchun ishlatiladi, boshqa hech kimga berilmaydi.",
   },
   {
     q: "Windows «Noma'lum noshir» deb ogohlantirsa nima qilaman?",
