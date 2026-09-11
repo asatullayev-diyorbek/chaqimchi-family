@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.alerts",
     "apps.deploy",
     "apps.screenshots",
+    "apps.billing",
 ]
 
 MIDDLEWARE = [
@@ -183,6 +184,17 @@ TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
 # Shared secret an external cron sends to POST /api/tracking/digest/run/ so
 # the daily Telegram digest can fire without a paid scheduler.
 DIGEST_CRON_SECRET = os.environ.get("DIGEST_CRON_SECRET", "")
+
+# Payme / Click merchant credentials (apps.billing). Empty until a real
+# merchant account exists — every billing endpoint that needs them checks
+# is_configured() first and 503s rather than crash. See apps/billing/payme.py
+# and click.py for exactly what each key is used for and the "never tested
+# against a real sandbox yet" caveat.
+PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "")
+PAYME_MERCHANT_KEY = os.environ.get("PAYME_MERCHANT_KEY", "")
+CLICK_MERCHANT_ID = os.environ.get("CLICK_MERCHANT_ID", "")
+CLICK_SERVICE_ID = os.environ.get("CLICK_SERVICE_ID", "")
+CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "")
 
 # Telegram user ids that get an operator DM when a new parent finishes
 # onboarding or a device is linked. Comma-separated; default is the

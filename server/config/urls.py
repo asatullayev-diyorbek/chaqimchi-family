@@ -22,6 +22,7 @@ urlpatterns = [
     path("api/devices/<uuid:id>/", DeviceDetailView.as_view(), name="device-detail"),
     path("api/rules/", include("apps.rules.urls")),
     path("api/screenshots/", include("apps.screenshots.urls")),
+    path("api/billing/", include("apps.billing.urls")),
     path("api/alerts/", include("apps.alerts.urls")),
     path("api/deploy/", include("apps.deploy.urls")),
     path("releases/", include("apps.deploy.release_urls")),

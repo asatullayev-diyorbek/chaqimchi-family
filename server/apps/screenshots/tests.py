@@ -82,6 +82,11 @@ class ScreenshotFlowTests(TestCase):
         self.assertEqual(resp.status_code, 429)
 
     def test_rate_limit_ignores_old_requests(self):
+        # Plan quota is a separate, lower-value gate (see PlanQuotaTests) —
+        # put this family on Max so only the hourly throttle under test
+        # applies.
+        self.family.subscription.plan = "max"
+        self.family.subscription.save(update_fields=["plan"])
         self._auth_parent()
         old = ScreenshotRequest.objects.create(device=self.device)
         ScreenshotRequest.objects.filter(id=old.id).update(

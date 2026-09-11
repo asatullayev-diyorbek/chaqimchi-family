@@ -19,6 +19,7 @@ LABELS = {
     "📊 bugungi statistika": "today",
     "🔔 ogohlantirishlar": "alerts",
     "🔎 ai tahlil": "ai",
+    "💳 obuna": "subscription",
     "📖 qo'llanma": "guide",
     "📖 qo‘llanma": "guide",
 }
@@ -29,7 +30,8 @@ def menu_keyboard() -> dict:
         "keyboard": [
             [{"text": "💻 Qurilmalar"}, {"text": "👦 Farzandlar"}],
             [{"text": "📊 Bugungi statistika"}, {"text": "🔔 Ogohlantirishlar"}],
-            [{"text": "🔎 AI tahlil"}, {"text": "📖 Qo'llanma"}],
+            [{"text": "🔎 AI tahlil"}, {"text": "💳 Obuna"}],
+            [{"text": "📖 Qo'llanma"}],
             [{"text": "📱 Ota-ona paneli", "web_app": {"url": miniapp_url()}}],
         ],
         "resize_keyboard": True,
@@ -76,3 +78,54 @@ def handle_menu_button(section: str, chat_id, parent):
         from .onboarding import send_install_guide
 
         send_install_guide(chat_id)
+    elif section == "subscription":
+        _send_subscription(chat_id, parent)
+
+
+def _send_subscription(chat_id, parent):
+    from apps.billing import click, payme
+    from apps.billing.models import Invoice
+    from apps.devices.models import Child, ChildDevice
+    from .models import Subscription
+
+    family = parent.family
+    sub = family.subscription
+    children = Child.objects.filter(family=family).count()
+    devices = ChildDevice.objects.filter(family=family, status=ChildDevice.STATUS_LINKED).count()
+
+    def fmt_limit(n):
+        return "cheksiz" if n is None else str(n)
+
+    lines = [
+        "💳 Obuna",
+        "",
+        f"Joriy tarif: {sub.plan_label}",
+        f"Farzand: {children}/{fmt_limit(sub.limit('max_children'))}",
+        f"Qurilma: {devices}/{fmt_limit(sub.limit('max_devices'))}",
+    ]
+    if sub.expires_at:
+        lines.append(f"Amal qiladi: {sub.expires_at:%Y-%m-%d}gacha")
+
+    buttons = []
+    for plan in (Subscription.PLAN_MINI, Subscription.PLAN_MAX):
+        if sub.plan == plan and sub.is_paid_and_active():
+            continue
+        price = Subscription.PLAN_PRICE_UZS[plan]
+        label = dict(Subscription.PLAN_CHOICES)[plan]
+        for provider, mod, configured in (
+            (Invoice.PROVIDER_PAYME, payme, payme.is_configured()),
+            (Invoice.PROVIDER_CLICK, click, click.is_configured()),
+        ):
+            if not configured:
+                continue
+            invoice = Invoice.objects.create(family=family, plan=plan, amount_uzs=price, provider=provider)
+            url = mod.checkout_url(invoice)
+            buttons.append([{
+                "text": f"{label} — {price:,} so'm ({provider.title()})".replace(",", " "),
+                "url": url,
+            }])
+
+    if not buttons:
+        lines.append("\nTo'lov usullari hozircha ulanmagan.")
+
+    tg_api.send_message(chat_id, "\n".join(lines), reply_markup={"inline_keyboard": buttons} if buttons else None)

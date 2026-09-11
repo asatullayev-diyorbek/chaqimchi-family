@@ -10,6 +10,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.accounts.limits import assert_can_add_child, assert_can_add_device
 from apps.accounts.models import ParentUser
 
 from .models import Child, ChildDevice, EnrollmentCode
@@ -30,6 +31,7 @@ class ChildListCreateView(generics.ListCreateAPIView):
         if not isinstance(self.request.user, ParentUser): return Child.objects.none()
         return Child.objects.filter(family=self.request.user.family).annotate(device_count=models.Count("devices"))
     def perform_create(self, serializer):
+        assert_can_add_child(self.request.user.family)
         serializer.save(family=self.request.user.family)
 
 
@@ -134,8 +136,12 @@ class VerifyCodeView(APIView):
                 status=status.HTTP_410_GONE,
             )
 
+        assert_can_add_device(request.user.family)
+
         device = enrollment_code.device
         child_id = request.data.get("child_id")
+        if not child_id:
+            assert_can_add_child(request.user.family)
         with transaction.atomic():
             child = get_object_or_404(Child, id=child_id, family=request.user.family) if child_id else Child.objects.create(family=request.user.family, name=device.child_name or "Farzand")
 

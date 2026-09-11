@@ -18,18 +18,48 @@ class Subscription(models.Model):
     later without a schema rethink. Feature checks go through ``allows()``."""
 
     PLAN_BETA = "beta"
+    PLAN_MINI = "mini"
+    PLAN_MAX = "max"
     PLAN_CHOICES = [
         (PLAN_BETA, "Beta (bepul)"),
-        # later: ("family", "Oila"), ("pro", "Pro")
+        (PLAN_MINI, "Mini"),
+        (PLAN_MAX, "Max"),
     ]
-    # Per-plan capability map. `None` = unlimited. AI analysis is off for
-    # everyone for now ("tez kunda") regardless of plan.
+
+    # Monthly price in so'm. Source of truth for both the checkout amount
+    # and every "narx" display (bot, apps, marketing) — never hard-code a
+    # price anywhere else.
+    PLAN_PRICE_UZS = {
+        PLAN_BETA: 0,
+        PLAN_MINI: 15_000,
+        PLAN_MAX: 25_000,
+    }
+
+    # Per-plan capability map. `None` = unlimited.
     PLAN_FEATURES = {
+        # 1 farzand, lekin uning noutbuki+telefoni kabi 2 qurilmasigacha —
+        # bitta bolali oilaning odatiy holatini bepul tarifda ham cheklamaslik
+        # uchun (bu — pullik tarif chiqishidan oldingi mavjud xatti-harakat).
         PLAN_BETA: {
+            "max_children": 1,
+            "max_devices": 2,
+            "history_days": 7,
+            "screenshot_daily_limit": 3,
+            "ai_analysis": False,
+        },
+        PLAN_MINI: {
+            "max_children": 2,
+            "max_devices": 4,
+            "history_days": 30,
+            "screenshot_daily_limit": 10,
+            "ai_analysis": False,
+        },
+        PLAN_MAX: {
             "max_children": None,
             "max_devices": None,
-            "screenshots": True,
-            "ai_analysis": False,
+            "history_days": None,
+            "screenshot_daily_limit": None,
+            "ai_analysis": True,
         },
     }
 
@@ -57,9 +87,20 @@ class Subscription(models.Model):
     def allows(self, feature: str) -> bool:
         return bool(self.features().get(feature))
 
+    def limit(self, feature: str):
+        """Numeric cap for `feature`, or None for unlimited/unknown."""
+        return self.features().get(feature)
+
+    @property
+    def price_uzs(self) -> int:
+        return self.PLAN_PRICE_UZS.get(self.plan, 0)
+
     @property
     def plan_label(self) -> str:
         return dict(self.PLAN_CHOICES).get(self.plan, self.plan)
+
+    def is_paid_and_active(self) -> bool:
+        return self.plan != self.PLAN_BETA and self.status == self.STATUS_ACTIVE
 
     def __str__(self):
         return f"{self.family_id} · {self.plan} ({self.status})"

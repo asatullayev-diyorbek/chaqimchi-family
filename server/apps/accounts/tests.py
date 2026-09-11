@@ -482,3 +482,22 @@ class ScreenMinutesBulkTests(TestCase):
         self.assertEqual(bulk[d1.id], screen_minutes(d1))
         self.assertEqual(bulk[d2.id], screen_minutes(d2))
         self.assertEqual(screen_minutes_by_device([]), {})
+
+
+@override_settings(
+    TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
+    TELEGRAM_WEBHOOK_SECRET="test-secret", PAYME_MERCHANT_ID="m1", PAYME_MERCHANT_KEY="k1",
+)
+@mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
+class SubscriptionMenuTests(TestCase):
+    def test_subscription_button_shows_plan_and_upgrade_link(self, api):
+        client = APIClient()
+        ParentUser.objects.create_user(email="s@e.com", password="supersecret1", telegram_id=950)
+        client.post(
+            reverse("telegram-webhook"),
+            {"message": {"text": "💳 Obuna", "chat": {"id": 1, "type": "private"}, "from": {"id": 950}}},
+            format="json", **WEBHOOK_HEADERS,
+        )
+        payload = api.call_args_list[-1][0][1]
+        self.assertIn("Beta", payload["text"])
+        self.assertIn("checkout.paycom.uz", str(payload["reply_markup"]))

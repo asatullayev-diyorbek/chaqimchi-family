@@ -115,6 +115,26 @@ class RequestScreenshotView(APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
+        # Plan quota — counted per family (not per device) since the
+        # subscription is family-level; None means unlimited (Max).
+        sub = getattr(device.family, "subscription", None)
+        daily_limit = sub.limit("screenshot_daily_limit") if sub else None
+        if daily_limit is not None:
+            day_start = timezone.now() - timedelta(hours=24)
+            used_today = ScreenshotRequest.objects.filter(
+                device__family_id=device.family_id, created_at__gte=day_start
+            ).count()
+            if used_today >= daily_limit:
+                return Response(
+                    {
+                        "detail": (
+                            f"Kunlik limit tugadi ({daily_limit} ta) — "
+                            f"«{sub.plan_label}» tarifda shuncha. Ko'proq uchun tarifni oshiring."
+                        ),
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+
         shot = ScreenshotRequest.objects.create(
             device=device,
             requested_by=request.user,
