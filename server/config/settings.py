@@ -93,13 +93,19 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Project-level templates always win over app-provided ones
+        # (checked before APP_DIRS, regardless of INSTALLED_APPS order) —
+        # this is what lets templates/admin/index.html override
+        # django.contrib.admin's own copy, since that app is listed before
+        # ours in INSTALLED_APPS.
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "apps.accounts.context_processors.admin_stats",
             ],
         },
     },

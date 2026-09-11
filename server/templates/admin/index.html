@@ -1,0 +1,60 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+{% if admin_stats %}
+<style>
+  .spino-stats { margin-bottom: 28px; }
+  .spino-stats h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .04em; color: var(--body-quiet-color, #666); margin: 0 0 12px; }
+  .spino-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .spino-card { background: var(--body-bg, #fff); border: 1px solid var(--border-color, #ddd); border-radius: 8px; padding: 14px 16px; }
+  .spino-card .n { font-size: 22px; font-weight: 700; display: block; line-height: 1.2; }
+  .spino-card .l { font-size: 12px; color: var(--body-quiet-color, #666); }
+  .spino-card.wide { grid-column: span 2; }
+  .spino-plan-rows span { display: inline-block; margin-right: 14px; font-size: 13px; }
+</style>
+<div class="spino-stats">
+  <h2>📊 Spino24 — bugungi ko'rsatkichlar</h2>
+  <div class="spino-stats-grid">
+    <div class="spino-card">
+      <span class="n">{{ admin_stats.users_total }}</span>
+      <span class="l">Jami foydalanuvchi (+{{ admin_stats.users_new_week }} shu hafta)</span>
+    </div>
+    <div class="spino-card">
+      <span class="n">{{ admin_stats.families_total }}</span>
+      <span class="l">Oila · {{ admin_stats.children_total }} farzand</span>
+    </div>
+    <div class="spino-card">
+      <span class="n">{{ admin_stats.devices_online }}/{{ admin_stats.devices_linked }}</span>
+      <span class="l">Qurilma onlayn / ulangan</span>
+    </div>
+    <div class="spino-card">
+      <span class="n">{{ admin_stats.onboarding_pending }}</span>
+      <span class="l">Telefon kutilmoqda (gate'da)</span>
+    </div>
+    <div class="spino-card wide">
+      <span class="n">{{ admin_stats.mrr_fmt }} so'm</span>
+      <span class="l">Oylik takroriy daromad (MRR)</span>
+      <div class="spino-plan-rows" style="margin-top:6px">
+        {% for plan, count in admin_stats.by_plan.items %}
+          <span>{{ plan }}: <strong>{{ count }}</strong></span>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="spino-card">
+      <span class="n">{{ admin_stats.revenue_paid_fmt }} so'm</span>
+      <span class="l">Jami to'langan ({{ admin_stats.invoices_paid_total }} ta)</span>
+    </div>
+    <div class="spino-card">
+      <span class="n">{{ admin_stats.screenshots_today }}</span>
+      <span class="l">Bugungi ekran rasmi so'rovi</span>
+    </div>
+    <div class="spino-card">
+      <span class="n">{{ admin_stats.alerts_today }}</span>
+      <span class="l">Bugungi ogohlantirish</span>
+    </div>
+  </div>
+</div>
+{% endif %}
+{{ block.super }}
+{% endblock %}
