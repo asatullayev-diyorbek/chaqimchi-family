@@ -16,7 +16,6 @@ import {
   IconButton,
   Meter,
   Muted,
-  QuickActions,
   Screen,
   SectionHeader,
   Skeleton,
@@ -26,7 +25,6 @@ import {
   Text,
   WeekBars,
 } from "../../components";
-import type { QuickAction } from "../../components";
 
 export default function HomeScreen({ navigation }: any) {
   const { activeDevice } = useFamily();
@@ -132,37 +130,6 @@ export default function HomeScreen({ navigation }: any) {
   const near = scopeLimit != null && !over && scopeMinutes > scopeLimit * 0.85;
   const pct = scopeLimit ? Math.round((scopeMinutes / scopeLimit) * 100) : null;
 
-  const quickActions: QuickAction[] = [
-    {
-      icon: "clock",
-      label: "Limit",
-      tone: "blue",
-      onPress: () => navigation.navigate("RulesTab"),
-    },
-    {
-      icon: "rules",
-      label: "Qoidalar",
-      tone: "mint",
-      onPress: () => navigation.navigate("RulesTab"),
-    },
-    {
-      icon: "activity",
-      label: "Faoliyat",
-      tone: "amber",
-      onPress: () =>
-        navigation.navigate("ActivityTab", {
-          screen: "Activity",
-          params: activeDevice ? { deviceId: activeDevice.id } : undefined,
-        }),
-    },
-    {
-      icon: "chart",
-      label: "Hisobot",
-      tone: "muted",
-      onPress: () => navigation.navigate("Reports"),
-    },
-  ];
-
   const bars = weekBreakdown.map((b) => ({
     label: shortWeekday(b.date),
     minutes: b.total_minutes || 0,
@@ -233,9 +200,6 @@ export default function HomeScreen({ navigation }: any) {
           </View>
         ) : null}
       </Card>
-
-      {/* Quick actions */}
-      <QuickActions actions={quickActions} />
 
       {/* Devices */}
       <Card style={{ gap: 12 }}>
