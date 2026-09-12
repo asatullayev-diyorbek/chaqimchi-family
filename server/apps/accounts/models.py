@@ -20,19 +20,24 @@ class Subscription(models.Model):
     PLAN_BETA = "beta"
     PLAN_MINI = "mini"
     PLAN_MAX = "max"
+    PLAN_TESTER = "tester"
     PLAN_CHOICES = [
         (PLAN_BETA, "Beta (bepul)"),
         (PLAN_MINI, "Mini"),
         (PLAN_MAX, "Max"),
+        (PLAN_TESTER, "Tester (cheksiz, faqat sinovchilar uchun)"),
     ]
 
     # Monthly price in so'm. Source of truth for both the checkout amount
     # and every "narx" display (bot, apps, marketing) — never hard-code a
-    # price anywhere else.
+    # price anywhere else. Tester is never sold — it's assigned by hand to
+    # people helping test the product (billing.CheckoutView only accepts
+    # mini/max) — so it has no real price.
     PLAN_PRICE_UZS = {
         PLAN_BETA: 0,
         PLAN_MINI: 15_000,
         PLAN_MAX: 25_000,
+        PLAN_TESTER: 0,
     }
 
     # Per-plan capability map. `None` = unlimited.
@@ -55,6 +60,13 @@ class Subscription(models.Model):
             "ai_analysis": False,
         },
         PLAN_MAX: {
+            "max_children": None,
+            "max_devices": None,
+            "history_days": None,
+            "screenshot_daily_limit": None,
+            "ai_analysis": True,
+        },
+        PLAN_TESTER: {
             "max_children": None,
             "max_devices": None,
             "history_days": None,
