@@ -245,10 +245,15 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	fetcher := rules.NewFetcher(baseURL, deviceID, deviceSecret, rulesCache)
 	go fetcher.Run(ctx, 5*time.Minute)
 
-	// Installed-apps snapshot: installs don't change often, so this rides a
-	// long interval, not the fast heartbeat/sync cycles above.
+	// Installed-apps snapshot. A registry scan is cheap, so this runs every
+	// 30 min rather than riding a long interval — a child installing and
+	// then uninstalling something inside too wide a window would otherwise
+	// leave it invisible to a parent checking later. Even so, anything
+	// installed and removed inside this window still goes unseen; a real
+	// install/uninstall *event* hook (not a periodic snapshot) would be the
+	// only way to close that gap entirely, which is a bigger feature.
 	appsSyncer := inventory.NewSyncer(baseURL, deviceID, deviceSecret)
-	go appsSyncer.Run(ctx, 6*time.Hour)
+	go appsSyncer.Run(ctx, 30*time.Minute)
 
 	uploader := syncpkg.NewUploader(baseURL, deviceID, deviceSecret, store)
 	uploader.AgentVersion = version
