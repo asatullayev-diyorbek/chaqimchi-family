@@ -68,6 +68,10 @@ class BillingStatusView(APIView):
                     "payme": payme.is_configured(),
                     "click": click.is_configured(),
                 },
+                # Surfaced so the app can show a "test mode" note near the
+                # upgrade buttons — sandbox credentials never move real
+                # money, but a parent tapping "to'lash" should still know.
+                "payme_test_mode": settings.PAYME_TEST_MODE,
             }
         )
 

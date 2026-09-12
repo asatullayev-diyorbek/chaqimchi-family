@@ -44,6 +44,7 @@ export default function MoreScreen({ navigation }: any) {
           <ListRow icon="device" title="Qurilmalar" subtitle={`${linkedDevices.length} ta ulangan`} onPress={() => navigation.navigate("Devices")} />
           <ListRow icon="qr" title="Qurilma ulash" onPress={() => navigation.navigate("PairDevice")} />
           <ListRow icon="chart" title="Hisobotlar" onPress={() => navigation.navigate("Reports")} />
+          <ListRow icon="card" title="Obuna" onPress={() => navigation.navigate("Subscription")} />
         </View>
       </Card>
 

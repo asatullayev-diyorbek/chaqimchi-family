@@ -207,6 +207,10 @@ DIGEST_CRON_SECRET = os.environ.get("DIGEST_CRON_SECRET", "")
 # against a real sandbox yet" caveat.
 PAYME_MERCHANT_ID = os.environ.get("PAYME_MERCHANT_ID", "")
 PAYME_MERCHANT_KEY = os.environ.get("PAYME_MERCHANT_KEY", "")
+# True while PAYME_MERCHANT_ID/KEY are sandbox (test merchant cabinet)
+# credentials rather than a live production merchant — routes checkout to
+# checkout.test.paycom.uz instead of the real checkout.paycom.uz.
+PAYME_TEST_MODE = os.environ.get("PAYME_TEST_MODE", "1") == "1"
 CLICK_MERCHANT_ID = os.environ.get("CLICK_MERCHANT_ID", "")
 CLICK_SERVICE_ID = os.environ.get("CLICK_SERVICE_ID", "")
 CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "")

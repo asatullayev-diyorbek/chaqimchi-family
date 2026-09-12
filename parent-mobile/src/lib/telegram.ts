@@ -136,6 +136,20 @@ export function openTelegramLink(url: string): boolean {
   return false;
 }
 
+/** Open an https:// link (e.g. a Payme/Click checkout page) the way that
+ *  gets the best UX in each environment: Telegram's own `openLink` inside
+ *  the Mini App (a proper external browser tab, not an in-app webview
+ *  fighting with Telegram's own chrome), or the caller's own handling
+ *  (native Linking, or a plain browser's normal navigation) otherwise. */
+export function openExternalLink(url: string): boolean {
+  const wa = getWebApp();
+  if (typeof wa?.openLink === "function") {
+    wa.openLink(url);
+    return true;
+  }
+  return false;
+}
+
 /**
  * Open Telegram's native QR scanner. Resolves with the scanned text, or null
  * if the user cancelled / it isn't available.

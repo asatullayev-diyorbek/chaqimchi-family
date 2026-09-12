@@ -500,4 +500,4 @@ class SubscriptionMenuTests(TestCase):
         )
         payload = api.call_args_list[-1][0][1]
         self.assertIn("Beta", payload["text"])
-        self.assertIn("checkout.paycom.uz", str(payload["reply_markup"]))
+        self.assertIn("paycom.uz", str(payload["reply_markup"]))

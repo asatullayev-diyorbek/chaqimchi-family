@@ -218,9 +218,13 @@ def _statement(request_id, params):
 
 
 def checkout_url(invoice: "Invoice") -> str:
-    """The https://checkout.paycom.uz/<base64> link the parent is sent to."""
+    """The checkout.paycom.uz/<base64> link the parent is sent to. Payme's
+    sandbox (test merchant cabinet) lives on a separate host — checkout.
+    test.paycom.uz — so a test merchant ID never accidentally hits
+    production, and vice versa."""
     import base64
 
+    host = "checkout.test.paycom.uz" if settings.PAYME_TEST_MODE else "checkout.paycom.uz"
     payload = f"m={settings.PAYME_MERCHANT_ID};ac.order_id={invoice.id};a={invoice.amount_uzs * 100}"
     encoded = base64.b64encode(payload.encode()).decode()
-    return f"https://checkout.paycom.uz/{encoded}"
+    return f"https://{host}/{encoded}"

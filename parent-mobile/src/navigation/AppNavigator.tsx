@@ -21,6 +21,7 @@ import ChildDetailScreen from "../screens/family/ChildDetailScreen";
 import DevicesScreen from "../screens/devices/DevicesScreen";
 import ReportsScreen from "../screens/more/ReportsScreen";
 import NotificationSettingsScreen from "../screens/more/NotificationSettingsScreen";
+import SubscriptionScreen from "../screens/more/SubscriptionScreen";
 import SettingsScreen from "../screens/more/SettingsScreen";
 import PrivacyScreen from "../screens/more/PrivacyScreen";
 import HelpScreen from "../screens/more/HelpScreen";
@@ -98,6 +99,7 @@ function MoreStack() {
       />
       <More.Screen name="Reports" component={ReportsScreen} options={{ title: "Hisobotlar" }} />
       <More.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: "Bildirishnomalar" }} />
+      <More.Screen name="Subscription" component={SubscriptionScreen} options={{ title: "Obuna" }} />
       <More.Screen name="Settings" component={SettingsScreen} options={{ title: "Sozlamalar" }} />
       <More.Screen name="Privacy" component={PrivacyScreen} options={{ title: "Maxfiylik" }} />
       <More.Screen name="Help" component={HelpScreen} options={{ title: "Yordam" }} />

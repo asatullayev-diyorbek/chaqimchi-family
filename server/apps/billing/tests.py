@@ -34,6 +34,7 @@ class BillingStatusTests(TestCase):
         self.assertEqual(r.json()["plan"], "beta")
         self.assertEqual(r.json()["usage"]["children"], 1)
         self.assertEqual(r.json()["usage"]["children_limit"], 1)
+        self.assertIn("payme_test_mode", r.json())
 
 
 @override_settings(PAYME_MERCHANT_ID="m1", PAYME_MERCHANT_KEY="key1", CLICK_MERCHANT_ID="", CLICK_SERVICE_ID="", CLICK_SECRET_KEY="")
@@ -46,7 +47,7 @@ class CheckoutTests(TestCase):
     def test_checkout_creates_pending_invoice(self):
         r = self.client.post(reverse("billing-checkout"), {"plan": "mini", "provider": "payme"}, format="json")
         self.assertEqual(r.status_code, 201, r.data)
-        self.assertIn("checkout.paycom.uz", r.json()["checkout_url"])
+        self.assertIn("paycom.uz", r.json()["checkout_url"])
         inv = Invoice.objects.get()
         self.assertEqual(inv.amount_uzs, 15_000)
         self.assertEqual(inv.status, Invoice.STATUS_PENDING)
@@ -58,6 +59,18 @@ class CheckoutTests(TestCase):
     def test_checkout_503_when_provider_not_configured(self):
         r = self.client.post(reverse("billing-checkout"), {"plan": "mini", "provider": "click"}, format="json")
         self.assertEqual(r.status_code, 503)
+
+    @override_settings(PAYME_TEST_MODE=True)
+    def test_checkout_uses_sandbox_host_in_test_mode(self):
+        r = self.client.post(reverse("billing-checkout"), {"plan": "mini", "provider": "payme"}, format="json")
+        self.assertIn("checkout.test.paycom.uz", r.json()["checkout_url"])
+
+    @override_settings(PAYME_TEST_MODE=False)
+    def test_checkout_uses_production_host_when_test_mode_off(self):
+        r = self.client.post(reverse("billing-checkout"), {"plan": "mini", "provider": "payme"}, format="json")
+        url = r.json()["checkout_url"]
+        self.assertIn("checkout.paycom.uz", url)
+        self.assertNotIn("checkout.test.paycom.uz", url)
 
 
 @override_settings(PAYME_MERCHANT_ID="m1", PAYME_MERCHANT_KEY="secretkey")
