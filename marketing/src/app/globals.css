@@ -109,25 +109,6 @@ body::after {
   animation: drift2 26s ease-in-out infinite alternate;
 }
 
-/* Dark mode overrides */
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --bg: #121524;
-    --surface: #1b1f2e;
-    --surface-2: #24293a;
-    --fg: #e0e5f2;
-    --body: #c1c8db;
-    --muted: #8a92a5;
-    --border: #2c3345;
-    /* keep brand colours */
-  }
-
-  body {
-    background: linear-gradient(135deg, #0f1a2e 0%, #111b2e 34%, #121524 62%, #171b2f 100%) fixed;
-  }
-}
-
 /* Animated badge */
 @keyframes badgePulse {
 
