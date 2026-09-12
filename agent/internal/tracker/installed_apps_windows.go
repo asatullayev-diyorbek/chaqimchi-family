@@ -6,11 +6,33 @@
 package tracker
 
 import (
+	"encoding/base64"
+	"strconv"
 	"strings"
 
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
+
+// iconPathFromDisplayIcon strips the optional ",<index>" resource-index
+// suffix registry uninstall entries often append to DisplayIcon (e.g.
+// `C:\Program Files\App\app.exe,0`), and rejects bare .ico-only values with
+// no exe fallback since ExtractIconPNG needs a real PE file to query.
+func iconPathFromDisplayIcon(raw string) string {
+	raw = strings.Trim(strings.TrimSpace(raw), `"`)
+	if raw == "" {
+		return ""
+	}
+	if i := strings.LastIndex(raw, ","); i > 0 {
+		if _, err := strconv.Atoi(strings.TrimSpace(raw[i+1:])); err == nil {
+			raw = strings.TrimSpace(raw[:i])
+		}
+	}
+	if !strings.HasSuffix(strings.ToLower(raw), ".exe") {
+		return ""
+	}
+	return raw
+}
 
 // ScanInstalledApps enumerates real, user-facing programs from the
 // registry's Uninstall keys: system-wide (HKLM, both 64- and 32-bit views)
@@ -81,12 +103,21 @@ func readAppEntry(root registry.Key, path string, flags uint32) (InstalledAppInf
 	publisher, _, _ := k.GetStringValue("Publisher")
 	installDate, _, _ := k.GetStringValue("InstallDate")
 
-	return InstalledAppInfo{
+	info := InstalledAppInfo{
 		Name:        name,
 		Version:     version,
 		Publisher:   publisher,
 		InstallDate: parseInstallDate(installDate),
-	}, true
+	}
+	if displayIcon, _, _ := k.GetStringValue("DisplayIcon"); displayIcon != "" {
+		if exePath := iconPathFromDisplayIcon(displayIcon); exePath != "" {
+			if png, sha, err := ExtractIconPNG(exePath); err == nil && len(png) > 0 {
+				info.IconSha256 = sha
+				info.IconB64 = base64.StdEncoding.EncodeToString(png)
+			}
+		}
+	}
+	return info, true
 }
 
 // currentUserSID returns the SID (as a string) of whoever is at the active

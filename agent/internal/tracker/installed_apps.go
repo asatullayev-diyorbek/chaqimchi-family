@@ -13,6 +13,12 @@ type InstalledAppInfo struct {
 	Version     string
 	Publisher   string
 	InstallDate string // YYYY-MM-DD, or "" if unknown/unparseable
+	// Icon, extracted from the registry's DisplayIcon path via the same
+	// ExtractIconPNG used for foreground-usage icons. Both empty when
+	// extraction fails or DisplayIcon is missing/unreadable — not every
+	// installer sets a usable one.
+	IconSha256 string
+	IconB64    string
 }
 
 var noisePattern = regexp.MustCompile(

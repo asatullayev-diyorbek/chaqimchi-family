@@ -1,5 +1,3 @@
-import base64
-import binascii
 import logging
 from collections import defaultdict
 from datetime import datetime, time, timedelta
@@ -15,13 +13,10 @@ from rest_framework.views import APIView
 
 from apps.accounts.models import ParentUser
 from apps.devices.geoip import update_device_geo_from_ip
+from apps.devices.icons import get_or_create_icon_blob
 from apps.devices.models import ChildDevice
 
 from .models import EVENT_TYPES, ICON_EVENT_TYPE, DeviceAppIcon, Event, EventBatch
-
-# Guard against a malformed or hostile agent: a 32x32 PNG is ~1-3 KB, so a
-# base64 payload over this is never a legitimate app icon.
-MAX_ICON_B64_LEN = 96 * 1024
 from .serializers import (
     ActivityHistorySerializer,
     BrowserUsageSerializer,
@@ -131,38 +126,27 @@ def _browser_of(payload: dict) -> str:
 def _store_app_icon(device, event: dict) -> bool:
     """Upsert one DeviceAppIcon from an app_icon event. Returns True on write."""
     app_id = (event.get("app_id") or event.get("app") or "").strip()
-    sha256 = (event.get("sha256") or "").strip().lower()
-    data_b64 = event.get("png_b64") or ""
     if not app_id or len(app_id) > 200:
         return False
-    if len(sha256) != 64 or not all(c in "0123456789abcdef" for c in sha256):
-        return False
-    if not isinstance(data_b64, str) or not (0 < len(data_b64) <= MAX_ICON_B64_LEN):
-        return False
-    try:
-        raw = base64.b64decode(data_b64, validate=True)
-    except (ValueError, binascii.Error):
-        return False
-    if not raw.startswith(b"\x89PNG\r\n\x1a\n"):
+    blob = get_or_create_icon_blob(event.get("sha256"), event.get("png_b64") or "")
+    if blob is None:
         return False
 
     existing = DeviceAppIcon.objects.filter(device=device, app_id=app_id).first()
-    if existing and existing.sha256 == sha256:
+    if existing and existing.icon_id == blob.sha256:
         return False
     DeviceAppIcon.objects.update_or_create(
         device=device,
         app_id=app_id,
-        defaults={"sha256": sha256, "data_b64": data_b64},
+        defaults={"icon": blob},
     )
     return True
 
 
 def _icons_for_device(device, app_ids) -> dict:
     """Map app_id -> data URI for the given apps on this device."""
-    rows = DeviceAppIcon.objects.filter(device=device, app_id__in=list(app_ids)).values_list(
-        "app_id", "data_b64"
-    )
-    return {app_id: f"data:image/png;base64,{data}" for app_id, data in rows}
+    rows = DeviceAppIcon.objects.filter(device=device, app_id__in=list(app_ids)).select_related("icon")
+    return {row.app_id: row.icon.data_uri() for row in rows}
 
 
 def _occurred_at(event: dict):

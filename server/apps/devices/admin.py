@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Child, ChildDevice, EnrollmentCode, InstalledApp
+from .models import Child, ChildDevice, EnrollmentCode, IconBlob, InstalledApp
 
 
 @admin.register(Child)
@@ -33,3 +33,15 @@ class EnrollmentCodeAdmin(admin.ModelAdmin):
     list_display = ("code", "device", "used", "expires_at")
     list_filter = ("used",)
     search_fields = ("code", "device__id")
+
+
+@admin.register(IconBlob)
+class IconBlobAdmin(admin.ModelAdmin):
+    # Content-addressed — read-only by design, one row is shared by however
+    # many apps/devices reference the same icon bytes.
+    list_display = ("sha256", "created_at")
+    search_fields = ("sha256",)
+    readonly_fields = ("sha256", "data_b64", "created_at")
+
+    def has_add_permission(self, request):
+        return False

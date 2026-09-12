@@ -6,6 +6,24 @@ from django.db import models
 from apps.accounts.models import Family
 
 
+class IconBlob(models.Model):
+    """Content-addressed icon storage — one row per unique PNG regardless of
+    how many apps/devices reference it. Icons repeat a lot (the same Chrome
+    or Discord icon on every device that runs it); without this, each
+    (device, app) row embedded its own full base64 copy of an icon that's
+    often byte-for-byte identical to ten others already stored."""
+
+    sha256 = models.CharField(max_length=64, primary_key=True)
+    data_b64 = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def data_uri(self) -> str:
+        return f"data:image/png;base64,{self.data_b64}"
+
+    def __str__(self):
+        return self.sha256[:12]
+
+
 class Child(models.Model):
     """A child belongs to one family and can own multiple devices."""
 
@@ -94,6 +112,7 @@ class InstalledApp(models.Model):
     first_seen = models.DateTimeField(auto_now_add=True)
     last_seen = models.DateTimeField(auto_now=True)
     uninstalled_at = models.DateTimeField(null=True, blank=True)
+    icon = models.ForeignKey(IconBlob, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
 
     class Meta:
         unique_together = [("device", "name")]

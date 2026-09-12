@@ -53,16 +53,17 @@ class DeviceAppIcon(models.Model):
     """The current icon for one app on one device.
 
     The agent extracts a 32x32 PNG from the foreground app's exe and sends it
-    once (per app, per icon change). ``data_b64`` is the raw base64 payload
-    without the data-URI prefix; the summary/history endpoints wrap it.
+    once (per app, per icon change). The actual PNG bytes live in a shared,
+    content-addressed ``devices.IconBlob`` (the same icon repeats across
+    devices/apps constantly) — this row is just the (device, app) -> icon
+    mapping.
     """
 
     device = models.ForeignKey(
         "devices.ChildDevice", on_delete=models.CASCADE, related_name="app_icons"
     )
     app_id = models.CharField(max_length=200)
-    sha256 = models.CharField(max_length=64)
-    data_b64 = models.TextField()
+    icon = models.ForeignKey("devices.IconBlob", on_delete=models.CASCADE, related_name="+")
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

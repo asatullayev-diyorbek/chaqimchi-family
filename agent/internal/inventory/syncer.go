@@ -43,6 +43,8 @@ type appPayload struct {
 	Version     string `json:"version,omitempty"`
 	Publisher   string `json:"publisher,omitempty"`
 	InstallDate string `json:"install_date,omitempty"`
+	Sha256      string `json:"sha256,omitempty"`
+	IconB64     string `json:"icon_b64,omitempty"`
 }
 
 // Tick scans the current inventory and, only if it differs from what the
@@ -86,6 +88,7 @@ func (s *Syncer) upload(ctx context.Context, apps []tracker.InstalledAppInfo) er
 	for i, a := range apps {
 		payload.Apps[i] = appPayload{
 			Name: a.Name, Version: a.Version, Publisher: a.Publisher, InstallDate: a.InstallDate,
+			Sha256: a.IconSha256, IconB64: a.IconB64,
 		}
 	}
 

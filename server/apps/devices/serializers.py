@@ -80,9 +80,17 @@ class ChildDeviceListSerializer(serializers.ModelSerializer):
 
 
 class InstalledAppSerializer(serializers.ModelSerializer):
+    icon = serializers.SerializerMethodField()
+
     class Meta:
         model = InstalledApp
-        fields = ["name", "version", "publisher", "install_date", "first_seen", "last_seen", "uninstalled_at"]
+        fields = [
+            "name", "version", "publisher", "install_date",
+            "first_seen", "last_seen", "uninstalled_at", "icon",
+        ]
+
+    def get_icon(self, obj):
+        return obj.icon.data_uri() if obj.icon_id else None
 
 
 class InstalledAppSyncItemSerializer(serializers.Serializer):
@@ -90,6 +98,10 @@ class InstalledAppSyncItemSerializer(serializers.Serializer):
     version = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
     publisher = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     install_date = serializers.DateField(required=False, allow_null=True, default=None)
+    # Icon PNG, validated/deduped via get_or_create_icon_blob — both optional
+    # since a registry entry's DisplayIcon path can be missing or unreadable.
+    sha256 = serializers.CharField(required=False, allow_blank=True, default="")
+    icon_b64 = serializers.CharField(required=False, allow_blank=True, default="")
 
 
 class InstalledAppSyncSerializer(serializers.Serializer):

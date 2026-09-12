@@ -5,10 +5,10 @@ import { formatDate } from "../../lib/format";
 import { getInstalledApps, InstalledApp } from "../../api/tracking";
 import { useQuery } from "../../hooks/useQuery";
 import {
+  AppIcon,
   Card,
   EmptyState,
   ErrorState,
-  ListRow,
   LoadingState,
   Muted,
   Screen,
@@ -18,21 +18,29 @@ import {
 
 function AppRow({ app, removed, first }: { app: InstalledApp; removed?: boolean; first?: boolean }) {
   return (
-    <ListRow
-      first={first}
-      icon="package"
-      title={app.name}
-      subtitle={
-        removed
-          ? `O'chirilgan: ${formatDate(app.uninstalled_at!, true)}`
-          : app.publisher || undefined
-      }
-      right={
-        <Text variant="label" color={colors.muted}>
-          {app.version || "—"}
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+        paddingVertical: 13,
+        borderTopWidth: first ? 0 : 1,
+        borderTopColor: colors.border,
+      }}
+    >
+      <AppIcon appId={app.name} appName={app.name} icon={app.icon} size={36} />
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text variant="label" numberOfLines={1}>
+          {app.name}
         </Text>
-      }
-    />
+        <Muted numberOfLines={1}>
+          {removed ? `O'chirilgan: ${formatDate(app.uninstalled_at!, true)}` : app.publisher || " "}
+        </Muted>
+      </View>
+      <Text variant="label" color={colors.muted}>
+        {app.version || "—"}
+      </Text>
+    </View>
   );
 }
 

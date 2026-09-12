@@ -13,6 +13,7 @@ from rest_framework.views import APIView
 from apps.accounts.limits import assert_can_add_child, assert_can_add_device
 from apps.accounts.models import ParentUser
 
+from .icons import get_or_create_icon_blob
 from .models import Child, ChildDevice, EnrollmentCode, InstalledApp
 from .serializers import (
     ChildDeviceListSerializer,
@@ -316,18 +317,23 @@ class InstalledAppsSyncView(APIView):
             seen_names = []
             for entry in apps:
                 seen_names.append(entry["name"])
+                defaults = {
+                    "version": entry.get("version") or "",
+                    "publisher": entry.get("publisher") or "",
+                    "install_date": entry.get("install_date"),
+                    # Reappearing after being marked uninstalled means a
+                    # reinstall — clear the mark rather than leave a
+                    # stale uninstalled_at on a currently-installed app.
+                    "uninstalled_at": None,
+                }
+                # Icon extraction can fail on the agent's side (unreadable
+                # DisplayIcon path, etc.) — only overwrite a previously-good
+                # icon when this sync actually resolved a new one.
+                blob = get_or_create_icon_blob(entry.get("sha256"), entry.get("icon_b64") or "")
+                if blob is not None:
+                    defaults["icon"] = blob
                 InstalledApp.objects.update_or_create(
-                    device=device,
-                    name=entry["name"],
-                    defaults={
-                        "version": entry.get("version") or "",
-                        "publisher": entry.get("publisher") or "",
-                        "install_date": entry.get("install_date"),
-                        # Reappearing after being marked uninstalled means a
-                        # reinstall — clear the mark rather than leave a
-                        # stale uninstalled_at on a currently-installed app.
-                        "uninstalled_at": None,
-                    },
+                    device=device, name=entry["name"], defaults=defaults,
                 )
             # Missing from this snapshot but not already marked: just
             # uninstalled. Never hard-delete — a parent should still be able
