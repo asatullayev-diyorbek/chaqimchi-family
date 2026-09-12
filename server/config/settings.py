@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "apps.deploy",
     "apps.screenshots",
     "apps.billing",
+    "apps.insights",
 ]
 
 MIDDLEWARE = [
@@ -214,6 +215,13 @@ PAYME_TEST_MODE = os.environ.get("PAYME_TEST_MODE", "1") == "1"
 CLICK_MERCHANT_ID = os.environ.get("CLICK_MERCHANT_ID", "")
 CLICK_SERVICE_ID = os.environ.get("CLICK_SERVICE_ID", "")
 CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "")
+
+# Groq (not Claude — a deliberate choice for the AI tahlil / weekly-insight
+# feature, apps.insights). Empty until a real key exists; is_configured()
+# in apps/insights/groq.py checks this first. Confirm the current model id
+# and pricing at https://console.groq.com before setting GROQ_MODEL.
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "")
 
 # Telegram user ids that get an operator DM when a new parent finishes
 # onboarding or a device is linked. Comma-separated; default is the

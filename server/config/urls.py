@@ -37,6 +37,7 @@ urlpatterns = [
     path("api/screenshots/", include("apps.screenshots.urls")),
     path("api/billing/", include("apps.billing.urls")),
     path("api/alerts/", include("apps.alerts.urls")),
+    path("api/insights/", include("apps.insights.urls")),
     path("api/deploy/", include("apps.deploy.urls")),
     path("releases/", include("apps.deploy.release_urls")),
     path("api/health/", health, name="health"),

@@ -6,10 +6,11 @@ from . import tg_api
 from .bot import _alerts, _children, _devices, _today
 from .onboarding import img, miniapp_url
 
-AI_TEXT = (
-    "🔎 AI tahlil — tez kunda\n\n"
+AI_UPSELL_TEXT = (
+    "🔎 AI tahlil\n\n"
     "Farzandingiz faoliyatini sun'iy intellekt tahlil qilib, ekran vaqti va "
-    "odatlari bo'yicha tushunarli tavsiyalar beradi. Ustida ishlayapmiz."
+    "odatlari bo'yicha tushunarli tavsiyalar beradi.\n\n"
+    "Bu — Max tarifiga xos imkoniyat. «💳 Obuna» bo'limidan Max'ga o'ting."
 )
 
 # Button label (lower-cased) -> section key.
@@ -73,13 +74,43 @@ def handle_menu_button(section: str, chat_id, parent):
     elif section == "alerts":
         tg_api.send_message(chat_id, _alerts(parent), parse_mode="HTML")
     elif section == "ai":
-        tg_api.send_photo(chat_id, img("ai-analysis-teaser"), caption=AI_TEXT)
+        _send_ai_insight(chat_id, parent)
     elif section == "guide":
         from .onboarding import send_install_guide
 
         send_install_guide(chat_id)
     elif section == "subscription":
         _send_subscription(chat_id, parent)
+
+
+def _send_ai_insight(chat_id, parent):
+    from apps.devices.models import Child
+    from apps.insights import groq
+    from apps.insights.format import format_insight_message
+    from apps.insights.service import get_or_generate_weekly_insight
+
+    sub = parent.family.subscription
+    if not sub.allows("ai_analysis"):
+        tg_api.send_message(chat_id, AI_UPSELL_TEXT)
+        return
+    if not groq.is_configured():
+        tg_api.send_message(chat_id, "🔎 AI tahlil hozircha ulanmagan.")
+        return
+
+    children = list(Child.objects.filter(family=parent.family))
+    if not children:
+        tg_api.send_message(chat_id, "Hali farzand qo'shilmagan.")
+        return
+
+    sent_any = False
+    for child in children:
+        insight = get_or_generate_weekly_insight(child)
+        if insight is None:
+            continue
+        tg_api.send_message(chat_id, format_insight_message(child.name, insight))
+        sent_any = True
+    if not sent_any:
+        tg_api.send_message(chat_id, "Hozircha tahlil uchun yetarli ma'lumot yo'q.")
 
 
 def _send_subscription(chat_id, parent):

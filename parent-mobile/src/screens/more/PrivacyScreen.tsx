@@ -11,6 +11,7 @@ const COLLECTED = [
   "Dastur versiyasi",
   "O'rnatilgan asosiy dasturlar ro'yxati",
   "Taxminiy joylashuv (internet manzili yoki qurilma joylashuv xizmati orqali, shahar/tuman darajasida)",
+  "AI tahlil (Max tarif): ilova/sayt statistikasi va ogohlantirishlar soni tahlil uchun tashqi xizmatga (Groq) yuboriladi — xabarlar yoki shaxsiy ma'lumot emas",
 ];
 
 const NOT_COLLECTED = [

@@ -501,3 +501,21 @@ class SubscriptionMenuTests(TestCase):
         payload = api.call_args_list[-1][0][1]
         self.assertIn("Beta", payload["text"])
         self.assertIn("paycom.uz", str(payload["reply_markup"]))
+
+
+@override_settings(
+    TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
+    TELEGRAM_WEBHOOK_SECRET="test-secret",
+)
+@mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
+class AiMenuTests(TestCase):
+    def test_ai_button_upsells_beta_plan(self, api):
+        client = APIClient()
+        ParentUser.objects.create_user(email="ai@e.com", password="supersecret1", telegram_id=951)
+        client.post(
+            reverse("telegram-webhook"),
+            {"message": {"text": "🔎 AI tahlil", "chat": {"id": 1, "type": "private"}, "from": {"id": 951}}},
+            format="json", **WEBHOOK_HEADERS,
+        )
+        payload = api.call_args_list[-1][0][1]
+        self.assertIn("Max tarifiga xos", payload["text"])
