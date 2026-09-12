@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View } from "react-native";
+import { Linking, View } from "react-native";
 import { colors } from "../../theme";
 import { formatDate, relativeTime } from "../../lib/format";
 import { useFamily } from "../../state/family";
@@ -172,6 +172,18 @@ export default function DeviceDetailScreen({ route, navigation }: any) {
             title="Ulangan sana"
             right={<Text variant="label">{device.linked_at ? formatDate(device.linked_at) : "—"}</Text>}
           />
+          {summary?.geo_updated_at ? (
+            <ListRow
+              icon="pin"
+              title="Oxirgi joylashuv"
+              subtitle={`${summary.geo_location_label || "Noma'lum"} · ${relativeTime(summary.geo_updated_at)}`}
+              onPress={
+                summary.geo_lat != null && summary.geo_lng != null
+                  ? () => Linking.openURL(`https://maps.google.com/?q=${summary.geo_lat},${summary.geo_lng}`)
+                  : undefined
+              }
+            />
+          ) : null}
         </View>
       </Card>
 
@@ -199,6 +211,11 @@ export default function DeviceDetailScreen({ route, navigation }: any) {
             icon="rules"
             title="Qoidalar"
             onPress={() => navigation.navigate("RulesTab")}
+          />
+          <ListRow
+            icon="package"
+            title="O'rnatilgan ilovalar"
+            onPress={() => navigation.navigate("InstalledApps", { deviceId })}
           />
           <ListRow icon="trash" title="Qurilmani uzish" danger onPress={() => setConfirmUnlink(true)} />
         </View>

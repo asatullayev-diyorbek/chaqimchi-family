@@ -4,7 +4,14 @@ from django.http import JsonResponse
 from django.urls import include, path, re_path
 from django.views.static import serve as serve_media
 
-from apps.devices.views import ChildDetailView, ChildListCreateView, DeviceDetailView, DeviceListView
+from apps.devices.views import (
+    ChildDetailView,
+    ChildListCreateView,
+    DeviceDetailView,
+    DeviceListView,
+    InstalledAppsListView,
+    InstalledAppsSyncView,
+)
 
 
 def health(request):
@@ -20,6 +27,12 @@ urlpatterns = [
     path("api/tracking/", include("apps.tracking.urls")),
     path("api/devices/", DeviceListView.as_view(), name="device-list"),
     path("api/devices/<uuid:id>/", DeviceDetailView.as_view(), name="device-detail"),
+    path("api/devices/<uuid:id>/installed-apps/", InstalledAppsListView.as_view(), name="installed-apps-list"),
+    path(
+        "api/devices/<uuid:id>/installed-apps/sync/",
+        InstalledAppsSyncView.as_view(),
+        name="installed-apps-sync",
+    ),
     path("api/rules/", include("apps.rules.urls")),
     path("api/screenshots/", include("apps.screenshots.urls")),
     path("api/billing/", include("apps.billing.urls")),

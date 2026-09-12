@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.models import ParentUser
+from apps.devices.geoip import update_device_geo_from_ip
 from apps.devices.models import ChildDevice
 
 from .models import EVENT_TYPES, ICON_EVENT_TYPE, DeviceAppIcon, Event, EventBatch
@@ -209,6 +210,7 @@ class IngestView(APIView):
         if reported_version and reported_version != device.agent_version:
             sync_fields["agent_version"] = reported_version[:20]
         ChildDevice.objects.filter(id=device.id).update(**sync_fields)
+        update_device_geo_from_ip(device, request)
 
         # Idempotency: a batch we've already stored is a no-op success —
         # the agent retries whenever it didn't see our ack, not just on error.
@@ -399,6 +401,11 @@ class SummaryView(APIView):
                 "battery_percent": battery_percent,
                 "battery_updated_at": battery_at,
                 "breakdown": breakdown,
+                "geo_location_label": device.geo_location_label,
+                "geo_lat": device.geo_lat,
+                "geo_lng": device.geo_lng,
+                "geo_source": device.geo_source,
+                "geo_updated_at": device.geo_updated_at,
             }
         ).data
         return Response(data)

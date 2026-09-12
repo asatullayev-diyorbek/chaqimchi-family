@@ -13,11 +13,13 @@ from rest_framework.views import APIView
 from apps.accounts.limits import assert_can_add_child, assert_can_add_device
 from apps.accounts.models import ParentUser
 
-from .models import Child, ChildDevice, EnrollmentCode
+from .models import Child, ChildDevice, EnrollmentCode, InstalledApp
 from .serializers import (
     ChildDeviceListSerializer,
     ChildSerializer,
     GenerateCodeResponseSerializer,
+    InstalledAppSerializer,
+    InstalledAppSyncSerializer,
     VerifyCodeSerializer,
 )
 
@@ -261,3 +263,68 @@ class DeviceDetailView(APIView):
         device.status = ChildDevice.STATUS_UNLINKED
         device.save(update_fields=["family", "status"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class InstalledAppsListView(APIView):
+    """GET /api/devices/<id>/installed-apps/ — parent-authenticated,
+    tenant-isolated, same ownership check as DeviceDetailView."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, id):
+        if not isinstance(request.user, ParentUser):
+            return Response(
+                {"detail": "Parent autentifikatsiyasi talab qilinadi"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        device = get_object_or_404(ChildDevice, id=id)
+        if device.family_id != request.user.family_id:
+            return Response(
+                {"detail": "Bu qurilma sizning oilangizga tegishli emas"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        apps = InstalledApp.objects.filter(device=device)
+        return Response(InstalledAppSerializer(apps, many=True).data)
+
+
+class InstalledAppsSyncView(APIView):
+    """POST /api/devices/<id>/installed-apps/sync/ — device-secret
+    authenticated. The agent sends its full current inventory; this upserts
+    each entry and deletes whatever isn't in the payload anymore, since
+    InstalledApp is a snapshot, not an event log."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        device = request.user
+        if not isinstance(device, ChildDevice) or str(device.id) != str(id):
+            return Response(
+                {"detail": "Device autentifikatsiyasi talab qilinadi"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        if device.status != ChildDevice.STATUS_LINKED:
+            return Response(
+                {"detail": "Qurilma hali oilaga bog'lanmagan"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = InstalledAppSyncSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        apps = serializer.validated_data["apps"]
+
+        with transaction.atomic():
+            seen_names = []
+            for entry in apps:
+                seen_names.append(entry["name"])
+                InstalledApp.objects.update_or_create(
+                    device=device,
+                    name=entry["name"],
+                    defaults={
+                        "version": entry.get("version") or "",
+                        "publisher": entry.get("publisher") or "",
+                        "install_date": entry.get("install_date"),
+                    },
+                )
+            InstalledApp.objects.filter(device=device).exclude(name__in=seen_names).delete()
+
+        return Response({"status": "ok", "count": len(seen_names)})

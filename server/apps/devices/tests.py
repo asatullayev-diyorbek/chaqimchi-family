@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -7,7 +8,12 @@ from rest_framework.test import APIClient
 
 from apps.accounts.models import ParentUser
 
-from .models import Child, ChildDevice, EnrollmentCode
+from . import geoip
+from .models import Child, ChildDevice, EnrollmentCode, InstalledApp
+
+
+def _device_auth(device):
+    return {"HTTP_AUTHORIZATION": f"Device {device.id}:{device.device_secret}"}
 
 
 class DeviceDetailTests(TestCase):
@@ -195,3 +201,102 @@ class GenerateCodeFingerprintTests(TestCase):
         a = self.client.post(self.url, {}, format="json").json()
         b = self.client.post(self.url, {}, format="json").json()
         self.assertNotEqual(a["device_id"], b["device_id"])
+
+
+class InstalledAppsSyncTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(email="p2@example.com", password="supersecret123")
+        self.device = ChildDevice.objects.create(family=self.parent.family, status=ChildDevice.STATUS_LINKED)
+        self.sync_url = reverse("installed-apps-sync", kwargs={"id": self.device.id})
+        self.list_url = reverse("installed-apps-list", kwargs={"id": self.device.id})
+
+    def test_sync_creates_entries(self):
+        payload = {"apps": [{"name": "Discord", "version": "1.0"}, {"name": "Chrome"}]}
+        response = self.client.post(self.sync_url, payload, format="json", **_device_auth(self.device))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(InstalledApp.objects.filter(device=self.device).count(), 2)
+
+    def test_sync_removes_uninstalled_apps(self):
+        InstalledApp.objects.create(device=self.device, name="OldApp")
+        payload = {"apps": [{"name": "NewApp"}]}
+        response = self.client.post(self.sync_url, payload, format="json", **_device_auth(self.device))
+        self.assertEqual(response.status_code, 200)
+        names = list(InstalledApp.objects.filter(device=self.device).values_list("name", flat=True))
+        self.assertEqual(names, ["NewApp"])
+
+    def test_sync_upserts_existing_entry(self):
+        InstalledApp.objects.create(device=self.device, name="Discord", version="1.0")
+        payload = {"apps": [{"name": "Discord", "version": "2.0"}]}
+        self.client.post(self.sync_url, payload, format="json", **_device_auth(self.device))
+        app = InstalledApp.objects.get(device=self.device, name="Discord")
+        self.assertEqual(app.version, "2.0")
+
+    def test_sync_requires_device_auth(self):
+        response = self.client.post(self.sync_url, {"apps": []}, format="json")
+        self.assertEqual(response.status_code, 401)
+
+    def test_sync_rejects_unlinked_device(self):
+        self.device.status = ChildDevice.STATUS_UNLINKED
+        self.device.save(update_fields=["status"])
+        response = self.client.post(self.sync_url, {"apps": []}, format="json", **_device_auth(self.device))
+        self.assertEqual(response.status_code, 403)
+
+    def test_parent_can_list_installed_apps(self):
+        InstalledApp.objects.create(device=self.device, name="Discord")
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["name"], "Discord")
+
+    def test_other_family_cannot_list(self):
+        other = ParentUser.objects.create_user(email="o2@example.com", password="supersecret123")
+        self.client.force_authenticate(user=other)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, 403)
+
+
+class GeoIpTests(TestCase):
+    def setUp(self):
+        self.device = ChildDevice.objects.create(status=ChildDevice.STATUS_LINKED)
+
+    def _request(self, ip):
+        request = type("R", (), {"META": {"REMOTE_ADDR": ip}})()
+        return request
+
+    def test_skips_local_ip(self):
+        geoip.update_device_geo_from_ip(self.device, self._request("127.0.0.1"))
+        self.device.refresh_from_db()
+        self.assertIsNone(self.device.geo_updated_at)
+
+    @patch.object(geoip, "_lookup")
+    def test_successful_lookup_updates_device(self, mock_lookup):
+        mock_lookup.return_value = {
+            "lat": 41.3, "lon": 69.2, "city": "Tashkent", "regionName": "Tashkent", "country": "Uzbekistan",
+        }
+        geoip.update_device_geo_from_ip(self.device, self._request("8.8.8.8"))
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.geo_source, ChildDevice.GEO_SOURCE_IP)
+        self.assertIn("Tashkent", self.device.geo_location_label)
+        self.assertEqual(self.device.last_ip, "8.8.8.8")
+
+    @patch.object(geoip, "_lookup")
+    def test_failed_lookup_still_records_ip(self, mock_lookup):
+        mock_lookup.return_value = None
+        geoip.update_device_geo_from_ip(self.device, self._request("8.8.8.8"))
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.last_ip, "8.8.8.8")
+        self.assertIsNone(self.device.geo_updated_at)
+
+    @patch.object(geoip, "_lookup")
+    def test_fresh_gps_is_not_overwritten_by_ip(self, mock_lookup):
+        self.device.geo_source = ChildDevice.GEO_SOURCE_GPS
+        self.device.geo_updated_at = timezone.now()
+        self.device.geo_location_label = "Precise spot"
+        self.device.save()
+        geoip.update_device_geo_from_ip(self.device, self._request("8.8.8.8"))
+        self.device.refresh_from_db()
+        self.assertEqual(self.device.geo_source, ChildDevice.GEO_SOURCE_GPS)
+        self.assertEqual(self.device.geo_location_label, "Precise spot")
+        mock_lookup.assert_not_called()

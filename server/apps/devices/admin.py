@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Child, ChildDevice, EnrollmentCode
+from .models import Child, ChildDevice, EnrollmentCode, InstalledApp
 
 
 @admin.register(Child)
@@ -14,11 +14,18 @@ class ChildAdmin(admin.ModelAdmin):
 class ChildDeviceAdmin(admin.ModelAdmin):
     list_display = (
         "id", "child_name", "family", "platform", "status",
-        "agent_version", "last_sync", "linked_at",
+        "agent_version", "last_sync", "linked_at", "geo_location_label",
     )
-    list_filter = ("status", "platform")
+    list_filter = ("status", "platform", "geo_source")
     search_fields = ("id", "child_name", "hardware_id", "family__id")
     readonly_fields = ("id", "device_secret", "created_at")
+
+
+@admin.register(InstalledApp)
+class InstalledAppAdmin(admin.ModelAdmin):
+    list_display = ("name", "device", "version", "publisher", "last_seen")
+    search_fields = ("name", "device__id", "device__child_name")
+    list_filter = ("publisher",)
 
 
 @admin.register(EnrollmentCode)

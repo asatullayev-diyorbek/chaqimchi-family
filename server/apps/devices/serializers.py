@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Child, ChildDevice, EnrollmentCode
+from .models import Child, ChildDevice, EnrollmentCode, InstalledApp
 
 
 class ChildSerializer(serializers.ModelSerializer):
@@ -77,3 +77,20 @@ class ChildDeviceListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChildDevice
         fields = ["id", "child_id", "child_name", "platform", "status", "created_at", "linked_at", "last_sync", "agent_version"]
+
+
+class InstalledAppSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InstalledApp
+        fields = ["name", "version", "publisher", "install_date", "first_seen", "last_seen"]
+
+
+class InstalledAppSyncItemSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=200)
+    version = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    publisher = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+    install_date = serializers.DateField(required=False, allow_null=True, default=None)
+
+
+class InstalledAppSyncSerializer(serializers.Serializer):
+    apps = InstalledAppSyncItemSerializer(many=True)

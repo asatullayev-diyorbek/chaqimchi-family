@@ -52,8 +52,8 @@ def _phone_keyboard() -> dict:
 WELCOME_TEXT = (
     f"{ce('wave')} Spino24 — oilaviy raqamli farovonlik xizmatiga xush kelibsiz.\n\n"
     "Farzandingiz nima qilayotganini emas, qancha va qanday vaqt sarflayotganini "
-    "ko'rsatadi: ekran vaqti, ilovalar, qoidalar, ogohlantirishlar va so'rov "
-    "bo'yicha ekran rasmi.\n\n"
+    "ko'rsatadi: ekran vaqti, ilovalar, qoidalar, ogohlantirishlar, so'rov "
+    "bo'yicha ekran rasmi va taxminiy joylashuv.\n\n"
     "Yig'ilmaydi: yozishmalar, parollar, kamera va mikrofon, klaviatura bosishlari."
 )
 

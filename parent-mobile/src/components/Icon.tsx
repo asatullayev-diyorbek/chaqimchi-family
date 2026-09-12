@@ -65,6 +65,8 @@ const MAP = {
   key: "key",
   mail: "mail",
   filter: "sliders",
+  pin: "map-pin",
+  package: "package",
 } as const;
 
 export type IconName = keyof typeof MAP;

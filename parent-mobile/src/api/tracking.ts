@@ -26,6 +26,20 @@ export type DeviceSummary = {
   battery_percent: number | null;
   battery_updated_at: string | null;
   breakdown: DayBreakdown[];
+  geo_location_label?: string;
+  geo_lat?: number | null;
+  geo_lng?: number | null;
+  geo_source?: "ip" | "gps" | "";
+  geo_updated_at?: string | null;
+};
+
+export type InstalledApp = {
+  name: string;
+  version: string;
+  publisher: string;
+  install_date: string | null;
+  first_seen: string;
+  last_seen: string;
 };
 
 export type Device = {
@@ -148,4 +162,8 @@ export function updateDevice(
 
 export async function unlinkDevice(deviceId: string): Promise<void> {
   await apiFetch(`/api/devices/${deviceId}/`, { method: "DELETE" });
+}
+
+export function getInstalledApps(deviceId: string): Promise<InstalledApp[]> {
+  return apiFetch(`/api/devices/${deviceId}/installed-apps/`);
 }

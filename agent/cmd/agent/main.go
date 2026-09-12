@@ -33,6 +33,7 @@ import (
 
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/endpoint"
+	"github.com/chaqimchi/chaqimchi-family/agent/internal/inventory"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/rules"
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/screenshot"
@@ -243,6 +244,11 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 
 	fetcher := rules.NewFetcher(baseURL, deviceID, deviceSecret, rulesCache)
 	go fetcher.Run(ctx, 5*time.Minute)
+
+	// Installed-apps snapshot: installs don't change often, so this rides a
+	// long interval, not the fast heartbeat/sync cycles above.
+	appsSyncer := inventory.NewSyncer(baseURL, deviceID, deviceSecret)
+	go appsSyncer.Run(ctx, 6*time.Hour)
 
 	uploader := syncpkg.NewUploader(baseURL, deviceID, deviceSecret, store)
 	uploader.AgentVersion = version

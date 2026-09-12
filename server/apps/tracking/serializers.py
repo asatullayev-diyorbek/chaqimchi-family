@@ -54,6 +54,11 @@ class SummarySerializer(serializers.Serializer):
     battery_percent = serializers.IntegerField(allow_null=True)
     battery_updated_at = serializers.DateTimeField(allow_null=True)
     breakdown = DayBreakdownSerializer(many=True)
+    geo_location_label = serializers.CharField(allow_blank=True, required=False)
+    geo_lat = serializers.FloatField(allow_null=True, required=False)
+    geo_lng = serializers.FloatField(allow_null=True, required=False)
+    geo_source = serializers.CharField(allow_blank=True, required=False)
+    geo_updated_at = serializers.DateTimeField(allow_null=True, required=False)
 
 
 class BrowserUsageSerializer(serializers.Serializer):

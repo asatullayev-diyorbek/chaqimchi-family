@@ -9,6 +9,8 @@ const COLLECTED = [
   "Ekran vaqti va kunlik statistika",
   "Qurilma holati: onlayn/oflayn, batareya darajasi",
   "Dastur versiyasi",
+  "O'rnatilgan asosiy dasturlar ro'yxati",
+  "Taxminiy joylashuv (internet manzili yoki qurilma joylashuv xizmati orqali, shahar/tuman darajasida)",
 ];
 
 const NOT_COLLECTED = [
@@ -17,7 +19,7 @@ const NOT_COLLECTED = [
   "Uzluksiz ekran yozuvi yoki avtomatik skrinshot",
   "Mikrofon yoki kamera",
   "Klaviatura bosishlari (keylogging)",
-  "Joylashuv (hozircha yig‘ilmaydi)",
+  "Uy manzili yoki xona darajasida aniq joylashuv",
 ];
 
 export default function PrivacyScreen() {

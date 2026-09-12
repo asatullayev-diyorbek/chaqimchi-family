@@ -56,6 +56,45 @@ class ChildDevice(models.Model):
     # dashboard so a parent can see what version is actually running.
     agent_version = models.CharField(max_length=20, blank=True)
 
+    # Approximate location — "current status" like agent_version/last_sync,
+    # not a history table. Two possible sources: an IP-geolocation lookup on
+    # every ingest request ("ip", always available, city-level accuracy) or
+    # the Windows Location API reported by the agent itself ("gps", more
+    # precise, only available when the machine has location services on).
+    # Whichever updated most recently wins — see IngestView / the location
+    # event handler.
+    GEO_SOURCE_IP = "ip"
+    GEO_SOURCE_GPS = "gps"
+    GEO_SOURCE_CHOICES = [(GEO_SOURCE_IP, "IP"), (GEO_SOURCE_GPS, "GPS")]
+
+    last_ip = models.GenericIPAddressField(null=True, blank=True)
+    geo_location_label = models.CharField(max_length=200, blank=True)
+    geo_lat = models.FloatField(null=True, blank=True)
+    geo_lng = models.FloatField(null=True, blank=True)
+    geo_source = models.CharField(max_length=8, choices=GEO_SOURCE_CHOICES, blank=True)
+    geo_updated_at = models.DateTimeField(null=True, blank=True)
+
+
+class InstalledApp(models.Model):
+    """One row per (device, app) currently installed — a snapshot, not an
+    event log. The agent periodically POSTs its full current list and the
+    sync endpoint deletes whatever isn't in that list anymore."""
+
+    device = models.ForeignKey(ChildDevice, on_delete=models.CASCADE, related_name="installed_apps")
+    name = models.CharField(max_length=200)
+    version = models.CharField(max_length=100, blank=True)
+    publisher = models.CharField(max_length=200, blank=True)
+    install_date = models.DateField(null=True, blank=True)
+    first_seen = models.DateTimeField(auto_now_add=True)
+    last_seen = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("device", "name")]
+        ordering = ["name"]
+
+    def __str__(self):
+        return f"{self.name} ({self.device_id})"
+
 
 class EnrollmentCode(models.Model):
     device = models.ForeignKey(
