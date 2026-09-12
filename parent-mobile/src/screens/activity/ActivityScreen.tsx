@@ -272,6 +272,7 @@ function ScreenTimeTab({ q, range, limit }: { q: any; range: SummaryRange; limit
     label: shortWeekday(b.date),
     minutes: b.total_minutes || 0,
     weekend: [0, 6].includes(new Date(`${b.date}T00:00:00`).getDay()),
+    date: b.date,
   }));
 
   const used = s.total_screen_minutes as number;

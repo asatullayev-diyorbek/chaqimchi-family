@@ -142,7 +142,7 @@ export default function ReportsScreen({ navigation }: any) {
   );
   const topApp = s.top_apps[0];
   const topSite = data!.sites?.results?.[0];
-  const bars = days.map((b) => ({ label: shortWeekday(b.date), minutes: b.total_minutes || 0 }));
+  const bars = days.map((b) => ({ label: shortWeekday(b.date), minutes: b.total_minutes || 0, date: b.date }));
 
   return (
     <Screen scroll refreshing={refreshing} onRefresh={refetch}>

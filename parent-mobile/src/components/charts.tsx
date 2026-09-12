@@ -11,7 +11,7 @@ import Svg, {
   Stop,
 } from "react-native-svg";
 import { CAT_COLORS, colors, gradients, radius } from "../theme";
-import { formatMinutesShort } from "../lib/format";
+import { formatDate, formatMinutes, formatMinutesShort, longWeekday } from "../lib/format";
 import { Text } from "./primitives";
 
 // --- Meter (linear progress) --------------------------------------
@@ -144,7 +144,21 @@ export function RingProgress({
 
 // --- WeekBars (7/30-day screen time) ----------------------------
 
-type Day = { label: string; minutes: number; weekend?: boolean };
+type Day = { label: string; minutes: number; weekend?: boolean; date?: string };
+
+/** A "nice" hour step for the Y-axis (0.5h/1h/2h/3h/...) so gridlines read
+ *  as round numbers instead of an arbitrary fraction of the day's max. */
+function niceHourStep(maxHours: number): number {
+  if (maxHours <= 1) return 0.5;
+  if (maxHours <= 3) return 1;
+  if (maxHours <= 6) return 2;
+  if (maxHours <= 12) return 3;
+  return Math.ceil(maxHours / 4);
+}
+
+function hourTickLabel(hours: number): string {
+  return Number.isInteger(hours) ? `${hours}s` : `${Math.round(hours * 60)}d`;
+}
 
 export function WeekBars({
   days,
@@ -158,133 +172,174 @@ export function WeekBars({
   showAverage?: boolean;
 }) {
   const [width, setWidth] = useState(0);
-  const [active, setActive] = useState<number | null>(null);
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
 
-  const { maxMin, avg } = useMemo(() => {
+  const { rawMax, avg } = useMemo(() => {
     const vals = days.map((d) => d.minutes);
     const nonZero = vals.filter((v) => v > 0);
     return {
-      maxMin: Math.max(60, ...vals),
+      rawMax: Math.max(60, ...vals),
       avg: nonZero.length ? nonZero.reduce((a, b) => a + b, 0) / nonZero.length : 0,
     };
   }, [days]);
+
+  const hourStep = niceHourStep(rawMax / 60);
+  const topHour = Math.max(hourStep, Math.ceil(rawMax / 60 / hourStep) * hourStep);
+  const maxMin = topHour * 60;
+  const hourTicks = useMemo(() => {
+    const out: number[] = [];
+    for (let h = hourStep; h <= topHour + 1e-9; h += hourStep) out.push(h);
+    return out;
+  }, [hourStep, topHour]);
 
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
   const padTop = showValues ? 16 : 6;
   const axisH = 16;
+  const axisW = 24;
   const plotH = height - axisH - padTop;
+  const plotW = Math.max(0, width - axisW);
   const dense = days.length > 10;
-  const barW = dense ? Math.max(4, width / days.length - 4) : Math.min(20, width / days.length - 10);
-  const step = width / days.length;
+  const barW = dense ? Math.max(4, plotW / days.length - 4) : Math.min(20, plotW / days.length - 10);
+  const step = plotW / days.length;
   const yFor = (m: number) => padTop + plotH - Math.min(1, m / maxMin) * plotH;
 
-  return (
-    <View onLayout={onLayout} style={{ height }}>
-      {width > 0 && (
-        <>
-          <Svg width={width} height={height}>
-            <Defs>
-              <LinearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={gradients.bar[1]} />
-                <Stop offset="1" stopColor={gradients.bar[0]} />
-              </LinearGradient>
-              <LinearGradient id="barActive" x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={gradients.barActive[0]} />
-                <Stop offset="1" stopColor={gradients.barActive[1]} />
-              </LinearGradient>
-            </Defs>
+  const activeDay = activeIdx != null ? days[activeIdx] : null;
 
-            {/* gridlines at 1/3, 2/3, top */}
-            {[0.33, 0.66, 1].map((f) => (
+  return (
+    <View style={{ gap: 6 }}>
+      <Text variant="micro" color={colors.muted} numberOfLines={1} style={{ minHeight: 15 }}>
+        {activeDay
+          ? `${activeDay.date ? `${longWeekday(activeDay.date)}, ${formatDate(activeDay.date)}` : activeDay.label} — ${formatMinutes(activeDay.minutes)}`
+          : ""}
+      </Text>
+      <View onLayout={onLayout} style={{ height }}>
+        {width > 0 && (
+          <>
+            <Svg width={width} height={height}>
+              <Defs>
+                <LinearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={gradients.bar[1]} />
+                  <Stop offset="1" stopColor={gradients.bar[0]} />
+                </LinearGradient>
+                <LinearGradient id="barActive" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0" stopColor={gradients.barActive[0]} />
+                  <Stop offset="1" stopColor={gradients.barActive[1]} />
+                </LinearGradient>
+              </Defs>
+
+              {/* hour gridlines */}
+              {hourTicks.map((h) => (
+                <Line
+                  key={h}
+                  x1={axisW}
+                  x2={width}
+                  y1={yFor(h * 60)}
+                  y2={yFor(h * 60)}
+                  stroke={colors.chartGrid}
+                  strokeWidth={1}
+                />
+              ))}
+              {/* baseline */}
               <Line
-                key={f}
-                x1={0}
+                x1={axisW}
                 x2={width}
-                y1={padTop + plotH - f * plotH}
-                y2={padTop + plotH - f * plotH}
-                stroke={colors.chartGrid}
+                y1={padTop + plotH}
+                y2={padTop + plotH}
+                stroke={colors.border}
                 strokeWidth={1}
               />
-            ))}
-            {/* baseline */}
-            <Line x1={0} x2={width} y1={padTop + plotH} y2={padTop + plotH} stroke={colors.border} strokeWidth={1} />
 
-            {/* average line */}
-            {showAverage && avg > 0 && (
-              <Line
-                x1={0}
-                x2={width}
-                y1={yFor(avg)}
-                y2={yFor(avg)}
-                stroke={colors.mintDark}
-                strokeWidth={1.5}
-                strokeDasharray="4 4"
-              />
-            )}
+              {/* average line */}
+              {showAverage && avg > 0 && (
+                <Line
+                  x1={axisW}
+                  x2={width}
+                  y1={yFor(avg)}
+                  y2={yFor(avg)}
+                  stroke={colors.mintDark}
+                  strokeWidth={1.5}
+                  strokeDasharray="4 4"
+                />
+              )}
 
-            {days.map((d, i) => {
-              const x = i * step + step / 2;
-              // The last bar is "today" in a trailing-N-days chart — give it
-              // the strongest fill so the parent's eye lands there first.
-              const isToday = i === days.length - 1;
-              const isActive = active === i;
-              if (d.minutes <= 0) {
+              {days.map((d, i) => {
+                const x = axisW + i * step + step / 2;
+                // The last bar is "today" in a trailing-N-days chart — give it
+                // the strongest fill so the parent's eye lands there first.
+                const isToday = i === days.length - 1;
+                const isActive = activeIdx === i;
+                if (d.minutes <= 0) {
+                  return (
+                    <Circle
+                      key={i}
+                      cx={x}
+                      cy={padTop + plotH - 2}
+                      r={isToday ? 3 : 2}
+                      fill={isToday ? colors.chartBarActive : colors.chartAxis}
+                    />
+                  );
+                }
+                const y = yFor(d.minutes);
                 return (
-                  <Circle
+                  <Rect
                     key={i}
-                    cx={x}
-                    cy={padTop + plotH - 2}
-                    r={isToday ? 3 : 2}
-                    fill={isToday ? colors.chartBarActive : colors.chartAxis}
+                    x={x - barW / 2}
+                    y={y}
+                    width={barW}
+                    height={padTop + plotH - y}
+                    rx={Math.min(6, barW / 2)}
+                    fill={isToday || isActive ? "url(#barActive)" : "url(#barGrad)"}
                   />
                 );
-              }
-              const y = yFor(d.minutes);
-              return (
-                <Rect
-                  key={i}
-                  x={x - barW / 2}
-                  y={y}
-                  width={barW}
-                  height={padTop + plotH - y}
-                  rx={Math.min(6, barW / 2)}
-                  fill={isToday || isActive ? "url(#barActive)" : "url(#barGrad)"}
-                />
-              );
-            })}
-          </Svg>
+              })}
+            </Svg>
 
-          {/* value labels + tap targets + axis (overlaid so text is crisp) */}
-          <View style={{ position: "absolute", left: 0, right: 0, top: 0, height, flexDirection: "row" }}>
-            {days.map((d, i) => (
-              <Pressable
-                key={i}
-                onPressIn={() => setActive(i)}
-                onPressOut={() => setActive(null)}
-                style={{ flex: 1, alignItems: "center", justifyContent: "space-between", paddingTop: 0 }}
-              >
-                <Text variant="micro" color={colors.faint} style={{ height: padTop }}>
-                  {(showValues || active === i) && d.minutes ? formatMinutesShort(d.minutes) : ""}
-                </Text>
+            {/* hour-axis labels (RN Text overlaid for crisp rendering) */}
+            <View style={{ position: "absolute", left: 0, top: 0, width: axisW - 4, height: padTop + plotH }}>
+              {hourTicks.map((h) => (
                 <Text
+                  key={h}
                   variant="micro"
-                  color={
-                    active === i || i === days.length - 1
-                      ? colors.blue
-                      : d.weekend
-                        ? colors.warning
-                        : colors.chartAxis
-                  }
-                  style={{ height: axisH }}
+                  color={colors.chartAxis}
+                  numberOfLines={1}
+                  style={{ position: "absolute", top: yFor(h * 60) - 6, left: 0, right: 0, textAlign: "right" }}
                 >
-                  {dense ? (i % 5 === 0 || i === days.length - 1 ? d.label : "") : d.label}
+                  {hourTickLabel(h)}
                 </Text>
-              </Pressable>
-            ))}
-          </View>
-        </>
-      )}
+              ))}
+            </View>
+
+            {/* value labels + tap targets + weekday axis */}
+            <View style={{ position: "absolute", left: axisW, right: 0, top: 0, height, flexDirection: "row" }}>
+              {days.map((d, i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => setActiveIdx(activeIdx === i ? null : i)}
+                  style={{ flex: 1, alignItems: "center", justifyContent: "space-between", paddingTop: 0 }}
+                >
+                  <Text variant="micro" color={colors.faint} style={{ height: padTop }}>
+                    {(showValues || activeIdx === i) && d.minutes ? formatMinutesShort(d.minutes) : ""}
+                  </Text>
+                  <Text
+                    variant="micro"
+                    color={
+                      activeIdx === i || i === days.length - 1
+                        ? colors.blue
+                        : d.weekend
+                          ? colors.warning
+                          : colors.chartAxis
+                    }
+                    style={{ height: axisH }}
+                  >
+                    {dense ? (i % 5 === 0 || i === days.length - 1 ? d.label : "") : d.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+      </View>
     </View>
   );
 }

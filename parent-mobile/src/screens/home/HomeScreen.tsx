@@ -132,6 +132,7 @@ export default function HomeScreen({ navigation }: any) {
     label: shortWeekday(b.date),
     minutes: b.total_minutes || 0,
     weekend: [0, 6].includes(new Date(`${b.date}T00:00:00`).getDay()),
+    date: b.date,
   }));
 
   return (
