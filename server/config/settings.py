@@ -222,6 +222,12 @@ CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "")
 # and pricing at https://console.groq.com before setting GROQ_MODEL.
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "")
+# PythonAnywhere's outbound IP range is Cloudflare-blocked in front of
+# api.groq.com (confirmed: HTTP 403 "error code: 1010", an ASN/datacenter
+# block) — set these to route through the small Vercel relay instead
+# (parent-web/src/app/api/groq-relay/route.ts), which isn't blocked.
+GROQ_RELAY_URL = os.environ.get("GROQ_RELAY_URL", "")
+GROQ_RELAY_SECRET = os.environ.get("GROQ_RELAY_SECRET", "")
 
 # Telegram user ids that get an operator DM when a new parent finishes
 # onboarding or a device is linked. Comma-separated; default is the

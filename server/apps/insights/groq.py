@@ -7,6 +7,15 @@ so no client library is worth adding for one call site.
 this project doesn't maintain a pricing/model reference for them. Confirm
 the current model id and cost at https://console.groq.com before setting
 GROQ_MODEL in production.
+
+⚠️ PythonAnywhere's outbound IP range is blocked by Cloudflare in front of
+api.groq.com (HTTP 403, "error code: 1010" — an ASN/datacenter block, not
+anything wrong with the request). Confirmed by hand from a PA console.
+Calls are routed through a tiny relay on Vercel instead
+(parent-web/src/app/api/groq-relay/route.ts) when GROQ_RELAY_URL is set —
+Vercel's IPs aren't on that block list. GROQ_RELAY_SECRET authenticates to
+the relay; the real GROQ_API_KEY only needs to exist wherever the actual
+call happens (the relay when routed through it, this process otherwise).
 """
 
 import json
@@ -18,7 +27,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 _TIMEOUT = 30
-_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+_DIRECT_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 _SYSTEM_PROMPT = (
     "Siz Spino24 — bolalar uchun raqamli xavfsizlik dasturidagi yordamchisiz. "
@@ -34,7 +43,13 @@ _SYSTEM_PROMPT = (
 
 
 def is_configured() -> bool:
-    return bool(settings.GROQ_API_KEY and settings.GROQ_MODEL)
+    # Either a direct key (this process calls Groq itself) or a relay URL +
+    # secret (the relay holds the real key) is enough — GROQ_MODEL is always
+    # required since it's sent in the request body either way.
+    has_credentials = bool(settings.GROQ_API_KEY) or bool(
+        settings.GROQ_RELAY_URL and settings.GROQ_RELAY_SECRET
+    )
+    return bool(has_credentials and settings.GROQ_MODEL)
 
 
 def _build_user_prompt(week_data: dict) -> str:
@@ -67,14 +82,15 @@ def generate_weekly_insight(week_data: dict) -> dict | None:
         "temperature": 0.4,
         "response_format": {"type": "json_object"},
     }
-    request = urllib.request.Request(
-        _API_URL,
-        data=json.dumps(body).encode(),
-        headers={
-            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-            "Content-Type": "application/json",
-        },
-    )
+
+    if settings.GROQ_RELAY_URL and settings.GROQ_RELAY_SECRET:
+        url = settings.GROQ_RELAY_URL
+        headers = {"X-Relay-Secret": settings.GROQ_RELAY_SECRET, "Content-Type": "application/json"}
+    else:
+        url = _DIRECT_API_URL
+        headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}", "Content-Type": "application/json"}
+
+    request = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers)
     try:
         with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
             data = json.loads(response.read())
