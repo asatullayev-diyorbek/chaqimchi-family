@@ -217,13 +217,26 @@ class InstalledAppsSyncTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(InstalledApp.objects.filter(device=self.device).count(), 2)
 
-    def test_sync_removes_uninstalled_apps(self):
+    def test_sync_marks_missing_apps_uninstalled_without_deleting(self):
         InstalledApp.objects.create(device=self.device, name="OldApp")
         payload = {"apps": [{"name": "NewApp"}]}
         response = self.client.post(self.sync_url, payload, format="json", **_device_auth(self.device))
         self.assertEqual(response.status_code, 200)
-        names = list(InstalledApp.objects.filter(device=self.device).values_list("name", flat=True))
-        self.assertEqual(names, ["NewApp"])
+        # Still there — just marked, so the parent can see it used to exist.
+        old = InstalledApp.objects.get(device=self.device, name="OldApp")
+        self.assertIsNotNone(old.uninstalled_at)
+        new = InstalledApp.objects.get(device=self.device, name="NewApp")
+        self.assertIsNone(new.uninstalled_at)
+
+    def test_sync_clears_uninstalled_mark_on_reinstall(self):
+        old = InstalledApp.objects.create(device=self.device, name="Discord")
+        old.uninstalled_at = timezone.now()
+        old.save(update_fields=["uninstalled_at"])
+        payload = {"apps": [{"name": "Discord", "version": "3.0"}]}
+        self.client.post(self.sync_url, payload, format="json", **_device_auth(self.device))
+        old.refresh_from_db()
+        self.assertIsNone(old.uninstalled_at)
+        self.assertEqual(old.version, "3.0")
 
     def test_sync_upserts_existing_entry(self):
         InstalledApp.objects.create(device=self.device, name="Discord", version="1.0")

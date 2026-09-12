@@ -40,6 +40,7 @@ export type InstalledApp = {
   install_date: string | null;
   first_seen: string;
   last_seen: string;
+  uninstalled_at: string | null;
 };
 
 export type Device = {

@@ -76,9 +76,11 @@ class ChildDevice(models.Model):
 
 
 class InstalledApp(models.Model):
-    """One row per (device, app) currently installed — a snapshot, not an
-    event log. The agent periodically POSTs its full current list and the
-    sync endpoint deletes whatever isn't in that list anymore."""
+    """One row per (device, app) ever seen installed. The agent POSTs its
+    full current list whenever it changes; the sync endpoint upserts each
+    entry (clearing uninstalled_at if it reappears — a reinstall) and marks
+    anything missing from the payload as uninstalled instead of deleting it,
+    so a parent can still see what used to be there and when it went away."""
 
     device = models.ForeignKey(ChildDevice, on_delete=models.CASCADE, related_name="installed_apps")
     name = models.CharField(max_length=200)
@@ -87,6 +89,7 @@ class InstalledApp(models.Model):
     install_date = models.DateField(null=True, blank=True)
     first_seen = models.DateTimeField(auto_now_add=True)
     last_seen = models.DateTimeField(auto_now=True)
+    uninstalled_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = [("device", "name")]

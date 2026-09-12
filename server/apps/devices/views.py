@@ -323,8 +323,17 @@ class InstalledAppsSyncView(APIView):
                         "version": entry.get("version") or "",
                         "publisher": entry.get("publisher") or "",
                         "install_date": entry.get("install_date"),
+                        # Reappearing after being marked uninstalled means a
+                        # reinstall — clear the mark rather than leave a
+                        # stale uninstalled_at on a currently-installed app.
+                        "uninstalled_at": None,
                     },
                 )
-            InstalledApp.objects.filter(device=device).exclude(name__in=seen_names).delete()
+            # Missing from this snapshot but not already marked: just
+            # uninstalled. Never hard-delete — a parent should still be able
+            # to see what used to be there and when it went away.
+            InstalledApp.objects.filter(device=device, uninstalled_at__isnull=True).exclude(
+                name__in=seen_names
+            ).update(uninstalled_at=timezone.now())
 
         return Response({"status": "ok", "count": len(seen_names)})

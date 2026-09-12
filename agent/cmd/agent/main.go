@@ -245,15 +245,14 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	fetcher := rules.NewFetcher(baseURL, deviceID, deviceSecret, rulesCache)
 	go fetcher.Run(ctx, 5*time.Minute)
 
-	// Installed-apps snapshot. A registry scan is cheap, so this runs every
-	// 30 min rather than riding a long interval — a child installing and
-	// then uninstalling something inside too wide a window would otherwise
-	// leave it invisible to a parent checking later. Even so, anything
-	// installed and removed inside this window still goes unseen; a real
-	// install/uninstall *event* hook (not a periodic snapshot) would be the
-	// only way to close that gap entirely, which is a bigger feature.
+	// Installed-apps: a cheap registry scan every 5 min, but it only
+	// uploads to the backend when the list actually changed (Syncer.Tick).
+	// Even so, this is still a periodic snapshot, not an install/uninstall
+	// *event* hook — something installed and removed between two ticks
+	// still goes unseen; only a true event-based hook would close that gap
+	// entirely.
 	appsSyncer := inventory.NewSyncer(baseURL, deviceID, deviceSecret)
-	go appsSyncer.Run(ctx, 30*time.Minute)
+	go appsSyncer.Run(ctx, 5*time.Minute)
 
 	uploader := syncpkg.NewUploader(baseURL, deviceID, deviceSecret, store)
 	uploader.AgentVersion = version

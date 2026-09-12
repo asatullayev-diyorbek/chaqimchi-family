@@ -1,8 +1,8 @@
-// Package inventory periodically reports the device's installed-apps
-// snapshot to the backend. Unlike screen-time tracking, this isn't event
-// buffering — the agent always sends its full CURRENT list and the server
-// diffs out whatever's no longer present, so there's nothing to persist
-// locally between runs.
+// Package inventory periodically scans the device's installed-apps and
+// reports it to the backend, but only when something actually changed —
+// the scan itself is cheap and runs often (every few minutes) to catch
+// short-lived installs, while the network upload only fires on an actual
+// diff so a quiet machine doesn't hit the backend needlessly.
 package inventory
 
 import (
@@ -22,6 +22,11 @@ type Syncer struct {
 	DeviceID     string
 	DeviceSecret string
 	HTTPClient   *http.Client
+
+	// lastSnapshot is what the backend was last told about, keyed by app
+	// name. nil until the first successful upload, so the very first tick
+	// always uploads (an empty machine still needs its baseline recorded).
+	lastSnapshot map[string]tracker.InstalledAppInfo
 }
 
 func NewSyncer(baseURL, deviceID, deviceSecret string) *Syncer {
@@ -40,12 +45,41 @@ type appPayload struct {
 	InstallDate string `json:"install_date,omitempty"`
 }
 
-// SyncOnce scans and uploads the current inventory. A scan error never
-// happens (ScanInstalledApps degrades to an empty list); a network/server
-// error here just means the previous snapshot on the backend goes stale
-// until the next successful run.
-func (s *Syncer) SyncOnce(ctx context.Context) error {
+// Tick scans the current inventory and, only if it differs from what the
+// backend was last told, uploads the new full list. Returns nil on a no-op
+// (nothing changed) or a successful upload.
+func (s *Syncer) Tick(ctx context.Context) error {
 	apps := tracker.ScanInstalledApps()
+	snapshot := make(map[string]tracker.InstalledAppInfo, len(apps))
+	for _, a := range apps {
+		snapshot[a.Name] = a
+	}
+
+	if s.lastSnapshot != nil && snapshotsEqual(s.lastSnapshot, snapshot) {
+		return nil
+	}
+
+	if err := s.upload(ctx, apps); err != nil {
+		return err
+	}
+	s.lastSnapshot = snapshot
+	return nil
+}
+
+func snapshotsEqual(a, b map[string]tracker.InstalledAppInfo) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for name, app := range a {
+		other, ok := b[name]
+		if !ok || app != other {
+			return false
+		}
+	}
+	return true
+}
+
+func (s *Syncer) upload(ctx context.Context, apps []tracker.InstalledAppInfo) error {
 	payload := struct {
 		Apps []appPayload `json:"apps"`
 	}{Apps: make([]appPayload, len(apps))}
@@ -80,11 +114,12 @@ func (s *Syncer) SyncOnce(ctx context.Context) error {
 	return nil
 }
 
-// Run syncs immediately, then every interval, until ctx is cancelled.
-// Installs don't change often — a long interval (hours, not minutes) is
-// plenty, so this doesn't need to ride the fast foreground-heartbeat cycle.
+// Run checks immediately, then every interval, until ctx is cancelled. The
+// check itself (a registry scan) is cheap, so a short interval (minutes,
+// not hours) is fine — catching a short-lived install/uninstall is the
+// whole point. Only an actual change triggers a network call.
 func (s *Syncer) Run(ctx context.Context, interval time.Duration) {
-	if err := s.SyncOnce(ctx); err != nil {
+	if err := s.Tick(ctx); err != nil {
 		log.Printf("installed-apps sync: %v", err)
 	}
 
@@ -95,7 +130,7 @@ func (s *Syncer) Run(ctx context.Context, interval time.Duration) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := s.SyncOnce(ctx); err != nil {
+			if err := s.Tick(ctx); err != nil {
 				log.Printf("installed-apps sync: %v", err)
 			}
 		}

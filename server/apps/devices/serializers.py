@@ -82,7 +82,7 @@ class ChildDeviceListSerializer(serializers.ModelSerializer):
 class InstalledAppSerializer(serializers.ModelSerializer):
     class Meta:
         model = InstalledApp
-        fields = ["name", "version", "publisher", "install_date", "first_seen", "last_seen"]
+        fields = ["name", "version", "publisher", "install_date", "first_seen", "last_seen", "uninstalled_at"]
 
 
 class InstalledAppSyncItemSerializer(serializers.Serializer):
