@@ -4,7 +4,8 @@ import { NavigationContainer, NavigationContainerRef } from "@react-navigation/n
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { palettes } from "./src/theme";
 import { ThemeProvider, useTheme } from "./src/state/theme";
-import { SessionProvider } from "./src/state/session";
+import { SessionProvider, useSession } from "./src/state/session";
+import { FamilyProvider } from "./src/state/family";
 import { ToastProvider } from "./src/components";
 import { AppFrame } from "./src/components/AppFrame";
 import RootNavigator from "./src/navigation/RootNavigator";
@@ -68,6 +69,23 @@ function Navigation() {
   );
 }
 
+/**
+ * FamilyProvider lives here, above Navigation's theme-remount boundary — the
+ * same "signed in and onboarded" condition RootNavigator gates AppNavigator
+ * on, kept in sync so a theme toggle can't reset it and force a refetch.
+ */
+function AppShell() {
+  const { status, user } = useSession();
+  const authed = status === "signedIn" && !user?.onboarding_required;
+  return authed ? (
+    <FamilyProvider>
+      <Navigation />
+    </FamilyProvider>
+  ) : (
+    <Navigation />
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
@@ -75,7 +93,7 @@ export default function App() {
         <AppFrame>
           <ToastProvider>
             <SessionProvider>
-              <Navigation />
+              <AppShell />
             </SessionProvider>
           </ToastProvider>
         </AppFrame>
