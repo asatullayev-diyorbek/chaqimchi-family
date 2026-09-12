@@ -19,6 +19,15 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 
+# Django 4+ requires the admin's own login POST to come from an origin it
+# explicitly trusts (checked against Referer) — without this, PythonAnywhere's
+# proxy fronting our custom domain makes every admin login fail with a CSRF
+# 403, even though ALLOWED_HOSTS is wide open.
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "https://api.guard.chaqimchi-ai.uz,https://apiguard.pythonanywhere.com",
+).split(",")
+
 
 INSTALLED_APPS = [
     "daphne",
