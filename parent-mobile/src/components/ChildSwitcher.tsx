@@ -36,6 +36,7 @@ export function ChildSwitcher({ onAddChild }: { onAddChild: () => void }) {
             borderColor: colors.border,
             backgroundColor: colors.surface,
             maxWidth: 168,
+            overflow: "hidden",
           },
           pressed && { backgroundColor: colors.surfaceMuted },
         ]}
@@ -46,7 +47,12 @@ export function ChildSwitcher({ onAddChild }: { onAddChild: () => void }) {
           seed={selectedChildId ?? undefined}
           size={26}
         />
-        <Text variant="label" numberOfLines={1} style={{ flexShrink: 1, fontSize: 13.5 }}>
+        <Text
+          variant="label"
+          numberOfLines={1}
+          ellipsizeMode="tail"
+          style={{ flexShrink: 1, minWidth: 0, fontSize: 13.5 }}
+        >
           {selectedChild?.name ?? "Farzand"}
         </Text>
         <View

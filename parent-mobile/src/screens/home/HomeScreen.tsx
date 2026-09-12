@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { colors, radius } from "../../theme";
 import { formatMinutes, shortWeekday } from "../../lib/format";
 import { appDisplay } from "../../lib/appDisplay";
+import { useTheme } from "../../state/theme";
 import { useHomeData } from "./useHomeData";
 import {
   Button,
@@ -27,40 +28,18 @@ import {
 
 export default function HomeScreen({ navigation }: any) {
   const { child, data, loading, refreshing, error, refresh, hasDevice, deviceCount, scopeDevice } = useHomeData();
+  const { mode, setPref } = useTheme();
 
-  const unseen = data?.unseenAlerts ?? 0;
   const header = (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
       <Spino24Wordmark size={18} />
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1 }}>
-        <View>
-          <IconButton
-            name="bell"
-            onPress={() => navigation.navigate("AlertsTab")}
-            accessibilityLabel="Xabarlar"
-            color={colors.body}
-          />
-          {unseen > 0 ? (
-            <View
-              style={{
-                position: "absolute",
-                top: 1,
-                right: 1,
-                minWidth: 15,
-                height: 15,
-                paddingHorizontal: 3,
-                borderRadius: 8,
-                backgroundColor: colors.danger,
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <Text style={{ fontSize: 9, fontWeight: "800", color: "#fff" }}>
-                {unseen > 9 ? "9+" : unseen}
-              </Text>
-            </View>
-          ) : null}
-        </View>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexShrink: 1, minWidth: 0 }}>
+        <IconButton
+          name={mode === "dark" ? "sun" : "moon"}
+          onPress={() => setPref(mode === "dark" ? "light" : "dark")}
+          accessibilityLabel={mode === "dark" ? "Yorug' mavzuga o'tish" : "Qorong'i mavzuga o'tish"}
+          color={colors.body}
+        />
         <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
       </View>
     </View>

@@ -211,7 +211,7 @@ export function WeekBars({
       <Text variant="micro" color={colors.muted} numberOfLines={1} style={{ minHeight: 15 }}>
         {activeDay
           ? `${activeDay.date ? `${longWeekday(activeDay.date)}, ${formatDate(activeDay.date)}` : activeDay.label} — ${formatMinutes(activeDay.minutes)}`
-          : ""}
+          : "Aniq vaqtini ko'rish uchun kunni bosing"}
       </Text>
       <View onLayout={onLayout} style={{ height }}>
         {width > 0 && (
