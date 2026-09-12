@@ -82,15 +82,27 @@ export function useHomeData() {
       const scopeMinutes = scopeDevices.reduce((t, r) => t + r.todayMinutes, 0);
       const scopeLimit = activeDevice ? scopeDevices[0]?.limitMinutes ?? null : null;
 
-      // Week breakdown: the scoped device, or the most-active one in "all".
-      const weekTarget =
-        activeDevice?.id ??
-        rows.slice().sort((a, b) => b.todayMinutes - a.todayMinutes)[0]?.device.id ??
-        null;
-      const week = weekTarget
-        ? await getSummary(weekTarget, { range: "week" }).catch(() => null)
-        : null;
-      const weekBreakdown = (week?.breakdown ?? []).slice(-7);
+      // Week breakdown: the scoped device alone, or every device the child
+      // owns summed per day — a single device's breakdown would otherwise
+      // hide the days the child mainly used a different one.
+      let weekBreakdown: DayBreakdown[];
+      if (activeDevice) {
+        const week = await getSummary(activeDevice.id, { range: "week" }).catch(() => null);
+        weekBreakdown = (week?.breakdown ?? []).slice(-7);
+      } else {
+        const weeks = await Promise.all(
+          scopeDevices.map((r) => getSummary(r.device.id, { range: "week" }).catch(() => null)),
+        );
+        const byDate = new Map<string, number>();
+        for (const week of weeks) {
+          for (const day of (week?.breakdown ?? []).slice(-7)) {
+            byDate.set(day.date, (byDate.get(day.date) ?? 0) + (day.total_minutes || 0));
+          }
+        }
+        weekBreakdown = Array.from(byDate, ([date, total_minutes]) => ({ date, total_minutes })).sort(
+          (a, b) => a.date.localeCompare(b.date),
+        );
+      }
       const nonZero = weekBreakdown.map((b) => b.total_minutes || 0).filter((m) => m > 0);
       const weekAverage = nonZero.length ? Math.round(nonZero.reduce((a, b) => a + b, 0) / nonZero.length) : 0;
 
