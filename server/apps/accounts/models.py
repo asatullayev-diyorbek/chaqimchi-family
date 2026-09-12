@@ -39,8 +39,8 @@ class Subscription(models.Model):
     # mini/max) — so it has no real price.
     PLAN_PRICE_UZS = {
         PLAN_BETA: 0,
-        PLAN_MINI: 15_000,
-        PLAN_MAX: 25_000,
+        PLAN_MINI: 25_000,
+        PLAN_MAX: 35_000,
         PLAN_TESTER: 0,
     }
 

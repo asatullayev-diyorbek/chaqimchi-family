@@ -16,8 +16,8 @@ class PlansViewTests(TestCase):
         r = APIClient().get(reverse("billing-plans"))
         self.assertEqual(r.status_code, 200)
         plans = {p["plan"]: p for p in r.json()}
-        self.assertEqual(plans["mini"]["price_uzs"], 15_000)
-        self.assertEqual(plans["max"]["price_uzs"], 25_000)
+        self.assertEqual(plans["mini"]["price_uzs"], 25_000)
+        self.assertEqual(plans["max"]["price_uzs"], 35_000)
         self.assertEqual(plans["beta"]["price_uzs"], 0)
 
 
@@ -49,7 +49,7 @@ class CheckoutTests(TestCase):
         self.assertEqual(r.status_code, 201, r.data)
         self.assertIn("paycom.uz", r.json()["checkout_url"])
         inv = Invoice.objects.get()
-        self.assertEqual(inv.amount_uzs, 15_000)
+        self.assertEqual(inv.amount_uzs, 25_000)
         self.assertEqual(inv.status, Invoice.STATUS_PENDING)
 
     def test_checkout_rejects_beta(self):

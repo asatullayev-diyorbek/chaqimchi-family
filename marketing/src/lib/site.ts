@@ -201,7 +201,7 @@ export const PLANS = [
   {
     id: "mini",
     name: "Mini",
-    price: 15000,
+    price: 25000,
     period: "oyiga",
     highlight: true,
     points: [
@@ -216,7 +216,7 @@ export const PLANS = [
   {
     id: "max",
     name: "Max",
-    price: 25000,
+    price: 35000,
     period: "oyiga",
     highlight: false,
     points: [
@@ -306,6 +306,6 @@ export const FAQ = [
   {
     q: "Narxi qancha?",
     a:
-      "Beta — hamisha bepul (1 farzand, 2 qurilma). Mini — 15,000 so'm/oy (2 farzand, 4 qurilma, 30 kunlik tarix). Max — 25,000 so'm/oy (cheksiz farzand/qurilma, AI tahlil chiqqanda birinchi bo'lib). To'lov Telegram botdagi «💳 Obuna» tugmasi orqali, Payme yoki Click bilan.",
+      "Beta — hamisha bepul (1 farzand, 2 qurilma). Mini — 25,000 so'm/oy (2 farzand, 4 qurilma, 30 kunlik tarix). Max — 35,000 so'm/oy (cheksiz farzand/qurilma, AI tahlil chiqqanda birinchi bo'lib). To'lov ilova yoki Telegram botdagi «💳 Obuna» bo'limi orqali, Payme yoki Click bilan.",
   },
 ];
