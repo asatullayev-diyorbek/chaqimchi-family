@@ -11,6 +11,10 @@ class Family(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        parent = self.parents.order_by("created_at").first()
+        return str(parent) if parent else f"Oila {str(self.id)[:8]}"
+
 
 class Subscription(models.Model):
     """One row per family. Every family gets a free "beta" plan on creation;
@@ -210,6 +214,10 @@ class TelegramLoginToken(models.Model):
     consumed = models.BooleanField(default=False)
     rejected = models.BooleanField(default=False)
 
+    def __str__(self):
+        who = self.telegram_username or self.telegram_id or (self.user or "yangi foydalanuvchi")
+        return f"Telegram token: {who}"
+
 
 class PasswordResetCode(models.Model):
     """Six-digit code DM'd to a parent's linked Telegram to reset a
@@ -221,3 +229,6 @@ class PasswordResetCode(models.Model):
     used = models.BooleanField(default=False)
     attempts = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user} — parol tiklash kodi"

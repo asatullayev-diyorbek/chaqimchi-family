@@ -74,6 +74,10 @@ class ChildDevice(models.Model):
     geo_source = models.CharField(max_length=8, choices=GEO_SOURCE_CHOICES, blank=True)
     geo_updated_at = models.DateTimeField(null=True, blank=True)
 
+    def __str__(self):
+        name = self.child.name if self.child_id else (self.child_name or "Noma'lum qurilma")
+        return f"{name} — {self.get_platform_display()}"
+
 
 class InstalledApp(models.Model):
     """One row per (device, app) ever seen installed. The agent POSTs its
@@ -96,7 +100,7 @@ class InstalledApp(models.Model):
         ordering = ["name"]
 
     def __str__(self):
-        return f"{self.name} ({self.device_id})"
+        return f"{self.name} — {self.device}"
 
 
 class EnrollmentCode(models.Model):
@@ -107,3 +111,6 @@ class EnrollmentCode(models.Model):
     qr_payload = models.CharField(max_length=255)
     expires_at = models.DateTimeField()
     used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.code} — {self.device}"

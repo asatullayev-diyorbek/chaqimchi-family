@@ -27,6 +27,9 @@ class Alert(models.Model):
     triggered_at = models.DateTimeField()
     seen = models.BooleanField(default=False)
 
+    def __str__(self):
+        return f"{ALERT_LABELS.get(self.alert_type, self.alert_type)} — {self.device}"
+
 
 class NotificationPreference(models.Model):
     """One row per (parent, alert_type) the parent has turned OFF for
@@ -41,3 +44,6 @@ class NotificationPreference(models.Model):
 
     class Meta:
         unique_together = ("parent", "alert_type")
+
+    def __str__(self):
+        return f"{self.parent} — {ALERT_LABELS.get(self.alert_type, self.alert_type)}"

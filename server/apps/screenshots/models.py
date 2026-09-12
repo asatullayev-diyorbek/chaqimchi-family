@@ -76,6 +76,9 @@ class ScreenshotRequest(models.Model):
             models.Index(fields=["device", "status"], name="shot_device_status_idx"),
         ]
 
+    def __str__(self):
+        return f"Skrinshot — {self.device} ({self.get_status_display()})"
+
     def storage_key(self) -> str:
         return f"screenshots/{self.device_id}/{self.id}.jpg"
 
@@ -105,3 +108,6 @@ class ScreenshotCleanupRun(models.Model):
     expired_count = models.PositiveIntegerField(default=0)
     unclaimed_count = models.PositiveIntegerField(default=0)
     objects_deleted = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"Tozalash — {self.ran_at:%Y-%m-%d %H:%M}"

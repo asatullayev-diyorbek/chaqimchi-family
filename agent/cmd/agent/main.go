@@ -274,7 +274,7 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	// (internal/updater). Updates are silent by design — a guardian the
 	// child cannot block — and the parent sees the version on the dashboard.
 	updChecker := updater.NewChecker(baseURL, deviceID, deviceSecret, version)
-	go updChecker.Run(ctx, 6*time.Hour,
+	go updChecker.Run(ctx, 10*time.Minute,
 		func(lv *updater.LatestVersion) {
 			log.Printf("update available: %s -> %s", version, lv.Version)
 			if err := updater.Apply(ctx, lv, version, dataDir); err != nil {

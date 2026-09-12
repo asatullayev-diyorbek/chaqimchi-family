@@ -26,6 +26,9 @@ class EventBatch(models.Model):
     batch_id = models.CharField(max_length=64, unique=True)
     received_at = models.DateTimeField(auto_now_add=True)
 
+    def __str__(self):
+        return f"Batch {self.batch_id} — {self.device}"
+
 
 class Event(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -41,6 +44,9 @@ class Event(models.Model):
         indexes = [
             models.Index(fields=["device", "event_type", "occurred_at"], name="event_device_type_time_idx"),
         ]
+
+    def __str__(self):
+        return f"{self.event_type} — {self.device} @ {self.occurred_at:%Y-%m-%d %H:%M}"
 
 
 class DeviceAppIcon(models.Model):
@@ -64,6 +70,9 @@ class DeviceAppIcon(models.Model):
             models.UniqueConstraint(fields=["device", "app_id"], name="uniq_device_app_icon"),
         ]
 
+    def __str__(self):
+        return f"{self.app_id} — {self.device}"
+
 
 class DailyDigestRun(models.Model):
     """One row per local date the Telegram daily digest has been sent for.
@@ -72,3 +81,6 @@ class DailyDigestRun(models.Model):
 
     date = models.DateField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Kunlik hisobot — {self.date}"

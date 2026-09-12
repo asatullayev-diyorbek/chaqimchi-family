@@ -13,3 +13,6 @@ class Rule(models.Model):
     rule_type = models.CharField(max_length=30, choices=[(t, t) for t in RULE_TYPES])
     value = models.JSONField()
     created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.rule_type} — {self.device}"
