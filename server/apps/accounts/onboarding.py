@@ -12,6 +12,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from . import tg_api
+from .emoji import ce
 from .models import ParentUser
 
 # ---------------------------------------------------------------------------
@@ -49,7 +50,7 @@ def _phone_keyboard() -> dict:
 # ---------------------------------------------------------------------------
 
 WELCOME_TEXT = (
-    "Spino24 — oilaviy raqamli farovonlik xizmatiga xush kelibsiz.\n\n"
+    f"{ce('wave')} Spino24 — oilaviy raqamli farovonlik xizmatiga xush kelibsiz.\n\n"
     "Farzandingiz nima qilayotganini emas, qancha va qanday vaqt sarflayotganini "
     "ko'rsatadi: ekran vaqti, ilovalar, qoidalar, ogohlantirishlar va so'rov "
     "bo'yicha ekran rasmi.\n\n"
@@ -65,7 +66,7 @@ PHONE_PROMPT_TEXT = (
 )
 
 PHONE_THANKS_TEXT = (
-    "Rahmat! ✅ Hisobingiz tayyor.\n\n"
+    f"Rahmat! ✅ Hisobingiz tayyor. {ce('party')}\n\n"
     "Endi farzand qurilmasiga Spino24'ni o'rnatishingiz mumkin."
 )
 
@@ -147,7 +148,7 @@ def start_onboarding(from_user: dict, chat_id):
         # Already onboarded — nothing to do here; caller shows the menu.
         return parent
 
-    tg_api.send_photo(chat_id, img("welcome-hero"), caption=WELCOME_TEXT)
+    tg_api.send_photo(chat_id, img("welcome-hero"), caption=WELCOME_TEXT, parse_mode="HTML")
     send_phone_prompt(chat_id)
     return parent
 
@@ -174,7 +175,9 @@ def handle_contact(message: dict) -> bool:
     parent.onboarding_required = False
     parent.save(update_fields=["phone", "onboarding_required"])
 
-    tg_api.send_message(chat_id, PHONE_THANKS_TEXT, reply_markup={"remove_keyboard": True})
+    tg_api.send_message(
+        chat_id, PHONE_THANKS_TEXT, reply_markup={"remove_keyboard": True}, parse_mode="HTML"
+    )
     tg_api.send_photo(chat_id, img("install-windows-steps"), caption=install_guide_text())
 
     from .notify_admin import notify_new_parent

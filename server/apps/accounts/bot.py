@@ -17,10 +17,12 @@ from apps.tracking.digest import (
     today_usage_by_device,
 )
 
+from .emoji import ce, esc
+
 _ALERT_ICON = {
-    "limit_reached": "🔴",
-    "blocked_app_opened": "🚫",
-    "settings_panel_access": "⚙️",
+    "limit_reached": ce("shock"),
+    "blocked_app_opened": ce("angry"),
+    "settings_panel_access": ce("lock"),
 }
 
 
@@ -169,19 +171,19 @@ def _alerts(parent):
     if today_count:
         summary.append(f"Bugun: {today_count}")
     if unseen:
-        summary.append(f"ko'rilmagan: {unseen}")
+        summary.append(f"{ce('eyes')} ko'rilmagan: {unseen}")
     if summary:
         lines.append("  ·  ".join(summary))
         lines.append("")
 
     for a in rows:
         icon = _ALERT_ICON.get(a.alert_type, "🔔")
-        who = _child_of(a.device)
-        label = ALERT_LABELS.get(a.alert_type, a.alert_type)
+        who = esc(_child_of(a.device))
+        label = esc(ALERT_LABELS.get(a.alert_type, a.alert_type))
         extra = ""
         app = (a.payload or {}).get("app_name") or (a.payload or {}).get("app")
         if a.alert_type == "blocked_app_opened" and app:
-            extra = f": {_pretty_app(app)}"
+            extra = f": {esc(_pretty_app(app))}"
         lines.append(f"{icon} {_short_date(a.triggered_at)} — {who}")
         lines.append(f"{label}{extra}")
         lines.append("")
@@ -193,14 +195,14 @@ def _alerts(parent):
 def _devices(parent):
     devices = list(_family_devices(parent))
     if not devices:
-        return "💻 Qurilmalar\n\n" + _NO_DEVICES
+        return f"{ce('laptop')} Qurilmalar\n\n" + _NO_DEVICES
 
     usage = today_usage_by_device([d.id for d in devices])
-    lines = [f"💻 Qurilmalar ({len(devices)})", ""]
+    lines = [f"{ce('laptop')} Qurilmalar ({len(devices)})", ""]
     for d in devices:
         online, battery = device_state(d)
         plat = {"windows": "Windows", "android": "Android", "ios": "iPad"}.get(d.platform, d.platform)
-        lines.append(f"🖥 {_child_of(d)} — {plat}")
+        lines.append(f"🖥 {esc(_child_of(d))} — {plat}")
         if online:
             row = "🟢 Onlayn"
             if battery is not None:

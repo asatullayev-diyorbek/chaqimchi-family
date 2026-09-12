@@ -215,7 +215,8 @@ class TelegramWebhookView(APIView):
         if cmd:
             reply = handle_command(cmd, parent)
             if reply is not None:
-                tg_api.send_message(chat_id, reply)
+                html_reply = cmd in ("qurilmalar", "ogohlantirishlar")
+                tg_api.send_message(chat_id, reply, parse_mode="HTML" if html_reply else None)
 
     def _handle_callback_query(self, callback_query):
         callback_id = callback_query.get("id")

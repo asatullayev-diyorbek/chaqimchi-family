@@ -65,13 +65,13 @@ def matches(text: str) -> str | None:
 
 def handle_menu_button(section: str, chat_id, parent):
     if section == "devices":
-        tg_api.send_message(chat_id, _devices(parent))
+        tg_api.send_message(chat_id, _devices(parent), parse_mode="HTML")
     elif section == "children":
         tg_api.send_message(chat_id, _children(parent))
     elif section == "today":
         tg_api.send_message(chat_id, _today(parent))
     elif section == "alerts":
-        tg_api.send_message(chat_id, _alerts(parent))
+        tg_api.send_message(chat_id, _alerts(parent), parse_mode="HTML")
     elif section == "ai":
         tg_api.send_photo(chat_id, img("ai-analysis-teaser"), caption=AI_TEXT)
     elif section == "guide":
