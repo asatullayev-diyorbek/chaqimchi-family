@@ -1,8 +1,8 @@
 {
-  "version": "0.4.0-rc.4",
+  "version": "0.7.1",
   "file": "ChaqimchiAI-Guard-test.zip",
-  "bytes": 36593283,
-  "sha256": "0DBB4284C5476C53CEB65235D7ADF56FF5E47D0C90B0DBF58D815875BD4F4738",
-  "date": "2026-09-02",
-  "note": "Sinov build #7: hafta kuni / dam olish kuni limiti + 'dam olish vaqti' oynalari (blocked_window). Backend PA'ga deploy qilindi. Installer.exe Administrator sifatida."
+  "bytes": 37277962,
+  "sha256": "ED98FDC02B551B6D74CF401BA4DD90BAC8952B1A46AD017FD76604A11F000EAC",
+  "date": "2026-09-12",
+  "note": "Rasmiy o'rnatuvchi bilan bir xil kod (agent 0.7.1): joylashuv (IP-geo), o'rnatilgan ilovalar ro'yxati, admin panel, To'lov (Payme/Click) tayyorgarligi va h.k. Installer.exe Administrator sifatida."
 }
