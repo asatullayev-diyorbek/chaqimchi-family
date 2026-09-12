@@ -1,6 +1,6 @@
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { StatusBar } from "expo-status-bar";
-import { NavigationContainer } from "@react-navigation/native";
+import { NavigationContainer, NavigationContainerRef } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { palettes } from "./src/theme";
 import { ThemeProvider, useTheme } from "./src/state/theme";
@@ -8,6 +8,7 @@ import { SessionProvider } from "./src/state/session";
 import { ToastProvider } from "./src/components";
 import { AppFrame } from "./src/components/AppFrame";
 import RootNavigator from "./src/navigation/RootNavigator";
+import { hideBackButton, onBackButtonClick, showBackButton } from "./src/lib/telegram";
 
 function navTheme(mode: "light" | "dark") {
   const c = palettes[mode];
@@ -36,13 +37,29 @@ function navTheme(mode: "light" | "dark") {
 function Navigation() {
   const { mode } = useTheme();
   const stateRef = useRef<object | undefined>(undefined);
+  const navRef = useRef<NavigationContainerRef<any>>(null);
+
+  const syncBackButton = () => {
+    if (navRef.current?.canGoBack()) showBackButton();
+    else hideBackButton();
+  };
+
+  useEffect(() => {
+    return onBackButtonClick(() => {
+      if (navRef.current?.canGoBack()) navRef.current.goBack();
+    });
+  }, []);
+
   return (
     <NavigationContainer
       key={mode}
+      ref={navRef}
       theme={navTheme(mode)}
       initialState={stateRef.current as any}
+      onReady={syncBackButton}
       onStateChange={(s) => {
         if (s) stateRef.current = s;
+        syncBackButton();
       }}
     >
       <StatusBar style={mode === "dark" ? "light" : "dark"} />

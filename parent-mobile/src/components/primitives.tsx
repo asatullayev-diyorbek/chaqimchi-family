@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { colors, radius, shadow, spacing, typography } from "../theme";
 import { Icon, IconName } from "./Icon";
+import { hapticTap } from "../lib/telegram";
 
 // --- Text ---------------------------------------------------------------
 
@@ -102,7 +103,10 @@ export function Button({
   const s = skin[variant];
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        hapticTap();
+        onPress();
+      }}
       disabled={off}
       accessibilityRole="button"
       style={({ pressed }) => [
@@ -147,7 +151,10 @@ export function IconButton({
 }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        hapticTap();
+        onPress();
+      }}
       hitSlop={hitSlop}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}

@@ -20,6 +20,20 @@ type ThemeParams = {
 
 type SafeAreaInset = { top: number; bottom: number; left: number; right: number };
 
+type TelegramBackButton = {
+  isVisible: boolean;
+  show: () => void;
+  hide: () => void;
+  onClick: (cb: () => void) => void;
+  offClick: (cb: () => void) => void;
+};
+
+type TelegramHapticFeedback = {
+  impactOccurred: (style: "light" | "medium" | "heavy" | "rigid" | "soft") => void;
+  notificationOccurred: (type: "error" | "success" | "warning") => void;
+  selectionChanged: () => void;
+};
+
 type TelegramWebApp = {
   initData: string;
   initDataUnsafe: { user?: { id: number; first_name?: string; username?: string } };
@@ -32,6 +46,8 @@ type TelegramWebApp = {
   isExpanded: boolean;
   safeAreaInset?: SafeAreaInset;
   contentSafeAreaInset?: SafeAreaInset;
+  BackButton?: TelegramBackButton;
+  HapticFeedback?: TelegramHapticFeedback;
   ready: () => void;
   expand: () => void;
   disableVerticalSwipes?: () => void;
@@ -199,4 +215,40 @@ export function onTelegramLayoutChange(cb: () => void): () => void {
   const events = ["viewportChanged", "safeAreaChanged", "contentSafeAreaChanged"];
   events.forEach((e) => wa.onEvent(e, cb));
   return () => events.forEach((e) => wa.offEvent?.(e, cb));
+}
+
+// ---------------------------------------------------------------------------
+// Native chrome: BackButton + haptics
+// ---------------------------------------------------------------------------
+
+/** Show Telegram's own top-left back arrow (its chrome, not part of our
+ *  page). Callers should also `hideBackButton()` once nothing is left to go
+ *  back to. */
+export function showBackButton(): void {
+  getWebApp()?.BackButton?.show();
+}
+
+export function hideBackButton(): void {
+  getWebApp()?.BackButton?.hide();
+}
+
+export function onBackButtonClick(cb: () => void): () => void {
+  const btn = getWebApp()?.BackButton;
+  if (!btn) return () => {};
+  btn.onClick(cb);
+  return () => btn.offClick(cb);
+}
+
+/** A light tap/click buzz — safe to call on every button press; a no-op
+ *  outside Telegram or on clients too old to support it. */
+export function hapticTap(style: "light" | "medium" | "heavy" | "rigid" | "soft" = "light"): void {
+  getWebApp()?.HapticFeedback?.impactOccurred(style);
+}
+
+export function hapticNotification(type: "error" | "success" | "warning"): void {
+  getWebApp()?.HapticFeedback?.notificationOccurred(type);
+}
+
+export function hapticSelection(): void {
+  getWebApp()?.HapticFeedback?.selectionChanged();
 }

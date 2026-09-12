@@ -136,6 +136,13 @@ export default function HomeScreen({ navigation }: any) {
     weekend: [0, 6].includes(new Date(`${b.date}T00:00:00`).getDay()),
   }));
 
+  // The top card is scoped to one device once the parent picks one — the
+  // family's actual total (across every device this child owns) would
+  // otherwise disappear. Only worth a line when there's more than one
+  // device and it isn't already what the top card is showing.
+  const familyTotalMinutes = devices.reduce((t, d) => t + d.todayMinutes, 0);
+  const showFamilyTotal = deviceCount > 1 && !isAllScope;
+
   return (
     <Screen scroll refreshing={refreshing} onRefresh={refresh}>
       {header}
@@ -204,6 +211,24 @@ export default function HomeScreen({ navigation }: any) {
       {/* Devices */}
       <Card style={{ gap: 12 }}>
         <SectionHeader icon="device" title={`Qurilmalar (${deviceCount})`} />
+        {showFamilyTotal ? (
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+              backgroundColor: colors.surfaceMuted,
+              borderRadius: radius.md,
+              paddingVertical: 10,
+              paddingHorizontal: 12,
+            }}
+          >
+            <Icon name="activity" size={14} color={colors.muted} />
+            <Muted>
+              Umumiy — {child.name}: barcha qurilmada bugun {formatMinutes(familyTotalMinutes)}
+            </Muted>
+          </View>
+        ) : null}
         <View style={{ gap: 10 }}>
           {devices.map((d) => (
             <DeviceRow
