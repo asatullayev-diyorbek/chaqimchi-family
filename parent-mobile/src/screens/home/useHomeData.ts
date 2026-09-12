@@ -31,20 +31,26 @@ export type HomeData = {
 };
 
 /**
- * Home is scoped to ONE child (chosen in the header) and ONE device scope
- * (chosen in the devices section). Screen time is never silently summed:
- * "Barcha qurilmalar" adds the devices' minutes only with an explicit
- * "N qurilmada jami" label and drops the per-device limit/progress.
+ * Home always shows the selected child's OVERALL numbers — the device a
+ * parent last picked on Activity/Rules/Reports is a global pick shared
+ * across those screens, but the dashboard must not silently inherit it and
+ * start scoping to one device behind the parent's back. So Home only ever
+ * narrows to a single device when the child literally owns just one;
+ * otherwise it's always "every device", screen time summed with an explicit
+ * "N qurilmada jami" label and no per-device limit/progress.
  */
 export function useHomeData() {
   const {
     selectedChild,
     childDevices,
-    activeDevice,
-    allDevices,
+    activeDevice: globalActiveDevice,
     loading: familyLoading,
     reload: reloadFamily,
   } = useFamily();
+
+  // Ignore the globally-selected device whenever there's more than one —
+  // Home's own scope, never the one Activity/Rules/Reports left behind.
+  const scopeDevice = childDevices.length > 1 ? null : globalActiveDevice;
 
   const [data, setData] = useState<HomeData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +58,7 @@ export function useHomeData() {
   const mounted = useRef(true);
 
   const deviceKey = childDevices.map((d) => d.id).join(",");
-  const scopeKey = activeDevice?.id ?? (allDevices ? "all" : "none");
+  const scopeKey = scopeDevice?.id ?? "all";
 
   const build = useCallback(async () => {
     if (childDevices.length === 0) {
@@ -78,16 +84,16 @@ export function useHomeData() {
         }),
       );
 
-      const scopeDevices = activeDevice ? rows.filter((r) => r.device.id === activeDevice.id) : rows;
+      const scopeDevices = scopeDevice ? rows.filter((r) => r.device.id === scopeDevice.id) : rows;
       const scopeMinutes = scopeDevices.reduce((t, r) => t + r.todayMinutes, 0);
-      const scopeLimit = activeDevice ? scopeDevices[0]?.limitMinutes ?? null : null;
+      const scopeLimit = scopeDevice ? scopeDevices[0]?.limitMinutes ?? null : null;
 
       // Week breakdown: the scoped device alone, or every device the child
       // owns summed per day — a single device's breakdown would otherwise
       // hide the days the child mainly used a different one.
       let weekBreakdown: DayBreakdown[];
-      if (activeDevice) {
-        const week = await getSummary(activeDevice.id, { range: "week" }).catch(() => null);
+      if (scopeDevice) {
+        const week = await getSummary(scopeDevice.id, { range: "week" }).catch(() => null);
         weekBreakdown = (week?.breakdown ?? []).slice(-7);
       } else {
         const weeks = await Promise.all(
@@ -123,7 +129,7 @@ export function useHomeData() {
         setData({
           scopeMinutes,
           scopeLimit,
-          isAllScope: allDevices,
+          isAllScope: scopeDevice === null,
           devices: rows,
           weekBreakdown,
           weekAverage,
@@ -134,7 +140,7 @@ export function useHomeData() {
     } catch (e: any) {
       if (mounted.current) setError(e?.message ?? "Ma'lumot yuklanmadi");
     }
-  }, [deviceKey, scopeKey, activeDevice, allDevices, childDevices]);
+  }, [deviceKey, scopeKey, scopeDevice, childDevices]);
 
   useEffect(() => {
     mounted.current = true;
@@ -160,5 +166,7 @@ export function useHomeData() {
     refresh,
     hasDevice: childDevices.length > 0,
     deviceCount: childDevices.length,
+    /** Home's own scope — null unless the child owns exactly one device. */
+    scopeDevice,
   };
 }

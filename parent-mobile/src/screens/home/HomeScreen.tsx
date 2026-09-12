@@ -3,7 +3,6 @@ import { View } from "react-native";
 import { colors, radius } from "../../theme";
 import { formatMinutes, shortWeekday } from "../../lib/format";
 import { appDisplay } from "../../lib/appDisplay";
-import { useFamily } from "../../state/family";
 import { useHomeData } from "./useHomeData";
 import {
   Button,
@@ -27,8 +26,7 @@ import {
 } from "../../components";
 
 export default function HomeScreen({ navigation }: any) {
-  const { activeDevice } = useFamily();
-  const { child, data, loading, refreshing, error, refresh, hasDevice, deviceCount } = useHomeData();
+  const { child, data, loading, refreshing, error, refresh, hasDevice, deviceCount, scopeDevice } = useHomeData();
 
   const unseen = data?.unseenAlerts ?? 0;
   const header = (
@@ -123,8 +121,8 @@ export default function HomeScreen({ navigation }: any) {
   if (!data) return null;
 
   const { scopeMinutes, scopeLimit, isAllScope, devices, weekBreakdown, weekAverage, lastApp } = data;
-  const scopeOnline = activeDevice
-    ? devices.find((d) => d.device.id === activeDevice.id)?.online
+  const scopeOnline = scopeDevice
+    ? devices.find((d) => d.device.id === scopeDevice.id)?.online
     : devices.some((d) => d.online);
   const over = scopeLimit != null && scopeMinutes > scopeLimit;
   const near = scopeLimit != null && !over && scopeMinutes > scopeLimit * 0.85;
@@ -135,13 +133,6 @@ export default function HomeScreen({ navigation }: any) {
     minutes: b.total_minutes || 0,
     weekend: [0, 6].includes(new Date(`${b.date}T00:00:00`).getDay()),
   }));
-
-  // The top card is scoped to one device once the parent picks one — the
-  // family's actual total (across every device this child owns) would
-  // otherwise disappear. Only worth a line when there's more than one
-  // device and it isn't already what the top card is showing.
-  const familyTotalMinutes = devices.reduce((t, d) => t + d.todayMinutes, 0);
-  const showFamilyTotal = deviceCount > 1 && !isAllScope;
 
   return (
     <Screen scroll refreshing={refreshing} onRefresh={refresh}>
@@ -211,24 +202,6 @@ export default function HomeScreen({ navigation }: any) {
       {/* Devices */}
       <Card style={{ gap: 12 }}>
         <SectionHeader icon="device" title={`Qurilmalar (${deviceCount})`} />
-        {showFamilyTotal ? (
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-              backgroundColor: colors.surfaceMuted,
-              borderRadius: radius.md,
-              paddingVertical: 10,
-              paddingHorizontal: 12,
-            }}
-          >
-            <Icon name="activity" size={14} color={colors.muted} />
-            <Muted>
-              Umumiy — {child.name}: barcha qurilmada bugun {formatMinutes(familyTotalMinutes)}
-            </Muted>
-          </View>
-        ) : null}
         <View style={{ gap: 10 }}>
           {devices.map((d) => (
             <DeviceRow
@@ -238,7 +211,6 @@ export default function HomeScreen({ navigation }: any) {
               todayMinutes={d.todayMinutes}
               battery={d.battery}
               childName={child.name}
-              selected={deviceCount > 1 && activeDevice?.id === d.device.id}
               onPress={() => navigation.navigate("DeviceDetail", { deviceId: d.device.id })}
             />
           ))}
@@ -255,7 +227,7 @@ export default function HomeScreen({ navigation }: any) {
             onAction={() =>
               navigation.navigate("ActivityTab", {
                 screen: "Activity",
-                params: activeDevice ? { deviceId: activeDevice.id } : undefined,
+                params: scopeDevice ? { deviceId: scopeDevice.id } : undefined,
               })
             }
           />
@@ -273,7 +245,7 @@ export default function HomeScreen({ navigation }: any) {
           >
             <Icon name="activity" size={14} color={colors.muted} />
             <Muted>
-              {isAllScope ? "Eng faol qurilma · " : ""}O‘rtacha: {formatMinutes(weekAverage)}
+              {isAllScope ? "Barcha qurilmalar · " : ""}O‘rtacha: {formatMinutes(weekAverage)}
             </Muted>
           </View>
         </Card>
