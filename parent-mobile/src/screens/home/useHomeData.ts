@@ -13,6 +13,15 @@ export type HomeDevice = {
   battery: number | null;
 };
 
+// Home's screen mounts fresh whenever the app remounts the navigator (e.g.
+// a dark/light toggle, which repaints every screen by remounting them — see
+// App.tsx) even though nothing about the child's data actually changed. A
+// short-lived cache keyed by child+device+scope lets the next mount paint
+// instantly with the last known numbers instead of a loading skeleton,
+// while still kicking off a real fetch behind it to catch up.
+const homeCache = new Map<string, { data: HomeData; ts: number }>();
+const HOME_CACHE_TTL_MS = 20_000;
+
 export type HomeData = {
   /** Screen-time figure for the current device scope. */
   scopeMinutes: number;
@@ -52,13 +61,17 @@ export function useHomeData() {
   // Home's own scope, never the one Activity/Rules/Reports left behind.
   const scopeDevice = childDevices.length > 1 ? null : globalActiveDevice;
 
-  const [data, setData] = useState<HomeData | null>(null);
+  const deviceKey = childDevices.map((d) => d.id).join(",");
+  const scopeKey = scopeDevice?.id ?? "all";
+  const cacheKey = `${selectedChild?.id ?? ""}|${deviceKey}|${scopeKey}`;
+
+  const [data, setData] = useState<HomeData | null>(() => {
+    const hit = homeCache.get(cacheKey);
+    return hit && Date.now() - hit.ts < HOME_CACHE_TTL_MS ? hit.data : null;
+  });
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const mounted = useRef(true);
-
-  const deviceKey = childDevices.map((d) => d.id).join(",");
-  const scopeKey = scopeDevice?.id ?? "all";
 
   const build = useCallback(async () => {
     if (childDevices.length === 0) {
@@ -125,22 +138,22 @@ export function useHomeData() {
       );
       const lastApp = apps[0]?.app ?? null;
 
-      if (mounted.current) {
-        setData({
-          scopeMinutes,
-          scopeLimit,
-          isAllScope: scopeDevice === null,
-          devices: rows,
-          weekBreakdown,
-          weekAverage,
-          unseenAlerts: alertLists.flat().filter((a) => !a.seen).length,
-          lastApp,
-        });
-      }
+      const next: HomeData = {
+        scopeMinutes,
+        scopeLimit,
+        isAllScope: scopeDevice === null,
+        devices: rows,
+        weekBreakdown,
+        weekAverage,
+        unseenAlerts: alertLists.flat().filter((a) => !a.seen).length,
+        lastApp,
+      };
+      homeCache.set(cacheKey, { data: next, ts: Date.now() });
+      if (mounted.current) setData(next);
     } catch (e: any) {
       if (mounted.current) setError(e?.message ?? "Ma'lumot yuklanmadi");
     }
-  }, [deviceKey, scopeKey, scopeDevice, childDevices]);
+  }, [deviceKey, scopeKey, scopeDevice, childDevices, cacheKey]);
 
   useEffect(() => {
     mounted.current = true;
