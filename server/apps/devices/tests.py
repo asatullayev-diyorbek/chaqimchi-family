@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from django.test import TestCase
@@ -6,7 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.accounts.models import ParentUser
+from apps.accounts.models import ParentUser, Subscription
 
 from . import geoip
 from .models import Child, ChildDevice, EnrollmentCode, InstalledApp
@@ -87,11 +87,114 @@ class DeviceDetailTests(TestCase):
         self.assertEqual(response.status_code, 401)
 
 
+class DeviceSendLocationTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.parent = ParentUser.objects.create_user(
+            email="parent@example.com", password="supersecret123"
+        )
+        self.device = ChildDevice.objects.create(
+            family=self.parent.family,
+            status=ChildDevice.STATUS_LINKED,
+            geo_lat=41.311081,
+            geo_lng=69.240562,
+        )
+        self.url = reverse("device-send-location", kwargs={"id": self.device.id})
+        self.client.force_authenticate(user=self.parent)
+
+    def test_requires_authentication(self):
+        self.client.force_authenticate(user=None)
+        self.assertEqual(self.client.post(self.url).status_code, 401)
+
+    def test_other_family_cannot_send(self):
+        other = ParentUser.objects.create_user(email="o@example.com", password="supersecret123")
+        self.client.force_authenticate(user=other)
+        self.assertEqual(self.client.post(self.url).status_code, 403)
+
+    def test_404_without_location(self):
+        device = ChildDevice.objects.create(family=self.parent.family, status=ChildDevice.STATUS_LINKED)
+        url = reverse("device-send-location", kwargs={"id": device.id})
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, 404)
+
+    def test_400_without_linked_telegram(self):
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 400)
+
+    @patch("apps.accounts.tg_api.send_location")
+    def test_sends_location_to_parent_telegram(self, mock_send):
+        mock_send.return_value = {"ok": True}
+        self.parent.telegram_id = 12345
+        self.parent.save(update_fields=["telegram_id"])
+
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200, response.data)
+        mock_send.assert_called_once_with(12345, 41.311081, 69.240562)
+
+    @patch("apps.accounts.tg_api.send_message")
+    @patch("apps.accounts.tg_api.send_location")
+    def test_no_followup_message_without_a_timestamp(self, mock_send_location, mock_send_message):
+        mock_send_location.return_value = {"ok": True}
+        self.parent.telegram_id = 12345
+        self.parent.save(update_fields=["telegram_id"])
+
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200, response.data)
+        mock_send_message.assert_not_called()
+
+    @patch("apps.accounts.tg_api.send_message")
+    @patch("apps.accounts.tg_api.send_location")
+    def test_followup_message_states_the_time_and_ip_accuracy(self, mock_send_location, mock_send_message):
+        mock_send_location.return_value = {"ok": True}
+        self.parent.telegram_id = 12345
+        self.parent.save(update_fields=["telegram_id"])
+        self.device.geo_updated_at = timezone.make_aware(datetime(2026, 9, 13, 14, 32))
+        self.device.geo_source = ChildDevice.GEO_SOURCE_IP
+        self.device.save(update_fields=["geo_updated_at", "geo_source"])
+
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 200, response.data)
+        mock_send_message.assert_called_once()
+        chat_id, text = mock_send_message.call_args[0]
+        self.assertEqual(chat_id, 12345)
+        self.assertIn("sentyabr", text)
+        self.assertIn("internet manzili", text.lower())
+        self.assertNotIn("qurilmaning joylashuv xizmati", text.lower())
+
+    @patch("apps.accounts.tg_api.send_message")
+    @patch("apps.accounts.tg_api.send_location")
+    def test_followup_message_for_gps_source_differs(self, mock_send_location, mock_send_message):
+        mock_send_location.return_value = {"ok": True}
+        self.parent.telegram_id = 12345
+        self.parent.save(update_fields=["telegram_id"])
+        self.device.geo_updated_at = timezone.now()
+        self.device.geo_source = ChildDevice.GEO_SOURCE_GPS
+        self.device.save(update_fields=["geo_updated_at", "geo_source"])
+
+        self.client.post(self.url)
+        _, text = mock_send_message.call_args[0]
+        self.assertIn("joylashuv xizmati", text.lower())
+        self.assertNotIn("internet manzili", text.lower())
+
+    @patch("apps.accounts.tg_api.send_location")
+    def test_502_when_telegram_call_fails(self, mock_send):
+        mock_send.return_value = None
+        self.parent.telegram_id = 12345
+        self.parent.save(update_fields=["telegram_id"])
+
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 502)
+
+
 class VerifyCodeDeviceReplacementTests(TestCase):
     def test_new_pairing_keeps_the_child_s_existing_devices_linked(self):
         parent = ParentUser.objects.create_user(
             email="pairing@example.com", password="supersecret123"
         )
+        # Beta's 7-day trial caps a family at 1 device — use a paid plan to
+        # exercise the "one child, two devices" pairing behavior itself.
+        parent.family.subscription.plan = Subscription.PLAN_MINI
+        parent.family.subscription.save(update_fields=["plan"])
         child = Child.objects.create(family=parent.family, name="Ali")
         previous = ChildDevice.objects.create(
             family=parent.family,

@@ -79,22 +79,10 @@ class Invoice(models.Model):
         self.paid_at = now
         self.save(update_fields=["status", "paid_at"])
 
-        sub = self.family.subscription
-        # Renewing the same plan before it expires extends from the current
-        # expiry, not from "now" — a parent who pays a week early doesn't
-        # lose that week.
-        base = now
-        if sub.expires_at and sub.expires_at > now and sub.plan == self.plan:
-            base = sub.expires_at
-        expires = base + timedelta(days=self.period_days)
-
-        sub.plan = self.plan
-        sub.status = Subscription.STATUS_ACTIVE
-        sub.provider = self.provider
-        sub.provider_ref = self.provider_transaction_id
-        sub.expires_at = expires
-        sub.renews_at = expires
-        sub.save(update_fields=["plan", "status", "provider", "provider_ref", "expires_at", "renews_at"])
+        activate_subscription(
+            self.family.subscription, self.plan, self.period_days,
+            provider=self.provider, provider_ref=self.provider_transaction_id,
+        )
 
     def mark_canceled(self):
         if self.status == self.STATUS_PAID:
@@ -110,6 +98,28 @@ class Invoice(models.Model):
         self.status = self.STATUS_CANCELED
         self.canceled_at = timezone.now()
         self.save(update_fields=["status", "canceled_at"])
+
+
+def activate_subscription(sub: Subscription, plan: str, period_days: int, provider: str = "", provider_ref: str = ""):
+    """Shared by Invoice.mark_paid (Payme/Click) and the wallet-only
+    checkout (apps.billing.views.WalletCheckoutView) — the two ways a
+    Subscription actually changes plan."""
+    now = timezone.now()
+    # Renewing the same plan before it expires extends from the current
+    # expiry, not from "now" — a parent who pays a week early doesn't lose
+    # that week.
+    base = now
+    if sub.expires_at and sub.expires_at > now and sub.plan == plan:
+        base = sub.expires_at
+    expires = base + timedelta(days=period_days)
+
+    sub.plan = plan
+    sub.status = Subscription.STATUS_ACTIVE
+    sub.provider = provider
+    sub.provider_ref = provider_ref
+    sub.expires_at = expires
+    sub.renews_at = expires
+    sub.save(update_fields=["plan", "status", "provider", "provider_ref", "expires_at", "renews_at"])
 
 
 def expire_subscriptions() -> int:

@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from apps.accounts.models import ParentUser, Subscription
 
 from . import click, payme
-from .models import Invoice, expire_subscriptions
+from .models import BILLING_PERIOD_DAYS, Invoice, activate_subscription, expire_subscriptions
 
 PAYABLE_PLANS = (Subscription.PLAN_MINI, Subscription.PLAN_MAX)
 
@@ -30,9 +30,14 @@ class PlansView(APIView):
                     "plan": plan,
                     "label": label,
                     "price_uzs": Subscription.PLAN_PRICE_UZS[plan],
+                    "durations": Subscription.PLAN_DURATION_PRICES.get(plan),
                     "features": Subscription.PLAN_FEATURES[plan],
+                    "trial_days": Subscription.TRIAL_DAYS if plan == Subscription.PLAN_BETA else None,
                 }
                 for plan, label in Subscription.PLAN_CHOICES
+                # Tester is assigned by hand, never sold or advertised — it
+                # must never appear in a public/parent-facing plan list.
+                if plan != Subscription.PLAN_TESTER
             ]
         )
 
@@ -47,6 +52,7 @@ class BillingStatusView(APIView):
         if not isinstance(request.user, ParentUser):
             return Response({"detail": "Parent autentifikatsiyasi talab qilinadi"}, status=401)
         from apps.devices.models import Child, ChildDevice
+        from apps.tasks.service import get_wallet
 
         family = request.user.family
         sub = family.subscription
@@ -58,6 +64,9 @@ class BillingStatusView(APIView):
                 "plan_label": sub.plan_label,
                 "status": sub.status,
                 "expires_at": sub.expires_at,
+                "trial_active": sub.is_trial_active,
+                "trial_ends_at": sub.trial_ends_at if sub.plan == Subscription.PLAN_BETA else None,
+                "wallet_balance_uzs": get_wallet(family).balance_uzs,
                 "usage": {
                     "children": children,
                     "children_limit": sub.limit("max_children"),
@@ -88,8 +97,15 @@ class CheckoutView(APIView):
 
         plan = request.data.get("plan")
         provider = request.data.get("provider")
+        try:
+            months = int(request.data.get("months", 1))
+        except (TypeError, ValueError):
+            months = 0
         if plan not in PAYABLE_PLANS:
             return Response({"detail": "Noto'g'ri tarif"}, status=status.HTTP_400_BAD_REQUEST)
+        amount = Subscription.duration_price_uzs(plan, months)
+        if amount is None:
+            return Response({"detail": "Noto'g'ri muddat"}, status=status.HTTP_400_BAD_REQUEST)
         if provider not in (Invoice.PROVIDER_PAYME, Invoice.PROVIDER_CLICK):
             return Response({"detail": "Noto'g'ri to'lov usuli"}, status=status.HTTP_400_BAD_REQUEST)
         if provider == Invoice.PROVIDER_PAYME and not payme.is_configured():
@@ -100,7 +116,8 @@ class CheckoutView(APIView):
         invoice = Invoice.objects.create(
             family=request.user.family,
             plan=plan,
-            amount_uzs=Subscription.PLAN_PRICE_UZS[plan],
+            amount_uzs=amount,
+            period_days=months * BILLING_PERIOD_DAYS,
             provider=provider,
         )
         url = payme.checkout_url(invoice) if provider == Invoice.PROVIDER_PAYME else click.checkout_url(invoice)
@@ -108,6 +125,45 @@ class CheckoutView(APIView):
             {"invoice_id": invoice.id, "amount_uzs": invoice.amount_uzs, "checkout_url": url},
             status=status.HTTP_201_CREATED,
         )
+
+
+class WalletCheckoutView(APIView):
+    """POST /api/billing/checkout/wallet/ {plan, months} — pays entirely out
+    of the family's apps.tasks wallet (task-reward balance), no Payme/Click
+    involved. Only works when the balance fully covers the price — no
+    partial redemption alongside a real payment, so wallet money never has
+    to be reconciled against a provider webhook."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        if not isinstance(request.user, ParentUser):
+            return Response({"detail": "Parent autentifikatsiyasi talab qilinadi"}, status=401)
+
+        from apps.tasks.service import get_wallet
+
+        plan = request.data.get("plan")
+        try:
+            months = int(request.data.get("months", 1))
+        except (TypeError, ValueError):
+            months = 0
+        if plan not in PAYABLE_PLANS:
+            return Response({"detail": "Noto'g'ri tarif"}, status=status.HTTP_400_BAD_REQUEST)
+        amount = Subscription.duration_price_uzs(plan, months)
+        if amount is None:
+            return Response({"detail": "Noto'g'ri muddat"}, status=status.HTTP_400_BAD_REQUEST)
+
+        wallet = get_wallet(request.user.family)
+        if wallet.balance_uzs < amount:
+            return Response(
+                {"detail": "Balansda yetarli mablag' yo'q", "balance_uzs": wallet.balance_uzs},
+                status=status.HTTP_402_PAYMENT_REQUIRED,
+            )
+
+        wallet.debit(amount, f"Obuna to'lovi: {plan} ({months} oy)")
+        sub = request.user.family.subscription
+        activate_subscription(sub, plan, months * BILLING_PERIOD_DAYS)
+        return Response({"plan": plan, "expires_at": sub.expires_at, "balance_uzs": wallet.balance_uzs})
 
 
 @method_decorator(csrf_exempt, name="dispatch")

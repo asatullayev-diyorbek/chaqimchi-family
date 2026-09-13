@@ -61,6 +61,7 @@ const MAP = {
   chart: "trending-up",
   privacy: "eye-off",
   sparkle: "star",
+  star: "star",
   link: "link",
   key: "key",
   mail: "mail",
@@ -68,6 +69,8 @@ const MAP = {
   pin: "map-pin",
   package: "package",
   card: "credit-card",
+  gift: "gift",
+  heart: "heart",
 } as const;
 
 export type IconName = keyof typeof MAP;

@@ -266,6 +266,69 @@ class DeviceDetailView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+_UZ_MONTHS = [
+    "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+    "iyul", "avgust", "sentyabr", "oktyabr", "noyabr", "dekabr",
+]
+
+
+def _format_uz_datetime(dt) -> str:
+    local = timezone.localtime(dt)
+    return f"{local.day}-{_UZ_MONTHS[local.month - 1]}, {local.strftime('%H:%M')}"
+
+
+class DeviceSendLocationView(APIView):
+    """POST /api/devices/<id>/send-location/ — DMs the device's last-known
+    location to the requesting parent's own Telegram chat as a native
+    location message (tap to open in their maps app), same ownership check
+    as DeviceDetailView. Requires the parent to have linked Telegram.
+
+    Telegram's sendLocation has no caption field, so a follow-up text
+    message carries two things the pin alone can't: exactly when this fix
+    was taken (it's a snapshot, not a live position — same reasoning as
+    DeviceLocationScreen's warning card on the mobile side) and, for an
+    IP-based fix, that the accuracy is city/district-level, not exact."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, id):
+        if not isinstance(request.user, ParentUser):
+            return Response(
+                {"detail": "Parent autentifikatsiyasi talab qilinadi"}, status=status.HTTP_401_UNAUTHORIZED
+            )
+        device = get_object_or_404(ChildDevice, id=id)
+        if device.family_id != request.user.family_id:
+            return Response(
+                {"detail": "Bu qurilma sizning oilangizga tegishli emas"}, status=status.HTTP_403_FORBIDDEN
+            )
+        if device.geo_lat is None or device.geo_lng is None:
+            return Response({"detail": "Joylashuv topilmadi"}, status=status.HTTP_404_NOT_FOUND)
+        if not request.user.telegram_id:
+            return Response(
+                {"detail": "Avval Telegram akkauntingizni ulang"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        from apps.accounts import tg_api
+
+        result = tg_api.send_location(request.user.telegram_id, device.geo_lat, device.geo_lng)
+        if result is None or not result.get("ok"):
+            return Response({"detail": "Botga yuborib bo'lmadi"}, status=status.HTTP_502_BAD_GATEWAY)
+
+        if device.geo_updated_at is not None:
+            when = _format_uz_datetime(device.geo_updated_at)
+            lines = [f"🕒 Bu joylashuv {when} da olingan — jonli emas, so'nggi ma'lum holat."]
+            if device.geo_source != ChildDevice.GEO_SOURCE_GPS:
+                lines.append(
+                    "📍 Internet manzili (IP) orqali aniqlangan — aniqlik shahar yoki tuman darajasida, "
+                    "bino yoki xona darajasida emas."
+                )
+            else:
+                lines.append("📍 Qurilmaning joylashuv xizmati orqali aniqlangan, baribir bir necha o'nlab metr xatolik bo'lishi mumkin.")
+            tg_api.send_message(request.user.telegram_id, "\n".join(lines))
+
+        return Response({"sent": True})
+
+
 class InstalledAppsListView(APIView):
     """GET /api/devices/<id>/installed-apps/ — parent-authenticated,
     tenant-isolated, same ownership check as DeviceDetailView."""

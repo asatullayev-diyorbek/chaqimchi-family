@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { Linking, View } from "react-native";
+import { View } from "react-native";
 import { colors } from "../../theme";
 import { formatDate, relativeTime } from "../../lib/format";
 import { useFamily } from "../../state/family";
@@ -179,7 +179,15 @@ export default function DeviceDetailScreen({ route, navigation }: any) {
               subtitle={`${summary.geo_location_label || "Noma'lum"} · ${relativeTime(summary.geo_updated_at)}`}
               onPress={
                 summary.geo_lat != null && summary.geo_lng != null
-                  ? () => Linking.openURL(`https://maps.google.com/?q=${summary.geo_lat},${summary.geo_lng}`)
+                  ? () =>
+                      navigation.navigate("DeviceLocation", {
+                        deviceId,
+                        lat: summary.geo_lat,
+                        lng: summary.geo_lng,
+                        label: summary.geo_location_label ?? null,
+                        source: summary.geo_source ?? "",
+                        updatedAt: summary.geo_updated_at ?? null,
+                      })
                   : undefined
               }
             />

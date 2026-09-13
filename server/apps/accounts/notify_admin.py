@@ -6,13 +6,13 @@ from django.conf import settings
 from . import tg_api
 
 
-def _admin_ids():
+def admin_ids():
     raw = getattr(settings, "ADMIN_TELEGRAM_IDS", "") or ""
     return [int(p) for p in (x.strip() for x in raw.split(",")) if p.isdigit()]
 
 
 def notify_admins(text: str):
-    for chat_id in _admin_ids():
+    for chat_id in admin_ids():
         tg_api.send_message(chat_id, text)
 
 

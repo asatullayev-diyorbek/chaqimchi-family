@@ -48,5 +48,6 @@ export { ChildSwitcher } from "./ChildSwitcher";
 export { QuickActions } from "./QuickActions";
 export type { QuickAction } from "./QuickActions";
 export { DurationPickerSheet, TimeRangePickerSheet } from "./pickers";
+export { ReviewSheet } from "./ReviewSheet";
 export { WheelColumn } from "./WheelPicker";
 export { ToastProvider, useToast } from "./Toast";

@@ -1,15 +1,16 @@
-import React from "react";
-import { View } from "react-native";
-import { colors } from "../../theme";
+import React, { useState } from "react";
+import { Pressable, View } from "react-native";
+import { colors, radius } from "../../theme";
 import { formatDate } from "../../lib/format";
 import { ApiError } from "../../api/client";
-import { getWeeklyInsight, RiskLevel } from "../../api/insights";
+import { generateInsight, getCachedInsight, Period, RiskLevel, WeeklyInsight } from "../../api/insights";
 import { useFamily } from "../../state/family";
 import { useQuery } from "../../hooks/useQuery";
 import {
   Badge,
   Button,
   Card,
+  ChildSwitcher,
   EmptyState,
   Icon,
   LoadingState,
@@ -24,12 +25,72 @@ const RISK_META: Record<RiskLevel, { label: string; color: string; bg: string }>
   concern: { label: "Tashvishli", color: colors.danger, bg: colors.dangerSoft },
 };
 
+const PERIOD_LABEL: Record<Period, string> = {
+  last_week: "O'tgan hafta",
+  this_week: "Shu hafta",
+  today: "Bugun",
+};
+const PERIODS: Period[] = ["last_week", "this_week", "today"];
+
+function PeriodSwitcher({ period, onChange }: { period: Period; onChange: (p: Period) => void }) {
+  return (
+    <View style={{ flexDirection: "row", backgroundColor: colors.chartTrack, borderRadius: radius.md, padding: 3 }}>
+      {PERIODS.map((p) => (
+        <Pressable
+          key={p}
+          onPress={() => onChange(p)}
+          style={{
+            flex: 1,
+            paddingVertical: 9,
+            borderRadius: radius.sm,
+            backgroundColor: period === p ? colors.surface : "transparent",
+            alignItems: "center",
+          }}
+        >
+          <Text variant="micro" color={period === p ? colors.blue : colors.muted}>
+            {PERIOD_LABEL[p]}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 export default function AIInsightScreen({ navigation }: any) {
   const { selectedChild } = useFamily();
-  const { data, loading, error, refetch, refreshing } = useQuery(
-    () => getWeeklyInsight(selectedChild!.id),
-    [selectedChild?.id],
+  const [period, setPeriod] = useState<Period>("last_week");
+  const { data, loading, error, refetch, reload, refreshing } = useQuery(
+    () => getCachedInsight(selectedChild!.id, period),
+    [selectedChild?.id, period],
     { enabled: !!selectedChild },
+  );
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+
+  async function handleGenerate() {
+    if (!selectedChild) return;
+    setGenerating(true);
+    setGenerateError(null);
+    try {
+      await generateInsight(selectedChild.id, period);
+      await reload();
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : "Tahlil yaratib bo'lmadi");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  const header = (
+    <>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <Text variant="label" color={colors.muted}>
+          Farzand
+        </Text>
+        <ChildSwitcher onAddChild={() => navigation.navigate("AddChild")} />
+      </View>
+      <PeriodSwitcher period={period} onChange={setPeriod} />
+    </>
   );
 
   if (!selectedChild) {
@@ -41,7 +102,8 @@ export default function AIInsightScreen({ navigation }: any) {
   }
   if (loading) {
     return (
-      <Screen>
+      <Screen scroll>
+        {header}
         <LoadingState />
       </Screen>
     );
@@ -50,6 +112,7 @@ export default function AIInsightScreen({ navigation }: any) {
   if (error instanceof ApiError && error.status === 403) {
     return (
       <Screen scroll>
+        {header}
         <Card style={{ gap: 12, alignItems: "center" }}>
           <Icon name="sparkle" size={28} color={colors.blue} />
           <Text variant="h3">AI tahlil — Max tarifda</Text>
@@ -62,39 +125,77 @@ export default function AIInsightScreen({ navigation }: any) {
       </Screen>
     );
   }
-  if (error instanceof ApiError && error.status === 503) {
+  if (error) {
     return (
       <Screen scroll refreshing={refreshing} onRefresh={refetch}>
-        <EmptyState icon="sparkle" title="Hozircha ulanmagan" message="AI tahlil tez orada ishga tushadi." />
-      </Screen>
-    );
-  }
-  if (error instanceof ApiError && error.status === 404) {
-    return (
-      <Screen scroll refreshing={refreshing} onRefresh={refetch}>
-        <EmptyState
-          icon="sparkle"
-          title="Hali ma'lumot yo'q"
-          message="Farzandingiz qurilmasi bir necha kun ishlatilgach, haftalik tahlil paydo bo'ladi."
-        />
-      </Screen>
-    );
-  }
-  if (error || !data) {
-    return (
-      <Screen scroll refreshing={refreshing} onRefresh={refetch}>
-        <EmptyState icon="sparkle" title="Yuklanmadi" message={error?.message ?? "Xatolik yuz berdi"} />
+        {header}
+        <EmptyState icon="sparkle" title="Yuklanmadi" message={error.message ?? "Xatolik yuz berdi"} />
       </Screen>
     );
   }
 
+  if (!data) {
+    return (
+      <Screen scroll refreshing={refreshing} onRefresh={refetch}>
+        {header}
+        <Card style={{ gap: 12, alignItems: "center" }}>
+          <Icon name="sparkle" size={28} color={colors.blue} />
+          <Text variant="h3">Hali tahlil yo'q</Text>
+          <Muted style={{ textAlign: "center" }}>
+            {period === "last_week"
+              ? "Har hafta avtomatik tayyorlanadi — yoki hozir so'rov yuboring."
+              : "Bu davr uchun hozir so'rov yuboring."}
+          </Muted>
+          {generateError ? <Muted style={{ color: colors.danger }}>{generateError}</Muted> : null}
+          <Button title="Hozir tahlil qiling" onPress={handleGenerate} loading={generating} />
+        </Card>
+      </Screen>
+    );
+  }
+
+  return (
+    <InsightView
+      header={header}
+      data={data}
+      childName={selectedChild.name}
+      refreshing={refreshing}
+      onRefresh={refetch}
+      generating={generating}
+      generateError={generateError}
+      onRegenerate={handleGenerate}
+    />
+  );
+}
+
+function InsightView({
+  header,
+  data,
+  childName,
+  refreshing,
+  onRefresh,
+  generating,
+  generateError,
+  onRegenerate,
+}: {
+  header: React.ReactNode;
+  data: WeeklyInsight;
+  childName: string;
+  refreshing: boolean;
+  onRefresh: () => void;
+  generating: boolean;
+  generateError: string | null;
+  onRegenerate: () => void;
+}) {
   const risk = RISK_META[data.risk_level] ?? RISK_META.ok;
 
   return (
-    <Screen scroll refreshing={refreshing} onRefresh={refetch}>
+    <Screen scroll refreshing={refreshing} onRefresh={onRefresh}>
+      {header}
       <Card style={{ gap: 10 }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <Text variant="h3">{selectedChild.name} — bu hafta</Text>
+          <Text variant="h3">
+            {childName} — {PERIOD_LABEL[data.period].toLowerCase()}
+          </Text>
           <Badge label={risk.label} color={risk.color} bg={risk.bg} />
         </View>
         <Text variant="body">{data.summary}</Text>
@@ -118,6 +219,9 @@ export default function AIInsightScreen({ navigation }: any) {
           ))}
         </Card>
       ) : null}
+
+      {generateError ? <Muted style={{ color: colors.danger }}>{generateError}</Muted> : null}
+      <Button title="Qayta tahlil qiling" variant="secondary" onPress={onRegenerate} loading={generating} />
     </Screen>
   );
 }

@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -300,15 +301,25 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 	const pollInterval = 10 * time.Second
 	var todayMinutes float64
 	var trackedDate string
+	// Per-app running total for the SAME day, keyed by lowercased exe name —
+	// only the currently-foregrounded app's entry advances each tick, same
+	// approximation as todayMinutes above. Backs app_daily_limit_minutes.
+	appMinutesToday := make(map[string]float64)
 
 	onPoll := func(app string) {
 		today := time.Now().UTC().Format("2006-01-02")
 		if trackedDate != today {
 			trackedDate = today
 			todayMinutes = 0
+			appMinutesToday = make(map[string]float64)
 		}
 		if app != "" {
 			todayMinutes += pollInterval.Minutes()
+			key := strings.ToLower(app)
+			appMinutesToday[key] += pollInterval.Minutes()
+			// Before CheckForegroundApp, so a budget crossed this tick
+			// blocks immediately rather than one tick later.
+			enforcer.CheckAppDailyLimit(ctx, app, appMinutesToday[key])
 		}
 
 		enforcer.CheckForegroundApp(ctx, app)

@@ -65,6 +65,26 @@ class RuleCRUDTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_create_app_daily_limit_rule(self):
+        self.client.force_authenticate(user=self.parent)
+        response = self.client.post(
+            self.collection_url,
+            {"rule_type": "app_daily_limit_minutes", "value": {"app": "roblox.exe", "minutes": 60}},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["value"], {"app": "roblox.exe", "minutes": 60})
+
+    def test_app_daily_limit_rejects_invalid_value_shape(self):
+        self.client.force_authenticate(user=self.parent)
+        for value in ({"app": "roblox.exe"}, {"minutes": 60}, {"app": "roblox.exe", "minutes": "lots"}):
+            response = self.client.post(
+                self.collection_url,
+                {"rule_type": "app_daily_limit_minutes", "value": value},
+                format="json",
+            )
+            self.assertEqual(response.status_code, 400, value)
+
     def test_create_blocked_window_rule(self):
         self.client.force_authenticate(user=self.parent)
         response = self.client.post(

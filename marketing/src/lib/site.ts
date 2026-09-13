@@ -5,11 +5,16 @@ export const SITE = {
   name: "Spino24",
   domain: "https://chaqimchi-ai.uz",
   tagline: "Oila uchun ochiq ekran-vaqt qoidalari — yashirin kuzatuv emas.",
-  appUrl: "https://guard.chaqimchi-ai.uz",
-  loginUrl: "https://guard.chaqimchi-ai.uz/login",
-  signupUrl: "https://guard.chaqimchi-ai.uz/signup",
-  downloadUrl: "https://guard.chaqimchi-ai.uz/download",
+  // The parent-web dashboard (guard.chaqimchi-ai.uz login/signup) isn't the
+  // parent-facing surface for now — everything a parent does (enroll,
+  // manage rules, view activity) goes through the Telegram bot and its
+  // Mini App instead, for an unknown period. Only the installer download
+  // stays on that domain — that's a static file, not the dashboard.
   botUrl: "https://t.me/ChaqimchiGuardBot",
+  appUrl: "https://t.me/ChaqimchiGuardBot",
+  loginUrl: "https://t.me/ChaqimchiGuardBot",
+  signupUrl: "https://t.me/ChaqimchiGuardBot",
+  downloadUrl: "https://guard.chaqimchi-ai.uz/download",
   supportEmail: "salom@chaqimchi-ai.uz",
   privacyUrl: "/maxfiylik",
   termsUrl: "/foydalanish-shartlari",
@@ -180,30 +185,52 @@ export const DATA_NOT_COLLECTED = [
   "Shaxsiy xabarlar",
 ];
 
+// "Beta" alohida hamisha-bepul tarif emas — bu ro'yxatdan o'tgan har bir
+// oilaga avtomatik beriladigan 7 kunlik bepul sinov (karta so'ralmaydi).
+// 1 farzand/1 qurilma bilan cheklangan, qolgan hamma narsa (tarix, ekran
+// rasmi, AI tahlil) Max darajasida ochiq. 7 kundan keyin doimiy bepul
+// variant qolmaydi — Mini yoki Max tanlash kerak. Server
+// apps/accounts/models.py Subscription trial holati bilan bir xil bo'lishi
+// shart.
+export const TRIAL = {
+  days: 7,
+  title: "7 kun bepul",
+  note: "Karta kerak emas. Istalgan vaqtda bekor qilish mumkin.",
+  detail: "1 farzand, 1 qurilma — Mini va Max imkoniyatlarini to'liq sinab ko'ring.",
+};
+
 // Narxlar server/apps/accounts/models.py Subscription.PLAN_PRICE_UZS bilan
 // bir xil bo'lishi shart — u yerda o'zgarsa, shu yerni ham yangilang.
+// Mini/Max uchun 1/3/12 oylik variant bor — `best` uzoq muddat tejamkorroq
+// ekanini ko'rsatish uchun (narxni oylikka bo'lganda 12 oy eng arzon chiqadi).
+// `fullPrice` — chegirmasiz narx (1 oylik narx x oylar soni), 1 oylik variantda
+// `price` bilan teng (chegirma yo'q); 3/12 oylikda chegirmani chizib
+// ko'rsatish uchun ishlatiladi.
 export const PLANS = [
   {
     id: "beta",
     name: "Beta",
     price: 0,
-    period: "hamisha bepul",
+    period: "7 kun",
     highlight: false,
     points: [
-      "1 farzand, 2 qurilmagacha",
-      "Kunlik limit, dam olish vaqti, ilova cheklovi",
-      "7 kunlik faoliyat tarixi",
-      "Kuniga 3 marta ekran rasmi",
-      "Telegram bot mini-paneli",
+      "1 farzand, 1 qurilma",
+      "Mini va Max'ning barcha imkoniyatlari ochiq",
+      "Cheksiz faoliyat tarixi va ekran rasmi",
+      "AI tahlil ham shu davrda ishlaydi",
+      "7 kundan keyin tarif tanlanadi",
     ],
     cta: "Bepul boshlash",
   },
   {
     id: "mini",
     name: "Mini",
-    price: 25000,
-    period: "oyiga",
     highlight: true,
+    durations: [
+      { months: 1, price: 25_000, fullPrice: 25_000, best: false },
+      { months: 3, price: 70_000, fullPrice: 75_000, best: false },
+      { months: 12, price: 250_000, fullPrice: 300_000, best: true },
+    ],
     points: [
       "2 farzand, 4 qurilmagacha",
       "30 kunlik faoliyat tarixi + CSV eksport",
@@ -216,19 +243,29 @@ export const PLANS = [
   {
     id: "max",
     name: "Max",
-    price: 35000,
-    period: "oyiga",
     highlight: false,
+    durations: [
+      { months: 1, price: 35_000, fullPrice: 35_000, best: false },
+      { months: 3, price: 95_000, fullPrice: 105_000, best: false },
+      { months: 12, price: 350_000, fullPrice: 420_000, best: true },
+    ],
     points: [
-      "Cheksiz farzand va qurilma",
+      "5 farzand, 10 qurilmagacha",
       "Cheksiz faoliyat tarixi",
       "Cheksiz ekran rasmi",
-      "AI tahlil — chiqqanda birinchi bo'lib",
+      "AI tahlil",
       "Mini'dagi hammasi",
     ],
     cta: "Max'ga o'tish",
   },
 ] as const;
+
+export type PlanDuration = 1 | 3 | 12;
+export const PLAN_DURATIONS: { months: PlanDuration; label: string }[] = [
+  { months: 1, label: "1 oy" },
+  { months: 3, label: "3 oy" },
+  { months: 12, label: "1 yil" },
+];
 
 export const PLATFORMS = [
   {
@@ -306,6 +343,6 @@ export const FAQ = [
   {
     q: "Narxi qancha?",
     a:
-      "Beta — hamisha bepul (1 farzand, 2 qurilma). Mini — 25,000 so'm/oy (2 farzand, 4 qurilma, 30 kunlik tarix). Max — 35,000 so'm/oy (cheksiz farzand/qurilma, AI tahlil chiqqanda birinchi bo'lib). To'lov ilova yoki Telegram botdagi «💳 Obuna» bo'limi orqali, Payme yoki Click bilan.",
+      "Ro'yxatdan o'tgan har bir oilaga 7 kunlik Beta — bepul sinov davri beriladi (karta so'ralmaydi): 1 farzand/1 qurilma bilan Mini va Max imkoniyatlarini to'liq sinaysiz. Doimiy bepul tarif yo'q — 7 kun tugagach, Mini yoki Max tanlaysiz. Mini — 25,000 so'm/oy, 3 oyga 70,000, yilga 250,000 so'm. Max — 35,000 so'm/oy, 3 oyga 95,000, yilga 350,000 so'm. To'lov avtomatik yechilmaydi — o'zingiz tarif tanlab, ilova yoki Telegram botdagi «💳 Obuna» bo'limida Payme yoki Click bilan to'laysiz.",
   },
 ];

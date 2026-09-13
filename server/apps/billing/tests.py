@@ -19,6 +19,7 @@ class PlansViewTests(TestCase):
         self.assertEqual(plans["mini"]["price_uzs"], 25_000)
         self.assertEqual(plans["max"]["price_uzs"], 35_000)
         self.assertEqual(plans["beta"]["price_uzs"], 0)
+        self.assertNotIn("tester", plans)
 
 
 class BillingStatusTests(TestCase):
@@ -231,9 +232,9 @@ class PlanLimitTests(TestCase):
         r = self.client.post(reverse("children"), {"name": "Vali"}, format="json")
         self.assertEqual(r.status_code, 402)
 
-    def test_beta_allows_two_devices_for_one_child(self):
-        # Deliberately generous: one child's laptop + phone must stay free.
-        self.assertEqual(self.parent.family.subscription.limit("max_devices"), 2)
+    def test_beta_trial_allows_one_device_for_one_child(self):
+        # Beta is the 7-day trial — capped at 1 child/1 device while active.
+        self.assertEqual(self.parent.family.subscription.limit("max_devices"), 1)
 
     def test_mini_allows_a_second_child(self):
         self.parent.family.subscription.plan = "mini"

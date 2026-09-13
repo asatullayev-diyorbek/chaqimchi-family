@@ -8,12 +8,14 @@ from .views import (
     ExpireSubscriptionsView,
     PaymeWebhookView,
     PlansView,
+    WalletCheckoutView,
 )
 
 urlpatterns = [
     path("plans/", PlansView.as_view(), name="billing-plans"),
     path("status/", BillingStatusView.as_view(), name="billing-status"),
     path("checkout/", CheckoutView.as_view(), name="billing-checkout"),
+    path("checkout/wallet/", WalletCheckoutView.as_view(), name="billing-checkout-wallet"),
     path("payme/webhook/", PaymeWebhookView.as_view(), name="billing-payme-webhook"),
     path("click/prepare/", ClickPrepareView.as_view(), name="billing-click-prepare"),
     path("click/complete/", ClickCompleteView.as_view(), name="billing-click-complete"),

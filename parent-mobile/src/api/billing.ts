@@ -1,6 +1,6 @@
 import { apiFetch } from "./client";
 
-export type PlanId = "beta" | "mini" | "max";
+export type PlanId = "beta" | "mini" | "max" | "tester";
 export type Provider = "payme" | "click";
 
 export type PlanFeatures = {
@@ -11,11 +11,15 @@ export type PlanFeatures = {
   ai_analysis: boolean;
 };
 
+export type PlanDuration = 1 | 3 | 12;
+
 export type Plan = {
   plan: PlanId;
   label: string;
   price_uzs: number;
+  durations: Partial<Record<PlanDuration, number>> | null;
   features: PlanFeatures;
+  trial_days: number | null;
 };
 
 export type BillingStatus = {
@@ -23,6 +27,8 @@ export type BillingStatus = {
   plan_label: string;
   status: "active" | "expired" | "canceled";
   expires_at: string | null;
+  trial_active: boolean;
+  trial_ends_at: string | null;
   usage: {
     children: number;
     children_limit: number | null;
@@ -47,9 +53,9 @@ export function getBillingStatus(): Promise<BillingStatus> {
   return apiFetch("/api/billing/status/");
 }
 
-export function checkout(plan: PlanId, provider: Provider): Promise<CheckoutResult> {
+export function checkout(plan: PlanId, provider: Provider, months: PlanDuration = 1): Promise<CheckoutResult> {
   return apiFetch("/api/billing/checkout/", {
     method: "POST",
-    body: JSON.stringify({ plan, provider }),
+    body: JSON.stringify({ plan, provider, months }),
   });
 }

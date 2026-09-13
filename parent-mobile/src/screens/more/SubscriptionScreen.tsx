@@ -1,11 +1,21 @@
 import React, { useCallback, useState } from "react";
-import { Linking, View } from "react-native";
-import { colors, radius } from "../../theme";
+import { Linking, Pressable, View } from "react-native";
+import { colors, radius, spacing } from "../../theme";
 import { formatDate } from "../../lib/format";
 import { openExternalLink } from "../../lib/telegram";
-import { BillingStatus, checkout, getBillingStatus, getPlans, Plan, PlanId, Provider } from "../../api/billing";
+import {
+  BillingStatus,
+  checkout,
+  getBillingStatus,
+  getPlans,
+  Plan,
+  PlanDuration,
+  PlanId,
+  Provider,
+} from "../../api/billing";
 import { useQuery } from "../../hooks/useQuery";
 import {
+  Badge,
   Button,
   Card,
   ErrorState,
@@ -14,6 +24,7 @@ import {
   Meter,
   Muted,
   Screen,
+  Spino24Mascot,
   Text,
   useToast,
 } from "../../components";
@@ -26,16 +37,91 @@ function openLink(url: string) {
   if (!openExternalLink(url)) Linking.openURL(url);
 }
 
+const DURATIONS: { months: PlanDuration; label: string }[] = [
+  { months: 1, label: "1 oy" },
+  { months: 3, label: "3 oy" },
+  { months: 12, label: "1 yil" },
+];
+
+const ACCENT: Record<PlanId, { main: string; soft: string }> = {
+  beta: { main: colors.blue, soft: colors.blueSoft },
+  mini: { main: colors.mint, soft: colors.mintSoft },
+  max: { main: colors.catPurple, soft: colors.catPurpleBg },
+  tester: { main: colors.catPurple, soft: colors.catPurpleBg },
+};
+
 const FEATURE_ROWS: { key: keyof Plan["features"]; label: (v: any) => string }[] = [
   { key: "max_children", label: (v) => (v == null ? "Farzand: cheksiz" : `Farzand: ${v} tagacha`) },
   { key: "max_devices", label: (v) => (v == null ? "Qurilma: cheksiz" : `Qurilma: ${v} tagacha`) },
   { key: "history_days", label: (v) => (v == null ? "Tarix: cheksiz" : `Tarix: ${v} kun`) },
   {
     key: "screenshot_daily_limit",
-    label: (v) => (v == null ? "Skrinshot: cheksiz" : `Skrinshot: kuniga ${v} ta`),
+    label: (v) => (v == null ? "Skrinshot: cheksiz" : v === 0 ? "Skrinshot: yo'q" : `Skrinshot: kuniga ${v} ta`),
   },
   { key: "ai_analysis", label: (v) => (v ? "AI tahlil: bor" : "AI tahlil: yo'q") },
 ];
+
+function DurationPicker({
+  plan,
+  months,
+  onChange,
+  accent,
+}: {
+  plan: Plan;
+  months: PlanDuration;
+  onChange: (m: PlanDuration) => void;
+  accent: { main: string; soft: string };
+}) {
+  if (!plan.durations) return null;
+  const oneMonth = plan.durations[1];
+  return (
+    <View style={{ flexDirection: "row", gap: 8 }}>
+      {DURATIONS.map((d) => {
+        const price = plan.durations?.[d.months];
+        if (price == null) return null;
+        const fullPrice = oneMonth != null ? oneMonth * d.months : null;
+        const pct = fullPrice != null && fullPrice > price ? Math.round((1 - price / fullPrice) * 100) : 0;
+        const active = months === d.months;
+        return (
+          <View key={d.months} style={{ flex: 1 }}>
+            <Pressable
+              onPress={() => onChange(d.months)}
+              style={{
+                paddingVertical: 8,
+                borderRadius: radius.md,
+                alignItems: "center",
+                backgroundColor: active ? accent.main : colors.surfaceMuted,
+                borderWidth: 1,
+                borderColor: active ? accent.main : colors.border,
+              }}
+            >
+              <Text variant="label" color={active ? "#fff" : colors.body}>
+                {d.label}
+              </Text>
+            </Pressable>
+            {pct > 0 ? (
+              <View
+                style={{
+                  position: "absolute",
+                  top: -8,
+                  right: -6,
+                  backgroundColor: active ? colors.warning : colors.dangerSoft,
+                  paddingHorizontal: 5,
+                  paddingVertical: 1,
+                  borderRadius: radius.pill,
+                }}
+              >
+                <Text variant="micro" color={active ? "#fff" : colors.danger}>
+                  -{pct}%
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        );
+      })}
+    </View>
+  );
+}
 
 function PlanCard({
   plan,
@@ -50,14 +136,26 @@ function PlanCard({
 }) {
   const toast = useToast();
   const [busy, setBusy] = useState<Provider | null>(null);
-  const payable = plan.plan !== "beta" && !current;
+  const [months, setMonths] = useState<PlanDuration>(1);
+  const accent = ACCENT[plan.plan];
+  const highlight = plan.plan === "mini";
+
+  const duration = plan.durations?.[months];
+  const oneMonth = plan.durations?.[1];
+  const price = duration ?? plan.price_uzs;
+  const fullPrice = oneMonth != null ? oneMonth * months : null;
+  const hasDiscount = fullPrice != null && duration != null && fullPrice > duration;
+  const discountPct = hasDiscount ? Math.round((1 - duration! / fullPrice!) * 100) : 0;
+  const periodLabel = plan.plan === "beta" ? `${plan.trial_days ?? 7} kun` : DURATIONS.find((d) => d.months === months)?.label ?? "";
+
+  const payable = plan.plan !== "beta" && !current && duration != null;
   const anyProvider = providersAvailable.payme || providersAvailable.click;
 
   const buy = useCallback(
     async (provider: Provider) => {
       setBusy(provider);
       try {
-        const result = await checkout(plan.plan as PlanId, provider);
+        const result = await checkout(plan.plan as PlanId, provider, months);
         openLink(result.checkout_url);
       } catch (e: any) {
         toast.error(e?.message ?? "To'lovga o'tib bo'lmadi");
@@ -65,73 +163,138 @@ function PlanCard({
         setBusy(null);
       }
     },
-    [plan.plan, toast],
+    [plan.plan, months, toast],
   );
 
   return (
     <Card
       style={{
-        gap: 10,
-        borderWidth: current ? 2 : 1,
-        borderColor: current ? colors.blue : colors.cardBorder,
+        gap: 12,
+        borderWidth: highlight ? 2 : current ? 2 : 1,
+        borderColor: highlight ? colors.mint : current ? colors.blue : colors.cardBorder,
       }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-        <Text variant="h3">{plan.label}</Text>
-        {current ? (
-          <View
-            style={{
-              backgroundColor: colors.blueSoft,
-              borderRadius: radius.pill,
-              paddingHorizontal: 10,
-              paddingVertical: 3,
-            }}
-          >
-            <Text variant="label" color={colors.blue}>
-              Joriy
-            </Text>
-          </View>
-        ) : null}
+      {highlight ? (
+        <View style={{ alignSelf: "flex-start" }}>
+          <Badge label="⭐ Eng ommabop" color="#fff" bg={colors.mintDark} />
+        </View>
+      ) : null}
+
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <Spino24Mascot width={44} />
+        <View style={{ flex: 1 }}>
+          <Text variant="h3">{plan.label.replace(/\s*\(.*\)/, "")}</Text>
+          <Muted>
+            {plan.plan === "beta"
+              ? "Bepul sinov tarifi"
+              : plan.plan === "mini"
+                ? "Asosiy imkoniyatlar"
+                : "To'liq imkoniyatlar"}
+          </Muted>
+        </View>
+        {current ? <Badge label="Joriy" color={colors.blue} bg={colors.blueSoft} /> : null}
       </View>
-      <Text variant="h2">{plan.price_uzs > 0 ? `${money(plan.price_uzs)} / oy` : "Bepul"}</Text>
-      <View style={{ gap: 4 }}>
+
+      {plan.durations ? (
+        <DurationPicker plan={plan} months={months} onChange={setMonths} accent={accent} />
+      ) : null}
+
+      {hasDiscount ? (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Text variant="body" color={colors.muted} style={{ textDecorationLine: "line-through" }}>
+            {money(fullPrice!)}
+          </Text>
+          <Badge label={`-${discountPct}%`} color="#fff" bg={accent.main} />
+        </View>
+      ) : null}
+      <Text variant="h1">
+        {price > 0 ? money(price) : "Bepul"}
+        <Text variant="body" color={colors.muted}>
+          {" "}
+          / {periodLabel}
+        </Text>
+      </Text>
+
+      <View style={{ gap: 6 }}>
         {FEATURE_ROWS.map((row) => (
           <View key={row.key} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Icon name="check" size={14} color={colors.mint} />
+            <View
+              style={{
+                width: 18,
+                height: 18,
+                borderRadius: 9,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: accent.soft,
+              }}
+            >
+              <Icon name="check" size={11} color={accent.main} />
+            </View>
             <Muted>{row.label((plan.features as any)[row.key])}</Muted>
           </View>
         ))}
       </View>
 
-      {payable ? (
+      {plan.plan === "beta" ? (
+        current ? null : (
+          <Muted>Har bir oila ro'yxatdan o'tganda avtomatik oladi.</Muted>
+        )
+      ) : payable ? (
         anyProvider ? (
           <View style={{ gap: 8 }}>
-            {testMode ? (
-              <Muted>Sinov (test) rejimi — haqiqiy pul yechilmaydi.</Muted>
-            ) : null}
+            {testMode ? <Muted>Sinov (test) rejimi — haqiqiy pul yechilmaydi.</Muted> : null}
             {providersAvailable.payme ? (
               <Button
-                title={busy === "payme" ? "Kutilmoqda..." : `Payme orqali o'tish`}
+                title={busy === "payme" ? "Kutilmoqda..." : `${plan.label}'ga o'tish — Payme`}
                 onPress={() => buy("payme")}
                 loading={busy === "payme"}
                 disabled={busy !== null}
+                style={{ backgroundColor: accent.main }}
               />
             ) : null}
             {providersAvailable.click ? (
               <Button
-                title={busy === "click" ? "Kutilmoqda..." : `Click orqali o'tish`}
+                title={busy === "click" ? "Kutilmoqda..." : `${plan.label}'ga o'tish — Click`}
                 onPress={() => buy("click")}
                 loading={busy === "click"}
                 disabled={busy !== null}
                 variant="secondary"
               />
             ) : null}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
+              <Icon name="shield" size={13} color={colors.muted} />
+              <Muted>Xavfsiz to'lov</Muted>
+            </View>
           </View>
         ) : (
           <Muted>To'lov usullari hozircha ulanmagan.</Muted>
         )
       ) : null}
     </Card>
+  );
+}
+
+function TrustRow() {
+  const items: { icon: "card" | "clock" | "shield" | "heart"; title: string; body: string }[] = [
+    { icon: "card", title: "Karta talab qilinmaydi", body: "Beta tarifida" },
+    { icon: "clock", title: "Hech qanday majburiyat", body: "Avtomatik yechilmaydi" },
+    { icon: "shield", title: "Ma'lumotlaringiz xavfsiz", body: "Zamonaviy himoya" },
+    { icon: "heart", title: "Siz bilan birgamiz", body: "Savol bo'lsa — yordam beramiz" },
+  ];
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: spacing.md }}>
+      {items.map((it) => (
+        <View key={it.title} style={{ flexBasis: "47%", flexGrow: 1, flexDirection: "row", gap: 8 }}>
+          <Icon name={it.icon} size={16} color={colors.blue} />
+          <View style={{ flex: 1 }}>
+            <Text variant="caption" style={{ fontWeight: "700" }}>
+              {it.title}
+            </Text>
+            <Muted>{it.body}</Muted>
+          </View>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -165,6 +328,13 @@ export default function SubscriptionScreen() {
           <Icon name="card" size={18} color={colors.blue} />
           <Text variant="h3">Joriy tarif: {status.plan_label}</Text>
         </View>
+        {status.plan === "beta" && status.trial_ends_at ? (
+          status.trial_active ? (
+            <Muted>7 kunlik bepul sinov — {formatDate(status.trial_ends_at)}gacha</Muted>
+          ) : (
+            <Muted>Bepul sinov muddati tugadi — davom etish uchun tarif tanlang.</Muted>
+          )
+        ) : null}
         {status.expires_at ? (
           <Muted>Amal qiladi: {formatDate(status.expires_at)}gacha</Muted>
         ) : null}
@@ -195,6 +365,7 @@ export default function SubscriptionScreen() {
 
       {plans
         .filter((p) => p.plan !== "beta" || status.plan === "beta")
+        .filter((p) => p.plan !== "tester" || status.plan === "tester")
         .map((p) => (
           <PlanCard
             key={p.plan}
@@ -204,6 +375,8 @@ export default function SubscriptionScreen() {
             providersAvailable={status.providers_available}
           />
         ))}
+
+      <TrustRow />
     </Screen>
   );
 }

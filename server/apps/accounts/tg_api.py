@@ -48,6 +48,12 @@ def send_photo(chat_id, photo_url, caption=None, reply_markup=None, parse_mode=N
     return call("sendPhoto", payload)
 
 
+def send_location(chat_id, latitude, longitude):
+    """A native Telegram location message — tappable, opens in the user's
+    own maps app, unlike a plain text link."""
+    return call("sendLocation", {"chat_id": chat_id, "latitude": latitude, "longitude": longitude})
+
+
 def answer_callback(callback_id, text=None):
     payload = {"callback_query_id": callback_id}
     if text:

@@ -6,13 +6,13 @@ import CountUp from "@/components/CountUp";
 import { WeekBars, CategoryDonut, MiniWeek } from "@/components/Charts";
 import ParentWebMock from "@/components/ParentWebMock";
 import Logo from "@/components/Logo";
+import PricingSection from "@/components/PricingSection";
 import {
   SITE,
   PROMISES,
   FEATURE_BLOCKS,
   FEATURE_CARDS,
   STEPS,
-  PLANS,
   PLATFORMS,
   FAQ,
   DEMO_APPS,
@@ -481,42 +481,12 @@ export default function Page() {
               <span className="eyebrow">Narx</span>
               <h2>Oilangizga mos tarifni tanlang</h2>
               <p className="lead" style={{ maxWidth: 560, margin: "0 auto" }}>
-                Beta hamisha bepul qoladi. To&apos;lov Telegram bot ichida, Payme yoki Click orqali.
+                7 kunlik Beta — bepul sinov davri bilan boshlaysiz. To&apos;lov Telegram bot ichida, Payme yoki Click orqali.
               </p>
             </Reveal>
-            <div className="grid grid-3 pricing-grid">
-              {PLANS.map((plan, i) => (
-                <Reveal
-                  as="div"
-                  className={`price${plan.highlight ? " price-highlight" : ""}`}
-                  key={plan.id}
-                  delay={i * 90}
-                >
-                  <div className="price-inner">
-                    <div className="price-top">
-                      {plan.highlight && <span className="pill">Tavsiya etiladi</span>}
-                      <h3>{plan.name}</h3>
-                      <div className="amt">
-                        {plan.price.toLocaleString("uz-UZ")} <span>so&apos;m{plan.period !== "hamisha bepul" ? ` / ${plan.period}` : " / hamisha bepul"}</span>
-                      </div>
-                    </div>
-                    <ul>
-                      {plan.points.map((point) => (
-                        <li key={point}><Check /> {point}</li>
-                      ))}
-                    </ul>
-                    <a
-                      className={`btn ${plan.highlight ? "btn-primary" : "btn-ghost"} btn-lg`}
-                      href={SITE.botUrl}
-                    >
-                      {plan.cta}
-                    </a>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
+            <PricingSection />
             <p className="hero-note" style={{ marginTop: 20 }}>
-              Mini/Max sotib olish botdagi «💳 Obuna» tugmasi orqali — to&apos;lov usullari ulanmagan bo&apos;lsa, bot shuni ochiq aytadi.
+              Mini/Max sotib olish botdagi «💳 Obuna» tugmasi orqali — to&apos;lov usullari ulanmagan bo&apos;lsa, bot shuni ochiq aytadi. To&apos;lov avtomatik yechilmaydi — muddat tugagach o&apos;zingiz tanlaysiz.
             </p>
           </div>
         </section>

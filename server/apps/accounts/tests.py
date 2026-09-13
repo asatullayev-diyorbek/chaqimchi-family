@@ -1,10 +1,14 @@
+from datetime import timedelta
+from io import StringIO
 from unittest import mock
 
+from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
-from .models import ParentUser, TelegramLoginToken
+from .models import ParentUser, Subscription, TelegramLoginToken
 
 WEBHOOK_HEADERS = {"HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN": "test-secret"}
 
@@ -490,7 +494,7 @@ class ScreenMinutesBulkTests(TestCase):
 )
 @mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
 class SubscriptionMenuTests(TestCase):
-    def test_subscription_button_shows_plan_and_upgrade_link(self, api):
+    def test_subscription_button_shows_duration_tiered_options(self, api):
         client = APIClient()
         ParentUser.objects.create_user(email="s@e.com", password="supersecret1", telegram_id=950)
         client.post(
@@ -500,7 +504,29 @@ class SubscriptionMenuTests(TestCase):
         )
         payload = api.call_args_list[-1][0][1]
         self.assertIn("Beta", payload["text"])
+        markup = str(payload["reply_markup"])
+        self.assertIn("subdur:mini:1", markup)
+        self.assertIn("subdur:mini:12", markup)
+        self.assertIn("-17%", markup)
+
+    def test_tapping_a_duration_shows_provider_checkout_link(self, api):
+        client = APIClient()
+        ParentUser.objects.create_user(email="s2@e.com", password="supersecret1", telegram_id=951)
+        client.post(
+            reverse("telegram-webhook"),
+            {
+                "callback_query": {
+                    "id": "cb1",
+                    "data": "subdur:mini:3",
+                    "message": {"message_id": 42, "chat": {"id": 1}},
+                    "from": {"id": 951},
+                }
+            },
+            format="json", **WEBHOOK_HEADERS,
+        )
+        payload = api.call_args_list[-1][0][1]
         self.assertIn("paycom.uz", str(payload["reply_markup"]))
+        self.assertIn("70 000", payload["text"])
 
 
 @override_settings(
@@ -509,9 +535,15 @@ class SubscriptionMenuTests(TestCase):
 )
 @mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
 class AiMenuTests(TestCase):
-    def test_ai_button_upsells_beta_plan(self, api):
+    def test_ai_button_upsells_expired_trial(self, api):
+        # Beta is a 7-day trial with ai_analysis included — the upsell only
+        # applies once that trial has lapsed.
+        parent = ParentUser.objects.create_user(email="ai@e.com", password="supersecret1", telegram_id=951)
+        sub = parent.family.subscription
+        sub.started_at = timezone.now() - timedelta(days=Subscription.TRIAL_DAYS + 1)
+        sub.save(update_fields=["started_at"])
+
         client = APIClient()
-        ParentUser.objects.create_user(email="ai@e.com", password="supersecret1", telegram_id=951)
         client.post(
             reverse("telegram-webhook"),
             {"message": {"text": "🔎 AI tahlil", "chat": {"id": 1, "type": "private"}, "from": {"id": 951}}},
@@ -519,3 +551,107 @@ class AiMenuTests(TestCase):
         )
         payload = api.call_args_list[-1][0][1]
         self.assertIn("Max tarifiga xos", payload["text"])
+
+
+@override_settings(TELEGRAM_BOT_TOKEN="x", PARENT_MINIAPP_URL="https://spino24.chaqimchi-ai.uz")
+@mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
+class BroadcastReviewPromptTests(TestCase):
+    def test_only_messages_parents_with_telegram_linked(self, api):
+        ParentUser.objects.create_user(email="no-tg@e.com", password="supersecret1")
+        ParentUser.objects.create_user(email="tg@e.com", password="supersecret1", telegram_id=1001)
+
+        call_command("broadcast_review_prompt", stdout=StringIO())
+
+        self.assertEqual(api.call_count, 1)
+        payload = api.call_args_list[0][0][1]
+        self.assertEqual(payload["chat_id"], 1001)
+        self.assertIn("open=review", str(payload["reply_markup"]))
+
+    def test_testers_only_flag_filters_by_plan(self, api):
+        tester = ParentUser.objects.create_user(email="t@e.com", password="supersecret1", telegram_id=1002)
+        tester.family.subscription.plan = Subscription.PLAN_TESTER
+        tester.family.subscription.save()
+        ParentUser.objects.create_user(email="mini@e.com", password="supersecret1", telegram_id=1003)
+
+        call_command("broadcast_review_prompt", "--testers-only", stdout=StringIO())
+
+        self.assertEqual(api.call_count, 1)
+        self.assertEqual(api.call_args_list[0][0][1]["chat_id"], 1002)
+
+    def test_dry_run_sends_nothing(self, api):
+        ParentUser.objects.create_user(email="tg@e.com", password="supersecret1", telegram_id=1004)
+
+        out = StringIO()
+        call_command("broadcast_review_prompt", "--dry-run", stdout=out)
+
+        api.assert_not_called()
+        self.assertIn("dry-run", out.getvalue())
+
+
+@override_settings(
+    TELEGRAM_BOT_TOKEN="x", TELEGRAM_BOT_USERNAME="ChaqimchiGuardBot",
+    TELEGRAM_WEBHOOK_SECRET="test-secret",
+)
+@mock.patch("apps.accounts.tg_api.call", return_value={"ok": True})
+class TasksBotFlowTests(TestCase):
+    def _send(self, payload):
+        return APIClient().post(
+            reverse("telegram-webhook"), payload, format="json", **WEBHOOK_HEADERS,
+        )
+
+    def _make_tasks(self):
+        from apps.tasks.models import Task
+
+        Task.objects.update_or_create(type=Task.TYPE_CHANNEL_JOIN, defaults=dict(title="Kanalga a'zolik", reward_uzs=1000, channel_username="@spino24channel"))
+        Task.objects.update_or_create(type=Task.TYPE_REFERRAL, defaults=dict(title="Do'stni taklif qilish", reward_uzs=1000))
+
+    def test_referral_start_links_new_user_to_referrer(self, api):
+        referrer = ParentUser.objects.create_user(email="r@e.com", password="supersecret1", telegram_id=2001)
+        self._send({
+            "message": {"text": f"/start ref_{referrer.id}", "chat": {"id": 1, "type": "private"}, "from": {"id": 2002}}
+        })
+        new_user = ParentUser.objects.get(telegram_id=2002)
+        self.assertEqual(new_user.referred_by_id, referrer.id)
+
+    def test_unknown_referrer_id_is_silently_ignored(self, api):
+        self._send({
+            "message": {"text": "/start ref_999999", "chat": {"id": 1, "type": "private"}, "from": {"id": 3001}}
+        })
+        new_user = ParentUser.objects.get(telegram_id=3001)
+        self.assertIsNone(new_user.referred_by)
+
+    def test_channel_check_callback_credits_wallet(self, api):
+        from apps.tasks import service
+
+        self._make_tasks()
+        parent = ParentUser.objects.create_user(
+            email="p@e.com", password="supersecret1", telegram_id=2003, onboarding_required=False,
+        )
+        api.return_value = {"ok": True, "result": {"status": "member"}}
+        self._send({
+            "callback_query": {
+                "id": "cb1", "data": "task:check_channel",
+                "message": {"message_id": 5, "chat": {"id": 1}},
+                "from": {"id": 2003},
+            }
+        })
+        self.assertEqual(service.get_wallet(parent.family).balance_uzs, 1000)
+
+    def test_tasks_menu_shows_story_instructions_with_short_id_and_no_submit_button(self, api):
+        from apps.tasks.models import Task
+
+        Task.objects.update_or_create(
+            type=Task.TYPE_TELEGRAM_STORY,
+            defaults=dict(title="Telegram'da story", reward_uzs=1500, target_url="https://t.me/spino24uz"),
+        )
+        parent = ParentUser.objects.create_user(
+            email="p2@e.com", password="supersecret1", telegram_id=2004, onboarding_required=False,
+        )
+        self._send({
+            "message": {"text": "🎯 Vazifalar", "chat": {"id": 1, "type": "private"}, "from": {"id": 2004}}
+        })
+        payload = api.call_args_list[-1][0][1]
+        self.assertIn(parent.short_id, payload["text"])
+        self.assertIn("https://t.me/spino24uz", payload["text"])
+        # No inline button for the story task — nothing to submit.
+        self.assertNotIn("story", str(payload.get("reply_markup", "")))

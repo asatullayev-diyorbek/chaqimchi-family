@@ -7,6 +7,7 @@ import { ThemeProvider, useTheme } from "./src/state/theme";
 import { SessionProvider, useSession } from "./src/state/session";
 import { FamilyProvider } from "./src/state/family";
 import { ToastProvider } from "./src/components";
+import { ReviewProvider } from "./src/state/review";
 import { AppFrame } from "./src/components/AppFrame";
 import RootNavigator from "./src/navigation/RootNavigator";
 import { hideBackButton, onBackButtonClick, showBackButton } from "./src/lib/telegram";
@@ -93,7 +94,9 @@ export default function App() {
         <AppFrame>
           <ToastProvider>
             <SessionProvider>
-              <AppShell />
+              <ReviewProvider>
+                <AppShell />
+              </ReviewProvider>
             </SessionProvider>
           </ToastProvider>
         </AppFrame>

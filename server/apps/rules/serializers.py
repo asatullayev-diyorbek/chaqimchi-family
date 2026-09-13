@@ -27,6 +27,16 @@ class RuleSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"value": "weekend_minutes butun son bo'lishi kerak"}
                 )
+        elif rule_type == "app_daily_limit_minutes":
+            if (
+                not isinstance(value, dict)
+                or not value.get("app")
+                or not isinstance(value.get("minutes"), int)
+                or isinstance(value.get("minutes"), bool)
+            ):
+                raise serializers.ValidationError(
+                    {"value": "app_daily_limit_minutes uchun {'app': '<name>', 'minutes': <int>} kerak"}
+                )
         elif rule_type == "blocked_app":
             if not isinstance(value, dict) or not value.get("app"):
                 raise serializers.ValidationError(

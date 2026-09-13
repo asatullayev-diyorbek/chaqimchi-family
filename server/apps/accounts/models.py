@@ -1,10 +1,12 @@
 import uuid
+from datetime import timedelta
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 class Family(models.Model):
@@ -17,26 +19,31 @@ class Family(models.Model):
 
 
 class Subscription(models.Model):
-    """One row per family. Every family gets a free "beta" plan on creation;
-    the model exists now so paid tiers (and Payme/Click billing) can be added
-    later without a schema rethink. Feature checks go through ``allows()``."""
+    """One row per family. Every family gets a free "beta" plan on creation —
+    which is a 7-day full-feature trial (see ``TRIAL_DAYS``/``is_trial_active``),
+    not a permanent free tier. Once the trial lapses, a still-``beta`` family
+    falls back to ``BETA_EXPIRED_FEATURES`` until they pick Mini or Max.
+    Feature checks go through ``allows()``."""
 
     PLAN_BETA = "beta"
     PLAN_MINI = "mini"
     PLAN_MAX = "max"
     PLAN_TESTER = "tester"
     PLAN_CHOICES = [
-        (PLAN_BETA, "Beta (bepul)"),
+        (PLAN_BETA, "Beta (7 kunlik sinov)"),
         (PLAN_MINI, "Mini"),
         (PLAN_MAX, "Max"),
         (PLAN_TESTER, "Tester (cheksiz, faqat sinovchilar uchun)"),
     ]
 
-    # Monthly price in so'm. Source of truth for both the checkout amount
-    # and every "narx" display (bot, apps, marketing) — never hard-code a
-    # price anywhere else. Tester is never sold — it's assigned by hand to
-    # people helping test the product (billing.CheckoutView only accepts
-    # mini/max) — so it has no real price.
+    TRIAL_DAYS = 7
+
+    # Monthly (1-oy) price in so'm — kept for call sites that only ever sold
+    # a single period (bot menu, MRR reporting). Source of truth for the
+    # actual checkout amount is ``PLAN_DURATION_PRICES`` below, which must
+    # agree with this dict's 1-month entry. Tester is never sold — it's
+    # assigned by hand to people helping test the product (billing.
+    # CheckoutView only accepts mini/max) — so it has no real price.
     PLAN_PRICE_UZS = {
         PLAN_BETA: 0,
         PLAN_MINI: 25_000,
@@ -44,17 +51,27 @@ class Subscription(models.Model):
         PLAN_TESTER: 0,
     }
 
-    # Per-plan capability map. `None` = unlimited.
+    # Duration-tiered pricing (months -> so'm) for the plans that are
+    # actually sold. Longer commitments are discounted — this must match
+    # marketing/src/lib/site.ts's PLANS durations; if one changes, update
+    # both.
+    PLAN_DURATION_PRICES = {
+        PLAN_MINI: {1: 25_000, 3: 70_000, 12: 250_000},
+        PLAN_MAX: {1: 35_000, 3: 95_000, 12: 350_000},
+    }
+
+    # Per-plan capability map. `None` = unlimited. PLAN_BETA here is the
+    # *active-trial* shape (7 days, matching TRIAL_DAYS) — capped at 1
+    # child/1 device but otherwise Max-level, so a family can fully evaluate
+    # paid features before deciding. Once the trial lapses, ``features()``
+    # returns BETA_EXPIRED_FEATURES instead.
     PLAN_FEATURES = {
-        # 1 farzand, lekin uning noutbuki+telefoni kabi 2 qurilmasigacha —
-        # bitta bolali oilaning odatiy holatini bepul tarifda ham cheklamaslik
-        # uchun (bu — pullik tarif chiqishidan oldingi mavjud xatti-harakat).
         PLAN_BETA: {
             "max_children": 1,
-            "max_devices": 2,
-            "history_days": 7,
-            "screenshot_daily_limit": 3,
-            "ai_analysis": False,
+            "max_devices": 1,
+            "history_days": None,
+            "screenshot_daily_limit": None,
+            "ai_analysis": True,
         },
         PLAN_MINI: {
             "max_children": 2,
@@ -64,8 +81,8 @@ class Subscription(models.Model):
             "ai_analysis": False,
         },
         PLAN_MAX: {
-            "max_children": None,
-            "max_devices": None,
+            "max_children": 5,
+            "max_devices": 10,
             "history_days": None,
             "screenshot_daily_limit": None,
             "ai_analysis": True,
@@ -77,6 +94,17 @@ class Subscription(models.Model):
             "screenshot_daily_limit": None,
             "ai_analysis": True,
         },
+    }
+
+    # Applied to a `beta` family once its trial has lapsed and it hasn't
+    # picked a paid plan — deliberately tight, to make upgrading the
+    # obvious next step rather than a comfortable permanent free tier.
+    BETA_EXPIRED_FEATURES = {
+        "max_children": 1,
+        "max_devices": 1,
+        "history_days": 3,
+        "screenshot_daily_limit": 0,
+        "ai_analysis": False,
     }
 
     STATUS_ACTIVE = "active"
@@ -97,7 +125,20 @@ class Subscription(models.Model):
     provider = models.CharField(max_length=30, blank=True, default="")     # e.g. "payme", "click"
     provider_ref = models.CharField(max_length=120, blank=True, default="")
 
+    @property
+    def trial_ends_at(self):
+        """Trial is always measured from this Subscription row's creation —
+        the same moment the family itself was created (see
+        ``_ensure_subscription`` below), so no extra field is needed."""
+        return self.started_at + timedelta(days=self.TRIAL_DAYS)
+
+    @property
+    def is_trial_active(self) -> bool:
+        return self.plan == self.PLAN_BETA and timezone.now() < self.trial_ends_at
+
     def features(self) -> dict:
+        if self.plan == self.PLAN_BETA and not self.is_trial_active:
+            return self.BETA_EXPIRED_FEATURES
         return self.PLAN_FEATURES.get(self.plan, self.PLAN_FEATURES[self.PLAN_BETA])
 
     def allows(self, feature: str) -> bool:
@@ -110,6 +151,12 @@ class Subscription(models.Model):
     @property
     def price_uzs(self) -> int:
         return self.PLAN_PRICE_UZS.get(self.plan, 0)
+
+    @classmethod
+    def duration_price_uzs(cls, plan: str, months: int) -> int | None:
+        """Price for `plan` billed for `months` (1/3/12), or None if that
+        plan/duration combination isn't sold."""
+        return cls.PLAN_DURATION_PRICES.get(plan, {}).get(months)
 
     @property
     def plan_label(self) -> str:
@@ -147,12 +194,13 @@ class ParentUserManager(BaseUserManager):
         extra_fields.setdefault("is_superuser", True)
         return self.create_user(email, password, **extra_fields)
 
-    def create_telegram_user(self, telegram_id, telegram_username="", full_name=""):
+    def create_telegram_user(self, telegram_id, telegram_username="", full_name="", referred_by=None):
         user = self.model(
             family=Family.objects.create(),
             telegram_id=telegram_id,
             telegram_username=telegram_username,
             full_name=full_name,
+            referred_by=referred_by,
             # A Telegram-created account can't do anything until the parent
             # confirms a phone number through the bot (see apps.accounts.onboarding).
             onboarding_required=True,
@@ -182,7 +230,11 @@ class ParentUser(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    # apps.tasks referral program: who invited this parent (set once, from a
+    # `/start ref_<id>` deep link, at account creation — never retroactive).
+    referred_by = models.ForeignKey(
+        "self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals"
+    )
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
@@ -190,6 +242,13 @@ class ParentUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email or self.username or f"telegram:{self.telegram_id}"
+
+    @property
+    def short_id(self) -> str:
+        """The apps.tasks story-verification number a parent writes on their
+        reposted story — their row id, zero-padded to 4 digits (an id of 5+
+        digits is used as-is, never truncated)."""
+        return f"{self.id:04d}"
 
 
 class TelegramLoginToken(models.Model):

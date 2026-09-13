@@ -15,13 +15,18 @@ from apps.tracking.digest import _app_name, _event_minutes
 from apps.tracking.models import Event
 from apps.tracking.views import _normalize_domain
 
+from .models import WeeklyInsight
+
 MAX_TOP_APPS = 8
 MAX_TOP_DOMAINS = 8
 
 
 def week_bounds(today=None):
     """(monday, sunday) of the most recently completed week — i.e. if today
-    is Wednesday, last Monday..Sunday, not the current in-progress week."""
+    is Wednesday, last Monday..Sunday, not the current in-progress week.
+    Kept separate from period_bounds() because the proactive weekly cron
+    (views.py) always analyzes last_week specifically, regardless of what
+    on-demand periods exist."""
     tz = timezone.get_current_timezone()
     day = today or timezone.localtime(timezone.now(), tz).date()
     this_monday = day - timedelta(days=day.weekday())
@@ -29,9 +34,36 @@ def week_bounds(today=None):
     return last_monday, last_monday + timedelta(days=6)
 
 
+def period_bounds(period, today=None):
+    """(period_start, range_start, range_end, is_partial) for an on-demand
+    "AI tahlil" request. range_start/range_end bound the data to aggregate;
+    period_start is the cache key (see WeeklyInsight.week_start). "this_week"
+    and "today" are always partial — the period isn't over — which callers
+    must tell Groq, or it'll narrate an in-progress period as a finished
+    one ("bu hafta ... sarfladi" about a week that's only half happened)."""
+    tz = timezone.get_current_timezone()
+    day = today or timezone.localtime(timezone.now(), tz).date()
+    this_monday = day - timedelta(days=day.weekday())
+
+    if period == WeeklyInsight.PERIOD_LAST_WEEK:
+        last_monday = this_monday - timedelta(days=7)
+        return last_monday, last_monday, last_monday + timedelta(days=6), False
+    if period == WeeklyInsight.PERIOD_THIS_WEEK:
+        return this_monday, this_monday, day, True
+    if period == WeeklyInsight.PERIOD_TODAY:
+        return day, day, day, True
+    raise ValueError(f"unknown period: {period!r}")
+
+
 def weekly_summary_for_child(child, week_start, week_end):
-    """The data bundle for one child's week, or None if the child has no
-    linked devices at all (nothing to analyze)."""
+    """The data bundle for one child over [week_start, week_end], or None if
+    the child has no linked devices, or none of them sent any telemetry
+    during this exact range (e.g. the device was only linked after this
+    range ended) — without this check, a genuinely untracked period looks
+    identical to a real zero-usage one, and Groq would confidently narrate
+    "spent no time on screens" for a period no monitoring happened in at
+    all. Despite the name, the range need not be a full week — "this_week"
+    and "today" (see period_bounds) reuse it with a shorter range."""
     device_ids = list(
         ChildDevice.objects.filter(child=child, status=ChildDevice.STATUS_LINKED).values_list(
             "id", flat=True
@@ -43,6 +75,9 @@ def weekly_summary_for_child(child, week_start, week_end):
     tz = timezone.get_current_timezone()
     start = timezone.make_aware(datetime.combine(week_start, time.min), tz)
     end = timezone.make_aware(datetime.combine(week_end, time.max), tz)
+
+    if not Event.objects.filter(device_id__in=device_ids, occurred_at__gte=start, occurred_at__lte=end).exists():
+        return None
 
     daily_minutes = defaultdict(float)
     app_minutes = defaultdict(float)

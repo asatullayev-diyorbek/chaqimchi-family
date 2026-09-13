@@ -23,6 +23,7 @@ export function DurationPickerSheet({
   initial,
   allowZero = true,
   loading = false,
+  showPresets = true,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -31,6 +32,10 @@ export function DurationPickerSheet({
   initial: number;
   allowZero?: boolean;
   loading?: boolean;
+  /** Set false to hide the quick-preset chip row above the wheel — for a
+   * picker where those specific presets (30d/1s/1s30d/2s/3s/4s) don't fit
+   * the use case and would just be visual noise. */
+  showPresets?: boolean;
 }) {
   const [h, setH] = useState(minutesToHM(initial).h);
   const [m, setM] = useState(roundToStep(minutesToHM(initial).m));
@@ -47,19 +52,21 @@ export function DurationPickerSheet({
   return (
     <Sheet visible={visible} onClose={onClose} title={title} scroll={false}>
       <View style={{ gap: spacing.lg }}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-          {PRESETS.map((p) => (
-            <Chip
-              key={p}
-              label={minutesToHM(p).h ? `${minutesToHM(p).h}s ${minutesToHM(p).m ? `${minutesToHM(p).m}d` : ""}`.trim() : `${p}d`}
-              active={total === p}
-              onPress={() => {
-                setH(minutesToHM(p).h);
-                setM(minutesToHM(p).m);
-              }}
-            />
-          ))}
-        </View>
+        {showPresets ? (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {PRESETS.map((p) => (
+              <Chip
+                key={p}
+                label={minutesToHM(p).h ? `${minutesToHM(p).h}s ${minutesToHM(p).m ? `${minutesToHM(p).m}d` : ""}`.trim() : `${p}d`}
+                active={total === p}
+                onPress={() => {
+                  setH(minutesToHM(p).h);
+                  setM(minutesToHM(p).m);
+                }}
+              />
+            ))}
+          </View>
+        ) : null}
 
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 }}>
           <WheelColumn values={HOURS} value={h} onChange={setH} suffix="soat" />

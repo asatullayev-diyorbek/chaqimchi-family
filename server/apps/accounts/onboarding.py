@@ -130,7 +130,7 @@ def send_phone_prompt(chat_id):
                       reply_markup=_phone_keyboard())
 
 
-def start_onboarding(from_user: dict, chat_id):
+def start_onboarding(from_user: dict, chat_id, referred_by=None):
     """Cold /start from an unlinked Telegram user: create the account and
     begin onboarding. Returns the ParentUser."""
     telegram_id = from_user.get("id")
@@ -142,7 +142,8 @@ def start_onboarding(from_user: dict, chat_id):
     parent = ParentUser.objects.filter(telegram_id=telegram_id).first()
     if parent is None:
         parent = ParentUser.objects.create_telegram_user(
-            telegram_id=telegram_id, telegram_username=username, full_name=full_name
+            telegram_id=telegram_id, telegram_username=username, full_name=full_name,
+            referred_by=referred_by,
         )
     elif not parent.onboarding_required:
         # Already onboarded — nothing to do here; caller shows the menu.

@@ -239,6 +239,124 @@ func TestCheckDailyLimit_WarnsThenBlocksInStages(t *testing.T) {
 	}
 }
 
+func TestCheckAppDailyLimit_WarnsThenBlocksInStages(t *testing.T) {
+	cache := newTestCache(t)
+	value, _ := json.Marshal(appDailyLimitValue{App: "roblox.exe", Minutes: 60})
+	cache.Replace([]Rule{{ID: "r1", RuleType: "app_daily_limit_minutes", Value: value}})
+
+	reporter := newTestReporter(t, func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	var notifications []string
+	var blockCount int
+	enforcer := NewEnforcer(cache, reporter,
+		func(reason, message string) {
+			blockCount++
+			if reason != "app_daily_limit" || message != MessageAppLimitReached {
+				t.Errorf("unexpected block: %q %q", reason, message)
+			}
+		},
+		func(message string) { notifications = append(notifications, message) },
+	)
+
+	ctx := context.Background()
+
+	enforcer.CheckAppDailyLimit(ctx, "roblox.exe", 40) // 20 min remaining
+	if len(notifications) != 0 {
+		t.Fatalf("expected no notifications yet, got %v", notifications)
+	}
+
+	enforcer.CheckAppDailyLimit(ctx, "roblox.exe", 50) // 10 min remaining
+	if len(notifications) != 1 || notifications[0] != MessageAppWarn15Min {
+		t.Fatalf("expected app 15min warning, got %v", notifications)
+	}
+
+	enforcer.CheckAppDailyLimit(ctx, "roblox.exe", 57) // 3 min remaining
+	if len(notifications) != 2 || notifications[1] != MessageAppWarn5Min {
+		t.Fatalf("expected app 5min warning appended, got %v", notifications)
+	}
+
+	if blockCount != 0 {
+		t.Fatal("should not be blocked before the app limit is reached")
+	}
+	enforcer.CheckAppDailyLimit(ctx, "roblox.exe", 61) // limit exceeded
+	if blockCount != 1 {
+		t.Fatalf("expected exactly 1 block call at crossing, got %d", blockCount)
+	}
+
+	// A different app is unaffected.
+	enforcer.CheckForegroundApp(ctx, "notepad.exe")
+	if _, _, ok := enforcer.ActiveBlock(); ok {
+		t.Fatal("a different app must not be blocked by roblox's limit")
+	}
+}
+
+func TestCheckAppDailyLimit_ReopeningBlockedAppReblocksAndReports(t *testing.T) {
+	cache := newTestCache(t)
+	value, _ := json.Marshal(appDailyLimitValue{App: "roblox.exe", Minutes: 60})
+	cache.Replace([]Rule{{ID: "r1", RuleType: "app_daily_limit_minutes", Value: value}})
+
+	var reportedTypes []string
+	reporter := newTestReporter(t, func(w http.ResponseWriter, r *http.Request) {
+		var body struct {
+			AlertType string `json:"alert_type"`
+		}
+		json.NewDecoder(r.Body).Decode(&body)
+		reportedTypes = append(reportedTypes, body.AlertType)
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	var blockCount int
+	enforcer := NewEnforcer(cache, reporter, func(reason, message string) { blockCount++ }, nil)
+	ctx := context.Background()
+
+	// Cross the limit while roblox is foregrounded (mirrors main.go calling
+	// CheckAppDailyLimit then CheckForegroundApp for the same app each tick).
+	enforcer.CheckAppDailyLimit(ctx, "roblox.exe", 61)
+	enforcer.CheckForegroundApp(ctx, "roblox.exe")
+	if blockCount != 1 {
+		t.Fatalf("expected exactly 1 block at crossing (no double-fire), got %d", blockCount)
+	}
+
+	// Child switches away, then reopens roblox later the same day — still
+	// over budget, so it must block (and report) again.
+	enforcer.CheckForegroundApp(ctx, "notepad.exe")
+	enforcer.CheckAppDailyLimit(ctx, "roblox.exe", 65)
+	enforcer.CheckForegroundApp(ctx, "roblox.exe")
+	if blockCount != 2 {
+		t.Fatalf("expected a second block on reopening, got %d", blockCount)
+	}
+	if len(reportedTypes) != 2 {
+		t.Fatalf("expected 2 alert reports, got %v", reportedTypes)
+	}
+}
+
+func TestCheckAppDailyLimit_RuleRemovedUnblocks(t *testing.T) {
+	cache := newTestCache(t)
+	value, _ := json.Marshal(appDailyLimitValue{App: "roblox.exe", Minutes: 60})
+	cache.Replace([]Rule{{ID: "r1", RuleType: "app_daily_limit_minutes", Value: value}})
+
+	reporter := newTestReporter(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusCreated) })
+	enforcer := NewEnforcer(cache, reporter, func(reason, message string) {}, nil)
+	ctx := context.Background()
+
+	enforcer.CheckAppDailyLimit(ctx, "roblox.exe", 61)
+	enforcer.CheckForegroundApp(ctx, "roblox.exe")
+	if _, _, ok := enforcer.ActiveBlock(); !ok {
+		t.Fatal("expected blocked after crossing the limit")
+	}
+
+	// Parent removes the rule.
+	cache.Replace(nil)
+	enforcer.CheckForegroundApp(ctx, "notepad.exe") // clears the per-session alertedApp
+	enforcer.CheckAppDailyLimit(ctx, "roblox.exe", 61)
+	enforcer.CheckForegroundApp(ctx, "roblox.exe")
+	if _, _, ok := enforcer.ActiveBlock(); ok {
+		t.Fatal("expected unblocked once the app_daily_limit_minutes rule is removed")
+	}
+}
+
 func TestActiveBlock(t *testing.T) {
 	ctx := context.Background()
 	noop := func(string, string) {}

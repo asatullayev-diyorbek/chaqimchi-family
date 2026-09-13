@@ -3376,3 +3376,100 @@ footer {
     transform: none;
   }
 }
+
+/* 7-day trial banner, sits above the duration toggle so it's the first
+   thing a parent reads on the pricing section. */
+.trial-banner {
+  max-width: 520px;
+  margin: 36px auto 28px;
+  padding: 22px 28px;
+  border-radius: 20px;
+  text-align: center;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--accent) 14%, var(--surface)), color-mix(in srgb, var(--brand) 10%, var(--surface)));
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+.trial-badge {
+  display: inline-block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--brand-ink);
+  margin-bottom: 6px;
+}
+
+.trial-note {
+  font-weight: 700;
+  color: var(--fg);
+  margin: 0 0 4px;
+}
+
+.trial-detail {
+  color: var(--body);
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+/* Shared billing-cycle switch for the Mini/Max cards below it. */
+.duration-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 auto 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.duration-btn {
+  border: 0;
+  background: transparent;
+  padding: 9px 20px;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.duration-btn.active {
+  background: var(--brand);
+  color: #fff;
+}
+
+.best-value {
+  justify-self: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--accent-ink);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* Non-discounted reference price + savings badge, shown above the actual
+   price whenever a 3/12-month choice is cheaper per period than paying
+   monthly — makes the discount impossible to miss. */
+.amt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.amt-original {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+
+.discount-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fff;
+  background: var(--accent-ink);
+  padding: 2px 8px;
+  border-radius: 999px;
+}

@@ -1,8 +1,13 @@
 import { apiFetch } from "./client";
 
-export type RuleType = "daily_limit_minutes" | "blocked_app" | "blocked_window";
+export type RuleType =
+  | "daily_limit_minutes"
+  | "app_daily_limit_minutes"
+  | "blocked_app"
+  | "blocked_window";
 
 export type DailyLimitValue = { minutes: number; weekend_minutes?: number };
+export type AppDailyLimitValue = { app: string; minutes: number };
 export type BlockedAppValue = { app: string };
 export type BlockedWindowValue = { start: string; end: string };
 
@@ -10,7 +15,7 @@ export type Rule = {
   id: string;
   device: string;
   rule_type: RuleType;
-  value: DailyLimitValue | BlockedAppValue | BlockedWindowValue;
+  value: DailyLimitValue | AppDailyLimitValue | BlockedAppValue | BlockedWindowValue;
   created_at: string;
 };
 
@@ -52,6 +57,19 @@ export function blockedApps(rules: Rule[]): (Rule & { value: BlockedAppValue })[
   return rules.filter(
     (r) => r.rule_type === "blocked_app" && "app" in r.value,
   ) as (Rule & { value: BlockedAppValue })[];
+}
+
+export function appDailyLimitRule(
+  rules: Rule[],
+  appName: string,
+): (Rule & { value: AppDailyLimitValue }) | null {
+  const r = rules.find(
+    (x) =>
+      x.rule_type === "app_daily_limit_minutes" &&
+      "app" in x.value &&
+      (x.value as AppDailyLimitValue).app.toLowerCase() === appName.toLowerCase(),
+  );
+  return (r as Rule & { value: AppDailyLimitValue }) ?? null;
 }
 
 export function blockedWindows(rules: Rule[]): (Rule & { value: BlockedWindowValue })[] {

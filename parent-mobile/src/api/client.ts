@@ -130,6 +130,14 @@ export function setSessionExpiredHandler(fn: (() => void) | null) {
   onSessionExpired = fn;
 }
 
+// For the rare call that goes to a host other than API_BASE_URL (the Vercel
+// groq-relay) but still needs to prove who the caller is — refreshes first
+// if the in-memory token is stale, same as apiFetch does internally.
+export async function getValidAccessToken(): Promise<string | null> {
+  if (isExpired(accessToken)) return refreshAccessToken();
+  return accessToken;
+}
+
 const TIMEOUT_MS = 20_000;
 const NETWORK_MESSAGE =
   "So‘rov javob bermadi. Internet aloqasini tekshirib, qayta urinib ko‘ring.";

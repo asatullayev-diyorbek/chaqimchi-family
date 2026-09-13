@@ -50,6 +50,9 @@ INSTALLED_APPS = [
     "apps.screenshots",
     "apps.billing",
     "apps.insights",
+    "apps.appinfo",
+    "apps.feedback",
+    "apps.tasks",
 ]
 
 MIDDLEWARE = [
@@ -216,18 +219,12 @@ CLICK_MERCHANT_ID = os.environ.get("CLICK_MERCHANT_ID", "")
 CLICK_SERVICE_ID = os.environ.get("CLICK_SERVICE_ID", "")
 CLICK_SECRET_KEY = os.environ.get("CLICK_SECRET_KEY", "")
 
-# Groq (not Claude — a deliberate choice for the AI tahlil / weekly-insight
-# feature, apps.insights). Empty until a real key exists; is_configured()
-# in apps/insights/groq.py checks this first. Confirm the current model id
-# and pricing at https://console.groq.com before setting GROQ_MODEL.
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_MODEL = os.environ.get("GROQ_MODEL", "")
-# PythonAnywhere's outbound IP range is Cloudflare-blocked in front of
-# api.groq.com (confirmed: HTTP 403 "error code: 1010", an ASN/datacenter
-# block) — set these to route through the small Vercel relay instead
-# (parent-web/src/app/api/groq-relay/route.ts), which isn't blocked.
-GROQ_RELAY_URL = os.environ.get("GROQ_RELAY_URL", "")
-GROQ_RELAY_SECRET = os.environ.get("GROQ_RELAY_SECRET", "")
+# AI tahlil (apps.insights) — Django never calls Groq itself (PythonAnywhere's
+# outbound IPs are Cloudflare-blocked in front of api.groq.com, and PA's own
+# proxy whitelist blocks arbitrary domains like Vercel too). Generation
+# happens on Vercel; this secret gates the two endpoints Vercel's weekly cron
+# uses to pull pending work and push results back (pending-batch/cron-submit).
+INSIGHTS_CRON_SECRET = os.environ.get("INSIGHTS_CRON_SECRET", "")
 
 # Telegram user ids that get an operator DM when a new parent finishes
 # onboarding or a device is linked. Comma-separated; default is the

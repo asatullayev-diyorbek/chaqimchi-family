@@ -154,6 +154,12 @@ class TelegramWebhookView(APIView):
         if not chat_id:
             return
 
+        # "/start ref_<id>" is a referral deep link — record it (new users
+        # only) then fall straight into the normal onboarding path below.
+        if text.startswith("/start ref_") and from_id and chat.get("type", "private") == "private":
+            self._handle_referral_start(text.split(None, 1)[1].strip(), from_user, chat_id)
+            return
+
         # "/start <token>" is the web login / account-link deep link — the
         # token is the credential, so this runs before the per-user gating.
         if text.startswith("/start ") and len(text.split()) > 1:
@@ -232,6 +238,18 @@ class TelegramWebhookView(APIView):
             self._mark_alert_seen(data.removeprefix(ALERT_SEEN_PREFIX), from_user, callback_id, chat_id, message_id)
             return
 
+        from . import botmenu
+
+        if data.startswith(botmenu.SUBDUR_PREFIX):
+            self._handle_subscription_duration(
+                data.removeprefix(botmenu.SUBDUR_PREFIX), from_user, callback_id, chat_id, message_id
+            )
+            return
+
+        if data.startswith(botmenu.TASK_PREFIX):
+            self._handle_task_action(data.removeprefix(botmenu.TASK_PREFIX), from_user, callback_id, chat_id)
+            return
+
         if data.startswith(CONFIRM_PREFIX):
             action, payload_token = "confirm", data.removeprefix(CONFIRM_PREFIX)
         elif data.startswith(REJECT_PREFIX):
@@ -289,6 +307,52 @@ class TelegramWebhookView(APIView):
                 from . import onboarding
 
                 onboarding.send_phone_prompt(chat_id)
+
+    @staticmethod
+    def _handle_task_action(action, from_user, callback_id, chat_id):
+        from . import botmenu
+
+        from_id = from_user.get("id")
+        parent = ParentUser.objects.filter(telegram_id=from_id).first() if from_id else None
+        if parent is None:
+            if callback_id:
+                _telegram_api_call("answerCallbackQuery", {"callback_query_id": callback_id, "text": "Topilmadi."})
+            return
+        botmenu.handle_task_action(action, chat_id, callback_id, parent)
+
+    @staticmethod
+    def _handle_referral_start(payload_token, from_user, chat_id):
+        from . import botmenu, onboarding
+
+        from_id = from_user.get("id")
+        parent = ParentUser.objects.filter(telegram_id=from_id).first()
+        if parent is not None:
+            # Already registered — referrals are never retroactive; behave
+            # like a bare /start.
+            if parent.onboarding_required:
+                onboarding.send_phone_prompt(chat_id)
+            else:
+                botmenu.send_menu(chat_id, parent)
+            return
+
+        referrer_id = payload_token.removeprefix("ref_")
+        referrer = ParentUser.objects.filter(pk=referrer_id).first() if referrer_id.isdigit() else None
+        if referrer and referrer.telegram_id == from_id:
+            referrer = None  # can't refer yourself
+        onboarding.start_onboarding(from_user, chat_id, referred_by=referrer)
+
+    @staticmethod
+    def _handle_subscription_duration(payload, from_user, callback_id, chat_id, message_id):
+        from . import botmenu
+
+        from_id = from_user.get("id")
+        parent = ParentUser.objects.filter(telegram_id=from_id).first() if from_id else None
+        plan, _, months = payload.partition(":")
+        if parent is None or not months.isdigit():
+            if callback_id:
+                _telegram_api_call("answerCallbackQuery", {"callback_query_id": callback_id, "text": "Topilmadi."})
+            return
+        botmenu.send_duration_checkout(chat_id, message_id, callback_id, parent, plan, int(months))
 
     @staticmethod
     def _mark_alert_seen(alert_id, from_user, callback_id, chat_id, message_id):

@@ -3,6 +3,7 @@ import { View } from "react-native";
 import { colors } from "../../theme";
 import { useSession } from "../../state/session";
 import { useFamily } from "../../state/family";
+import { useReview } from "../../state/review";
 import {
   AppHeader,
   Avatar,
@@ -18,6 +19,7 @@ import {
 export default function MoreScreen({ navigation }: any) {
   const { user, signOut, viaTelegram } = useSession();
   const { children, linkedDevices } = useFamily();
+  const review = useReview();
   const [confirmOut, setConfirmOut] = React.useState(false);
 
   return (
@@ -46,6 +48,7 @@ export default function MoreScreen({ navigation }: any) {
           <ListRow icon="chart" title="Hisobotlar" onPress={() => navigation.navigate("Reports")} />
           <ListRow icon="card" title="Obuna" onPress={() => navigation.navigate("Subscription")} />
           <ListRow icon="sparkle" title="AI tahlil" onPress={() => navigation.navigate("AIInsight")} />
+          <ListRow icon="gift" title="Vazifalar" subtitle="Bajarib, balans yig'ing" onPress={() => navigation.navigate("Tasks")} />
         </View>
       </Card>
 
@@ -58,6 +61,7 @@ export default function MoreScreen({ navigation }: any) {
           <ListRow icon="settings" title="Hisob sozlamalari" onPress={() => navigation.navigate("Settings")} />
           <ListRow icon="privacy" title="Maxfiylik" onPress={() => navigation.navigate("Privacy")} />
           <ListRow icon="help" title="Yordam" onPress={() => navigation.navigate("Help")} />
+          <ListRow icon="star" title="Ilovani baholang" onPress={review.open} />
         </View>
       </Card>
 

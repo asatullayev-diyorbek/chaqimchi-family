@@ -9,6 +9,8 @@ import { useAlertBadge } from "../hooks/useAlertBadge";
 import HomeScreen from "../screens/home/HomeScreen";
 import DeviceDetailScreen from "../screens/devices/DeviceDetailScreen";
 import InstalledAppsScreen from "../screens/devices/InstalledAppsScreen";
+import InstalledAppDetailScreen from "../screens/devices/InstalledAppDetailScreen";
+import DeviceLocationScreen from "../screens/devices/DeviceLocationScreen";
 import AddChildScreen from "../screens/family/AddChildScreen";
 import PairDeviceScreen from "../screens/enroll/PairDeviceScreen";
 import ActivityScreen from "../screens/activity/ActivityScreen";
@@ -22,6 +24,7 @@ import DevicesScreen from "../screens/devices/DevicesScreen";
 import ReportsScreen from "../screens/more/ReportsScreen";
 import NotificationSettingsScreen from "../screens/more/NotificationSettingsScreen";
 import SubscriptionScreen from "../screens/more/SubscriptionScreen";
+import TasksScreen from "../screens/more/TasksScreen";
 import AIInsightScreen from "../screens/more/AIInsightScreen";
 import SettingsScreen from "../screens/more/SettingsScreen";
 import PrivacyScreen from "../screens/more/PrivacyScreen";
@@ -44,10 +47,16 @@ function HomeStack() {
       <Home.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
       <Home.Screen name="Devices" component={DevicesScreen} options={{ title: "Qurilmalar" }} />
       <Home.Screen name="DeviceDetail" component={DeviceDetailScreen} options={{ title: "Qurilma" }} />
+      <Home.Screen name="DeviceLocation" component={DeviceLocationScreen} options={{ title: "Joylashuv" }} />
       <Home.Screen
         name="InstalledApps"
         component={InstalledAppsScreen}
         options={{ title: "O'rnatilgan ilovalar" }}
+      />
+      <Home.Screen
+        name="InstalledAppDetail"
+        component={InstalledAppDetailScreen}
+        options={{ title: "Ilova" }}
       />
       <Home.Screen name="Reports" component={ReportsScreen} options={{ title: "Hisobotlar" }} />
       <Home.Screen name="AddChild" component={AddChildScreen} options={{ title: "Farzand qo‘shish" }} />
@@ -93,14 +102,21 @@ function MoreStack() {
       <More.Screen name="ChildDetail" component={ChildDetailScreen} options={{ title: "Farzand" }} />
       <More.Screen name="Devices" component={DevicesScreen} options={{ title: "Qurilmalar" }} />
       <More.Screen name="DeviceDetail" component={DeviceDetailScreen} options={{ title: "Qurilma" }} />
+      <More.Screen name="DeviceLocation" component={DeviceLocationScreen} options={{ title: "Joylashuv" }} />
       <More.Screen
         name="InstalledApps"
         component={InstalledAppsScreen}
         options={{ title: "O'rnatilgan ilovalar" }}
       />
+      <More.Screen
+        name="InstalledAppDetail"
+        component={InstalledAppDetailScreen}
+        options={{ title: "Ilova" }}
+      />
       <More.Screen name="Reports" component={ReportsScreen} options={{ title: "Hisobotlar" }} />
       <More.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ title: "Bildirishnomalar" }} />
       <More.Screen name="Subscription" component={SubscriptionScreen} options={{ title: "Obuna" }} />
+      <More.Screen name="Tasks" component={TasksScreen} options={{ title: "Vazifalar" }} />
       <More.Screen name="AIInsight" component={AIInsightScreen} options={{ title: "AI tahlil" }} />
       <More.Screen name="Settings" component={SettingsScreen} options={{ title: "Sozlamalar" }} />
       <More.Screen name="Privacy" component={PrivacyScreen} options={{ title: "Maxfiylik" }} />

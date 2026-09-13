@@ -166,6 +166,12 @@ export async function unlinkDevice(deviceId: string): Promise<void> {
   await apiFetch(`/api/devices/${deviceId}/`, { method: "DELETE" });
 }
 
+/** DMs the device's last-known location to the parent's own Telegram chat
+ * as a native, tappable location message. */
+export async function sendDeviceLocation(deviceId: string): Promise<void> {
+  await apiFetch(`/api/devices/${deviceId}/send-location/`, { method: "POST" });
+}
+
 export function getInstalledApps(deviceId: string): Promise<InstalledApp[]> {
   return apiFetch(`/api/devices/${deviceId}/installed-apps/`);
 }

@@ -10,7 +10,7 @@ class ParentUserAdmin(admin.ModelAdmin):
         "onboarding_required", "onboarding_reminders_sent", "created_at",
     )
     list_filter = ("onboarding_required", "is_staff")
-    search_fields = ("email", "username", "telegram_username", "phone", "telegram_id")
+    search_fields = ("email", "username", "telegram_username", "phone", "telegram_id", "=id")
     readonly_fields = ("created_at", "last_onboarding_reminder_at")
 
 

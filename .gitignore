@@ -1,5 +1,5 @@
 # Secrets
-DNS/.env
+DNS/*.env
 
 # Server (Django)
 server/venv/

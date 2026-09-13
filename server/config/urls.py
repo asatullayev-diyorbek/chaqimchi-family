@@ -9,6 +9,7 @@ from apps.devices.views import (
     ChildListCreateView,
     DeviceDetailView,
     DeviceListView,
+    DeviceSendLocationView,
     InstalledAppsListView,
     InstalledAppsSyncView,
 )
@@ -27,6 +28,7 @@ urlpatterns = [
     path("api/tracking/", include("apps.tracking.urls")),
     path("api/devices/", DeviceListView.as_view(), name="device-list"),
     path("api/devices/<uuid:id>/", DeviceDetailView.as_view(), name="device-detail"),
+    path("api/devices/<uuid:id>/send-location/", DeviceSendLocationView.as_view(), name="device-send-location"),
     path("api/devices/<uuid:id>/installed-apps/", InstalledAppsListView.as_view(), name="installed-apps-list"),
     path(
         "api/devices/<uuid:id>/installed-apps/sync/",
@@ -38,7 +40,10 @@ urlpatterns = [
     path("api/billing/", include("apps.billing.urls")),
     path("api/alerts/", include("apps.alerts.urls")),
     path("api/insights/", include("apps.insights.urls")),
+    path("api/app-info/", include("apps.appinfo.urls")),
+    path("api/feedback/", include("apps.feedback.urls")),
     path("api/deploy/", include("apps.deploy.urls")),
+    path("api/tasks/", include("apps.tasks.urls")),
     path("releases/", include("apps.deploy.release_urls")),
     path("api/health/", health, name="health"),
 ]
