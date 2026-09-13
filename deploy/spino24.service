@@ -1,0 +1,15 @@
+[Unit]
+Description=Spino24 Django (Daphne ASGI)
+After=network.target postgresql.service redis-server.service
+
+[Service]
+User=spino24
+Group=spino24
+WorkingDirectory=/opt/spino24/app/server
+EnvironmentFile=/etc/spino24/env
+ExecStart=/opt/spino24/app/server/venv/bin/daphne -b 127.0.0.1 -p 8001 config.asgi:application
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
