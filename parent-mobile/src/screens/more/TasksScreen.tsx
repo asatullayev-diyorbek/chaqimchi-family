@@ -1,12 +1,25 @@
 import React, { useState } from "react";
 import { Linking, Share, View } from "react-native";
-import { colors } from "../../theme";
+import { colors, radius } from "../../theme";
 import { checkChannelMembership, getTasks, TaskItem, TaskType } from "../../api/tasks";
 import { useQuery } from "../../hooks/useQuery";
-import { Badge, Button, Card, ErrorState, Icon, LoadingState, Muted, Screen, Text, useToast } from "../../components";
+import {
+  Badge,
+  Button,
+  Card,
+  ErrorState,
+  Icon,
+  ListRow,
+  LoadingState,
+  Muted,
+  Screen,
+  Sheet,
+  Text,
+  useToast,
+} from "../../components";
 
 function coins(n: number) {
-  return `${Math.round(n).toLocaleString("ru-RU").replace(/,/g, " ")} coin`;
+  return `${Math.round(n).toLocaleString("ru-RU").replace(/,/g, " ")}`;
 }
 
 const STATUS_BADGE: Record<string, { label: string; color: string; bg: string }> = {
@@ -15,9 +28,46 @@ const STATUS_BADGE: Record<string, { label: string; color: string; bg: string }>
   rejected: { label: "Rad etildi", color: colors.danger, bg: colors.dangerSoft },
 };
 
-/** Every card ends in the same control: "O'tish" while the task is still
- * open, a disabled "✅ Bajarilgan" once it's approved. What "O'tish" does
- * is the only thing that varies per task type. */
+const CARD_ICON: Record<TaskType, "app" | "users" | "camera" | "sparkle"> = {
+  channel_join: "app",
+  referral: "users",
+  telegram_story: "camera",
+  instagram_story: "sparkle",
+};
+
+const CARD_TINT: Record<TaskType, { color: string; bg: string }> = {
+  channel_join: { color: colors.blue, bg: colors.blueSoft },
+  referral: { color: colors.mintDark, bg: colors.mintSoft },
+  telegram_story: { color: colors.blue, bg: colors.blueSoft },
+  instagram_story: { color: colors.catPurple, bg: colors.catPurpleBg },
+};
+
+/** A pill matching the mockup's rounded coin-reward badge — used both in
+ * the list row and again inside the detail sheet. */
+function CoinBadge({ amount }: { amount: number }) {
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 4,
+        backgroundColor: colors.mintSoft,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: radius.pill,
+      }}
+    >
+      <Text variant="label" color={colors.mintDark}>
+        +{coins(amount)}
+      </Text>
+      <Icon name="sparkle" size={13} color={colors.mintDark} />
+    </View>
+  );
+}
+
+/** Every task's detail sheet ends in the same control: "O'tish" while the
+ * task is still open, a disabled "✅ Bajarilgan" once it's approved. What
+ * "O'tish" does is the only thing that varies per task type. */
 function TaskActionButton({
   task,
   label = "O'tish →",
@@ -35,7 +85,7 @@ function TaskActionButton({
   return <Button title={label} onPress={onPress} loading={loading} disabled={loading} />;
 }
 
-function ChannelJoinCard({ task, onDone }: { task: TaskItem; onDone: () => void }) {
+function ChannelJoinDetail({ task, onDone }: { task: TaskItem; onDone: () => void }) {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
 
@@ -58,7 +108,7 @@ function ChannelJoinCard({ task, onDone }: { task: TaskItem; onDone: () => void 
   return <TaskActionButton task={task} onPress={goAndCheck} loading={busy} />;
 }
 
-function ReferralCard({ task, referralLink }: { task: TaskItem; referralLink: string }) {
+function ReferralDetail({ task, referralLink }: { task: TaskItem; referralLink: string }) {
   return (
     <View style={{ gap: 8 }}>
       <Muted>{referralLink}</Muted>
@@ -75,7 +125,7 @@ function ReferralCard({ task, referralLink }: { task: TaskItem; referralLink: st
   );
 }
 
-function StoryTaskCard({ task, shortId }: { task: TaskItem; shortId: string }) {
+function StoryTaskDetail({ task, shortId }: { task: TaskItem; shortId: string }) {
   return (
     <View style={{ gap: 8 }}>
       {task.status !== "approved" ? (
@@ -90,15 +140,53 @@ function StoryTaskCard({ task, shortId }: { task: TaskItem; shortId: string }) {
   );
 }
 
-const CARD_ICON: Record<TaskType, "app" | "users" | "camera" | "sparkle"> = {
-  channel_join: "app",
-  referral: "users",
-  telegram_story: "camera",
-  instagram_story: "sparkle",
-};
+function TaskDetailSheet({
+  task,
+  onClose,
+  data,
+  onDone,
+}: {
+  task: TaskItem | null;
+  onClose: () => void;
+  data: { referral_link: string; short_id: string };
+  onDone: () => void;
+}) {
+  return (
+    <Sheet visible={!!task} onClose={onClose} title={task?.title}>
+      {task ? (
+        <View style={{ gap: 14 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: radius.md,
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: CARD_TINT[task.type].bg,
+              }}
+            >
+              <Icon name={CARD_ICON[task.type]} size={20} color={CARD_TINT[task.type].color} />
+            </View>
+            {task.status ? <Badge {...STATUS_BADGE[task.status]} /> : <CoinBadge amount={task.reward_uzs} />}
+          </View>
+          {task.description ? <Muted>{task.description}</Muted> : null}
+          {task.status === "rejected" && task.note ? <Muted>Sabab: {task.note}</Muted> : null}
+
+          {task.type === "channel_join" && <ChannelJoinDetail task={task} onDone={onDone} />}
+          {task.type === "referral" && <ReferralDetail task={task} referralLink={data.referral_link} />}
+          {(task.type === "telegram_story" || task.type === "instagram_story") && (
+            <StoryTaskDetail task={task} shortId={data.short_id} />
+          )}
+        </View>
+      ) : null}
+    </Sheet>
+  );
+}
 
 export default function TasksScreen() {
   const { data, loading, error, refetch, refreshing } = useQuery(getTasks, []);
+  const [selected, setSelected] = useState<TaskItem | null>(null);
 
   if (loading) {
     return (
@@ -117,38 +205,40 @@ export default function TasksScreen() {
 
   return (
     <Screen scroll refreshing={refreshing} onRefresh={refetch}>
-      <Card style={{ gap: 6 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Icon name="card" size={18} color={colors.blue} />
-          <Text variant="h3">Balansingiz: {coins(data.balance_uzs)}</Text>
+      <Card style={{ gap: 4 }}>
+        <Text variant="h2">Vazifalarni bajaring, coin ishlang!</Text>
+        <Muted>Oddiy vazifalarni bajaring va obuna uchun coin to'plang.</Muted>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 }}>
+          <Icon name="card" size={16} color={colors.blue} />
+          <Text variant="label">Balansingiz: {coins(data.balance_uzs)} coin</Text>
         </View>
-        <Muted>Obuna to'lovida chegirma sifatida ishlatiladi.</Muted>
-        <Muted>Sizning ID raqamingiz: {data.short_id}</Muted>
+        <Muted>ID raqamingiz: {data.short_id}</Muted>
       </Card>
 
-      {data.tasks.map((task) => (
-        <Card key={task.type} style={{ gap: 10 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Icon name={CARD_ICON[task.type]} size={18} color={colors.blue} />
-            <Text variant="h3" style={{ flex: 1 }}>
-              {task.title}
-            </Text>
-            {task.status ? (
-              <Badge {...STATUS_BADGE[task.status]} />
-            ) : (
-              <Badge label={`+${coins(task.reward_uzs)}`} color={colors.mintDark} bg={colors.mintSoft} />
-            )}
-          </View>
-          {task.description ? <Muted>{task.description}</Muted> : null}
-          {task.status === "rejected" && task.note ? <Muted>Sabab: {task.note}</Muted> : null}
+      <Card padded={false}>
+        {data.tasks.map((task, i) => (
+          <ListRow
+            key={task.type}
+            first={i === 0}
+            icon={CARD_ICON[task.type]}
+            iconColor={CARD_TINT[task.type].color}
+            iconBg={CARD_TINT[task.type].bg}
+            title={task.title}
+            subtitle={task.description}
+            onPress={() => setSelected(task)}
+            right={
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                {task.status ? <Badge {...STATUS_BADGE[task.status]} /> : <CoinBadge amount={task.reward_uzs} />}
+                <Icon name="chevronRight" size={18} color={colors.faint} />
+              </View>
+            }
+          />
+        ))}
+      </Card>
 
-          {task.type === "channel_join" && <ChannelJoinCard task={task} onDone={refetch} />}
-          {task.type === "referral" && <ReferralCard task={task} referralLink={data.referral_link} />}
-          {(task.type === "telegram_story" || task.type === "instagram_story") && (
-            <StoryTaskCard task={task} shortId={data.short_id} />
-          )}
-        </Card>
-      ))}
+      <Muted style={{ textAlign: "center" }}>Yig'ilgan coinlar obuna to'lovida chegirma sifatida ishlatiladi.</Muted>
+
+      <TaskDetailSheet task={selected} onClose={() => setSelected(null)} data={data} onDone={refetch} />
     </Screen>
   );
 }
