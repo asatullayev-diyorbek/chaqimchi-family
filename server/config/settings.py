@@ -25,7 +25,8 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 # 403, even though ALLOWED_HOSTS is wide open.
 CSRF_TRUSTED_ORIGINS = os.environ.get(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "https://api.guard.chaqimchi-ai.uz,https://apiguard.pythonanywhere.com",
+    "https://api.guard.chaqimchi-ai.uz,https://apiguard.pythonanywhere.com,"
+    "https://api.guard.spino24.uz",
 ).split(",")
 
 
@@ -77,9 +78,11 @@ CORS_ALLOWED_ORIGINS = [
         "CORS_ALLOWED_ORIGINS",
         "http://localhost:3000,http://127.0.0.1:3000,"
         "http://192.168.34.235:3000,https://chaqimchi-ai.uz,https://www.chaqimchi-ai.uz,"
-        "https://guard.chaqimchi-ai.uz,"
+        "https://guard.chaqimchi-ai.uz,https://spino24.uz,https://www.spino24.uz,"
+        "https://guard.spino24.uz,"
         # Spino24 parent Mini App (Expo web). Local dev server + deployed host.
-        "http://localhost:8081,http://127.0.0.1:8081,https://spino24.chaqimchi-ai.uz",
+        "http://localhost:8081,http://127.0.0.1:8081,https://spino24.chaqimchi-ai.uz,"
+        "https://spino24.spino24.uz",
     ).split(",")
     if origin
 ]
