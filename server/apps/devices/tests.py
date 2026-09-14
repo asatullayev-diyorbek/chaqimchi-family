@@ -228,6 +228,48 @@ class VerifyCodeDeviceReplacementTests(TestCase):
             ChildDevice.objects.filter(child=child, status=ChildDevice.STATUS_LINKED).count(), 2
         )
 
+
+@patch("apps.accounts.tg_api.call", return_value={"ok": True})
+class VerifyCodeAdminAccountWarningTests(TestCase):
+    def _link(self, parent, device, code="654321"):
+        EnrollmentCode.objects.create(
+            device=device, code=code, qr_payload=f"chaqimchi://enroll?token={code}",
+            expires_at=timezone.now() + timedelta(minutes=10),
+        )
+        client = APIClient()
+        client.force_authenticate(user=parent)
+        return client.post(reverse("verify-code"), {"code": code}, format="json")
+
+    @staticmethod
+    def _admin_warning_calls(api):
+        return [c for c in api.call_args_list if "administrator" in c[0][1].get("text", "")]
+
+    def test_admin_account_device_warns_the_linking_parent(self, api):
+        parent = ParentUser.objects.create_user(
+            email="p@example.com", password="supersecret123", telegram_id=42,
+        )
+        device = ChildDevice.objects.create(account_is_admin=True)
+        self._link(parent, device)
+        warnings = self._admin_warning_calls(api)
+        self.assertEqual(len(warnings), 1)
+        self.assertEqual(warnings[0][0][1]["chat_id"], 42)
+
+    def test_non_admin_account_device_sends_no_warning(self, api):
+        parent = ParentUser.objects.create_user(
+            email="p2@example.com", password="supersecret123", telegram_id=43,
+        )
+        device = ChildDevice.objects.create(account_is_admin=False)
+        self._link(parent, device)
+        self.assertEqual(self._admin_warning_calls(api), [])
+
+    def test_admin_account_but_no_telegram_linked_sends_nothing(self, api):
+        parent = ParentUser.objects.create_user(email="p3@example.com", password="supersecret123")
+        device = ChildDevice.objects.create(account_is_admin=True)
+        self._link(parent, device)
+        self.assertEqual(self._admin_warning_calls(api), [])
+
+
+class DeviceDataScopingTests(TestCase):
     def test_each_device_keeps_its_own_activity(self):
         """Data stays device-scoped — a second device must not absorb the first's."""
         parent = ParentUser.objects.create_user(
@@ -304,6 +346,18 @@ class GenerateCodeFingerprintTests(TestCase):
         a = self.client.post(self.url, {}, format="json").json()
         b = self.client.post(self.url, {}, format="json").json()
         self.assertNotEqual(a["device_id"], b["device_id"])
+
+    def test_account_is_admin_flag_is_recorded(self):
+        r = self.client.post(
+            self.url, {"hardware_id": "fp-admin", "account_is_admin": True}, format="json"
+        ).json()
+        device = ChildDevice.objects.get(id=r["device_id"])
+        self.assertTrue(device.account_is_admin)
+
+    def test_account_is_admin_defaults_to_false_when_omitted(self):
+        r = self.client.post(self.url, {"hardware_id": "fp-no-flag"}, format="json").json()
+        device = ChildDevice.objects.get(id=r["device_id"])
+        self.assertFalse(device.account_is_admin)
 
 
 class InstalledAppsSyncTests(TestCase):

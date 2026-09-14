@@ -37,9 +37,17 @@ type Code struct {
 }
 
 // GenerateCode calls POST /api/enroll/generate-code/. hardwareID is the
-// stable machine fingerprint from HardwareID() (may be "").
-func (c *Client) GenerateCode(ctx context.Context, deviceHint, hardwareID string) (*Code, error) {
-	body, _ := json.Marshal(map[string]string{"device_hint": deviceHint, "hardware_id": hardwareID})
+// stable machine fingerprint from HardwareID() (may be ""). accountIsAdmin
+// reports whether the Windows account running the installer belongs to the
+// local Administrators group (see CurrentUserIsAdmin) — the backend uses it
+// only to warn the parent that this account could stop/uninstall the agent;
+// it never affects enrollment itself.
+func (c *Client) GenerateCode(ctx context.Context, deviceHint, hardwareID string, accountIsAdmin bool) (*Code, error) {
+	body, _ := json.Marshal(map[string]any{
+		"device_hint":      deviceHint,
+		"hardware_id":      hardwareID,
+		"account_is_admin": accountIsAdmin,
+	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost,
 		c.BaseURL+"/api/enroll/generate-code/", bytes.NewReader(body))
 	if err != nil {

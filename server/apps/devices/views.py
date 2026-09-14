@@ -62,8 +62,12 @@ class GenerateCodeView(APIView):
     def post(self, request):
         device_hint = request.data.get("device_hint", "")
         hardware_id = (request.data.get("hardware_id") or "").strip()[:64]
+        account_is_admin = bool(request.data.get("account_is_admin"))
 
         device, previously_linked = self._device_for(hardware_id, device_hint)
+        if device.account_is_admin != account_is_admin:
+            device.account_is_admin = account_is_admin
+            device.save(update_fields=["account_is_admin"])
 
         code = _generate_unique_code()
         expires_at = timezone.now() + timedelta(minutes=CODE_TTL_MINUTES)
@@ -111,6 +115,28 @@ class GenerateCodeView(APIView):
                     True,
                 )
         return ChildDevice.objects.create(child_name=device_hint, hardware_id=hardware_id), False
+
+
+def _warn_if_admin_account(parent, device):
+    """One-time DM at linking time — never repeated, never blocks anything.
+    See ChildDevice.account_is_admin's docstring for why this matters: a
+    child on an Administrator Windows account can stop the service or
+    uninstall the agent outright, which no amount of server-side logic can
+    prevent. The single most effective fix is entirely outside this app —
+    the child using a Standard account — so all we can do is tell the
+    parent plainly."""
+    if not device.account_is_admin or not parent.telegram_id:
+        return
+    from apps.accounts import tg_api
+
+    tg_api.send_message(
+        parent.telegram_id,
+        "⚠️ Diqqat: bu qurilmadagi hisob — administrator huquqiga ega.\n\n"
+        "Bunday hisobda farzandingiz Spino24 xizmatini to'xtatishi yoki "
+        "o'chirib tashlashi mumkin. Buning oldini olish uchun farzandingiz "
+        "uchun alohida Standard (administrator emas) hisob yaratib, "
+        "administrator parolini faqat o'zingizda saqlashni tavsiya qilamiz.",
+    )
 
 
 class VerifyCodeView(APIView):
@@ -171,6 +197,7 @@ class VerifyCodeView(APIView):
         from apps.accounts.notify_admin import notify_new_device
 
         notify_new_device(device)
+        _warn_if_admin_account(request.user, device)
 
         return Response({"device_id": device.id, "status": device.status})
 

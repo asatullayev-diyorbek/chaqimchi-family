@@ -67,6 +67,13 @@ class ChildDevice(models.Model):
     # piling up an orphan every time. Blank for devices enrolled before this
     # field existed, or platforms that don't provide one.
     hardware_id = models.CharField(max_length=64, blank=True, db_index=True)
+    # Reported by the installer at generate-code time (see
+    # apps.devices.views.GenerateCodeView) — whether the Windows account
+    # running it belongs to the local Administrators group. Used only to
+    # warn the parent once at linking that this account could stop the
+    # service or uninstall the agent outright; never changes anything about
+    # the device itself. Null for devices enrolled before this existed.
+    account_is_admin = models.BooleanField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     linked_at = models.DateTimeField(null=True, blank=True)
     last_sync = models.DateTimeField(null=True, blank=True)

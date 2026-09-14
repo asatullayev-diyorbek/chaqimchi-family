@@ -105,7 +105,7 @@ func main() {
 		},
 		StopOldService: func() error { return service.Stop(service.ServiceName) },
 		NewCode: func(c context.Context) (webwin.Code, error) {
-			code, err := client.GenerateCode(c, hostname, hardwareID)
+			code, err := client.GenerateCode(c, hostname, hardwareID, enroll.CurrentUserIsAdmin())
 			if err != nil {
 				return webwin.Code{}, err
 			}
@@ -165,7 +165,7 @@ func runWalkInstaller(ctx context.Context, client *enroll.Client, hostname, hard
 		return
 	}
 	for {
-		code, err := client.GenerateCode(ctx, hostname, hardwareID)
+		code, err := client.GenerateCode(ctx, hostname, hardwareID, enroll.CurrentUserIsAdmin())
 		if err != nil {
 			fatalInstaller("Bog‘lash kodini olishda xatolik: %v", err)
 		}

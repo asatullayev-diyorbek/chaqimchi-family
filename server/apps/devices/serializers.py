@@ -76,7 +76,10 @@ class ChildDeviceListSerializer(serializers.ModelSerializer):
         return obj.child.name if obj.child_id else obj.child_name
     class Meta:
         model = ChildDevice
-        fields = ["id", "child_id", "child_name", "platform", "status", "created_at", "linked_at", "last_sync", "agent_version"]
+        fields = [
+            "id", "child_id", "child_name", "platform", "status", "created_at", "linked_at",
+            "last_sync", "agent_version", "account_is_admin",
+        ]
 
 
 class InstalledAppSerializer(serializers.ModelSerializer):

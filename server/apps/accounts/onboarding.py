@@ -82,6 +82,9 @@ NEED_PHONE_TEXT = (
 def install_guide_text() -> str:
     return (
         "📥 O'rnatish — 4 qadam\n\n"
+        "💡 Boshlashdan oldin: farzandingiz kompyuterda administrator emas, "
+        "«Standard» hisobda ishlashi tavsiya etiladi — aks holda u xizmatni "
+        "o'zi to'xtatib qo'yishi mumkin. Administrator paroli faqat sizda qolsin.\n\n"
         f"1. Farzand kompyuterida (Windows 10/11) oching: {download_url()}\n"
         "   «Rasmiy o'rnatuvchi» bo'limidan .exe faylni yuklab oling.\n\n"
         "2. Faylni ishga tushiring. Windows «Noma'lum noshir» desa: "
