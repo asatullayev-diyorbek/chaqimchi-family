@@ -21,7 +21,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
+	"spino24agent/internal/buffer"
 )
 
 // browserVisit is one page load observed in a browser's history DB.

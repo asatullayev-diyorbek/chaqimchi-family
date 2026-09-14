@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
+	"spino24agent/internal/localipc"
 )
 
 // Coordinator owns the service-side capture workflow: it polls the backend

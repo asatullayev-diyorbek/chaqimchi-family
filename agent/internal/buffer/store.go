@@ -26,7 +26,7 @@ type Store struct {
 }
 
 // Open creates/opens the buffer database at path (e.g.
-// %ProgramData%\ChaqimchiFamily\buffer.db on Windows) and ensures the
+// %ProgramData%\Spino24\buffer.db on Windows) and ensures the
 // schema exists.
 func Open(path string) (*Store, error) {
 	db, err := sql.Open("sqlite", path)

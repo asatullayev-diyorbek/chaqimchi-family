@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="1.0.0.0" processorArchitecture="amd64" name="ChaqimchiAI.Guard.Bootstrap" type="win32"/>
-  <description>ChaqimchiAI Guard Installer — Parental Control Client</description>
+  <assemblyIdentity version="1.0.0.0" processorArchitecture="amd64" name="Spino24.Guard.Bootstrap" type="win32"/>
+  <description>Spino24 Guard Installer — Parental Control Client</description>
   <!-- lxn/walk (the enrollment wizard UI) requires ComCtl32 v6; without this
        dependency InitCommonControlsEx fails and the wizard silently falls
        back to a plain MessageBox with no QR code. -->

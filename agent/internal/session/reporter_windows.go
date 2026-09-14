@@ -56,7 +56,7 @@ func runOnce(ctx context.Context, exePath string, session uint32) error {
 	// After an SCM crash-restart the previous service instance's reporter is
 	// orphaned in the user session and keeps POSTing to the new instance's
 	// (working) IPC endpoint, so its own failure backstop never trips. Clear
-	// any stray chaqimchi-agent.exe before spawning this instance's reporter.
+	// any stray spino24-agent.exe before spawning this instance's reporter.
 	killStrayReporters()
 
 	cmdLine, err := windows.UTF16PtrFromString(
@@ -130,7 +130,7 @@ func sleep(ctx context.Context, d time.Duration) {
 	}
 }
 
-// killStrayReporters terminates every other chaqimchi-agent.exe process. In a
+// killStrayReporters terminates every other spino24-agent.exe process. In a
 // healthy state the only one besides this service is its own reporter child,
 // which hasn't been spawned yet when this runs; the target is an orphan
 // reporter left by a previous, crashed service instance. Running as SYSTEM,
@@ -150,7 +150,7 @@ func killStrayReporters() {
 	}
 	for {
 		if entry.ProcessID != self &&
-			windows.UTF16ToString(entry.ExeFile[:]) == "chaqimchi-agent.exe" {
+			windows.UTF16ToString(entry.ExeFile[:]) == "spino24-agent.exe" {
 			if h, err := windows.OpenProcess(windows.PROCESS_TERMINATE, false, entry.ProcessID); err == nil {
 				_ = windows.TerminateProcess(h, 0)
 				windows.CloseHandle(h)

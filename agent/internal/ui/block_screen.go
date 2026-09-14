@@ -140,7 +140,7 @@ type paintStructT struct {
 	rgbReserved [32]byte
 }
 
-const blockClassName = "ChaqimchiBlockScreen"
+const blockClassName = "Spino24BlockScreen"
 
 var (
 	blockScreenMu      sync.Mutex
@@ -188,7 +188,7 @@ func BlockScreen(reason, message string) {
 	screenH, _, _ := procGetSystemMetrics.Call(smCYScreen)
 
 	className, _ := syscall.UTF16PtrFromString(blockClassName)
-	title, _ := syscall.UTF16PtrFromString("ChaqimchiAI")
+	title, _ := syscall.UTF16PtrFromString("Spino24")
 
 	hwnd, _, _ := procCreateWindowExW.Call(
 		wsExTopmost,
@@ -290,7 +290,7 @@ func paintBlockScreen(hdc uintptr) {
 	procSelectObject.Call(hdc, markFont)
 	procSetTextColor.Call(hdc, blockMarkColor)
 	markRect := rectT{left: 0, top: h / 12, right: w, bottom: h/12 + 60}
-	drawBlockText(hdc, "CHAQIMCHIAI  GUARD", &markRect, dtCenter|dtSingleLine)
+	drawBlockText(hdc, "SPINO24  GUARD", &markRect, dtCenter|dtSingleLine)
 
 	side := w * blockSideMarginPc / 100
 	headW := w - 2*side

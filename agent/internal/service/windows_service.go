@@ -52,7 +52,7 @@ func Install(name, displayName, exePath string, args []string) error {
 		current.BinaryPathName = serviceCommandLine(exePath, args)
 		current.StartType = mgr.StartAutomatic
 		current.DisplayName = displayName
-		current.Description = "ChaqimchiAI Guard — bola qurilmasi monitoring agenti"
+		current.Description = "Spino24 Guard — bola qurilmasi monitoring agenti"
 		if err := s.UpdateConfig(current); err != nil {
 			return fmt.Errorf("updating existing service config: %w", err)
 		}
@@ -69,7 +69,7 @@ func Install(name, displayName, exePath string, args []string) error {
 	s, err = m.CreateService(name, exePath, mgr.Config{
 		DisplayName: displayName,
 		StartType:   mgr.StartAutomatic,
-		Description: "ChaqimchiAI Guard — bola qurilmasi monitoring agenti",
+		Description: "Spino24 Guard — bola qurilmasi monitoring agenti",
 	}, args...)
 	if err != nil {
 		return fmt.Errorf("creating service: %w", err)

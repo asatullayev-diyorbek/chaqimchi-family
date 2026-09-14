@@ -15,7 +15,7 @@ import (
 // Shared visual language for the agent's Windows windows. The operator here
 // is the parent, so the tone matches the parent/desktop panels: professional,
 // calm, a blue-green accent — not the playful child-side look
-// (chaqimchiai-family-ornatuvchi-dizayn-talablari.md §5). walk paints native
+// (spino24ai-family-ornatuvchi-dizayn-talablari.md §5). walk paints native
 // Win32 controls, so the design leans on what actually renders well there:
 // a coloured header band, generous white space, a tight type scale, and
 // hairline-framed cards rather than shadows or rounded corners it can't draw.
@@ -64,7 +64,7 @@ func mutedText(text string) d.Widget {
 func headerBand(step string) d.Widget {
 	children := []d.Widget{
 		d.ImageView{Image: markBitmap(), MinSize: d.Size{Width: 22, Height: 22}, MaxSize: d.Size{Width: 22, Height: 22}},
-		d.Label{Text: "ChaqimchiAI Guard", Font: fontOf(11, true), TextColor: colorOnAccent},
+		d.Label{Text: "Spino24 Guard", Font: fontOf(11, true), TextColor: colorOnAccent},
 		d.HSpacer{},
 	}
 	if step != "" {

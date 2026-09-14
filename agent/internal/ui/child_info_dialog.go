@@ -11,17 +11,17 @@ import (
 // they explain the current state and data boundaries but expose no control
 // that could stop or weaken the agent from the child-facing tray menu.
 func ShowChildStatus(status Status) {
-	heading, message := "Hammasi joyida", "ChaqimchiAI Child faol. Bugungi vaqt va qolgan limitni ota-onangizning ilovasida ko‘rishingiz mumkin."
+	heading, message := "Hammasi joyida", "Spino24 Child faol. Bugungi vaqt va qolgan limitni ota-onangizning ilovasida ko‘rishingiz mumkin."
 	if status == StatusWarning {
 		heading, message = "Ogohlantirish", "Bugungi qoida yoki limitga yaqin qoldingiz. Savol bo‘lsa, ota-onangiz bilan gaplashing."
 	} else if status == StatusOffline {
-		heading, message = "Internet aloqasi yo‘q", "ChaqimchiAI Child hozir internetga ulanmagan. Aloqa tiklanganda ma’lumotlar xavfsiz yuboriladi."
+		heading, message = "Internet aloqasi yo‘q", "Spino24 Child hozir internetga ulanmagan. Aloqa tiklanganda ma’lumotlar xavfsiz yuboriladi."
 	}
-	showInfoWindow("ChaqimchiAI Child — Holat", "BUGUNGI HOLAT", heading, message)
+	showInfoWindow("Spino24 Child — Holat", "BUGUNGI HOLAT", heading, message)
 }
 
 func ShowPrivacyNotice() {
-	showInfoWindow("ChaqimchiAI Child — Shaffoflik", "NIMA KUZATILADI",
+	showInfoWindow("Spino24 Child — Shaffoflik", "NIMA KUZATILADI",
 		"Ota-onam nimani ko‘radi?",
 		"Ota-ona ilova va sayt nomlari, ekran vaqti hamda qurilma holatini ko‘rishi mumkin.\n\n"+
 			"Xabarlar, parollar, kamera yoki mikrofon, bosilgan tugmalar kuzatilmaydi.\n\n"+

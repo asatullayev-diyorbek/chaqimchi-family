@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-  <assemblyIdentity version="1.0.0.0" processorArchitecture="amd64" name="ChaqimchiAI.Guard.Desktop" type="win32"/>
-  <description>ChaqimchiAI Guard — Parental Control Status</description>
+  <assemblyIdentity version="1.0.0.0" processorArchitecture="amd64" name="Spino24.Guard.Desktop" type="win32"/>
+  <description>Spino24 Guard — Parental Control Status</description>
   <!-- The tray UI and its dialogs are lxn/walk, which needs ComCtl32 v6. -->
   <dependency>
     <dependentAssembly>

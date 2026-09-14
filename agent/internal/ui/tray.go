@@ -9,7 +9,7 @@ package ui
 import (
 	"sync"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
+	"spino24agent/internal/localipc"
 	"github.com/getlantern/systray"
 )
 
@@ -62,7 +62,7 @@ func (t *Tray) onReady() {
 	t.mu.RUnlock()
 	systray.SetIcon(iconFor(status))
 	systray.SetTooltip(tooltipFor(status))
-	t.statusItem = systray.AddMenuItem(statusLabel(status), "ChaqimchiAI Child holati")
+	t.statusItem = systray.AddMenuItem(statusLabel(status), "Spino24 Child holati")
 	t.statusItem.Disable()
 	systray.AddSeparator()
 	statusMenu := systray.AddMenuItem("Bugungi holat", "Agentning joriy holati")
@@ -96,7 +96,7 @@ func (t *Tray) onReady() {
 			if onLogs != nil {
 				onLogs(logs)
 			} else {
-				showInfoWindow("ChaqimchiAI Guard — Oxirgi amallar", "OXIRGI AMALLAR", "So‘nggi hodisalar", logs)
+				showInfoWindow("Spino24 Guard — Oxirgi amallar", "OXIRGI AMALLAR", "So‘nggi hodisalar", logs)
 			}
 		}
 	}()
@@ -124,7 +124,7 @@ func (t *Tray) onReady() {
 	}()
 
 	// Deliberately no "Chiqish"/quit menu item here: the bola-app doc
-	// (chaqimchiai-family-bola-ilova-dizayn-talablari.md, 7-bo'lim) is
+	// (spino24ai-family-bola-ilova-dizayn-talablari.md, 7-bo'lim) is
 	// explicit that no "stop/quit the app" control may exist anywhere in
 	// this interface — it would defeat the anti-tamper requirement. Quit()
 	// still exists as a method because cmd/agent needs to close the tray
@@ -185,11 +185,11 @@ func (t *Tray) Notify(message string) {
 func tooltipFor(status Status) string {
 	switch status {
 	case StatusWarning:
-		return "ChaqimchiAI — ogohlantirish"
+		return "Spino24 — ogohlantirish"
 	case StatusOffline:
-		return "ChaqimchiAI — offline"
+		return "Spino24 — offline"
 	default:
-		return "ChaqimchiAI — faol"
+		return "Spino24 — faol"
 	}
 }
 

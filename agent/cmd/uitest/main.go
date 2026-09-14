@@ -11,9 +11,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui/webwin"
+	"spino24agent/internal/localipc"
+	"spino24agent/internal/ui"
+	"spino24agent/internal/ui/webwin"
 )
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 			ExistingService: func() (bool, bool) { return false, false },
 			NewCode: func(context.Context) (webwin.Code, error) {
 				return webwin.Code{
-					Code: "482913", QRPayload: "chaqimchi://enroll?token=482913",
+					Code: "482913", QRPayload: "spino24://enroll?token=482913",
 					DeviceID: "dev-1", Secret: "sek", ExpiresAt: time.Now().Add(9 * time.Minute),
 				}, nil
 			},
@@ -96,7 +96,7 @@ func main() {
 		time.Sleep(1 * time.Second)
 	case "adult":
 		if ui.ShowAdultAccessGate() {
-			ui.ShowAdultPanel(localipc.Status{Online: true, Version: "0.4.0-rc.2", LastSyncAt: "2026-09-01T10:20:00Z", TodayMinutes: 135}, "https://guard.chaqimchi-ai.uz", `C:\ProgramData\ChaqimchiFamily\agent.log`)
+			ui.ShowAdultPanel(localipc.Status{Online: true, Version: "0.4.0-rc.2", LastSyncAt: "2026-09-01T10:20:00Z", TodayMinutes: 135}, "https://guard.spino24.uz", `C:\ProgramData\Spino24\agent.log`)
 		}
 	case "consent":
 		ok, err := ui.RequireInstallerConsent()
@@ -104,7 +104,7 @@ func main() {
 	default:
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		defer cancel()
-		err := ui.ShowEnrollment(ctx, "482913", "chaqimchi://enroll?token=482913",
+		err := ui.ShowEnrollment(ctx, "482913", "spino24://enroll?token=482913",
 			time.Now().Add(9*time.Minute),
 			func(ctx context.Context, onErr func(error)) error {
 				<-ctx.Done() // never links

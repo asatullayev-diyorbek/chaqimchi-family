@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/tracker"
+	"spino24agent/internal/tracker"
 )
 
 type Syncer struct {

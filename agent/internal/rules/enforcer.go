@@ -20,7 +20,7 @@ type BlockFunc func(reason, message string)
 type NotifyFunc func(message string)
 
 // Language note: every string here is checked against
-// docs/chaqimchiai-family-bola-ilova-dizayn-talablari.md 4.3-4.4 va 6-bo'lim
+// docs/spino24ai-family-bola-ilova-dizayn-talablari.md 4.3-4.4 va 6-bo'lim
 // (the child-app doc's explicit banned-word list: "taqiqlangan", "buzildi",
 // "ruxsatsiz", "jazo", "kuzatilyapsan" — none of these appear below).
 // MessageAppUnavailable and MessageLimitReached are quoted close to

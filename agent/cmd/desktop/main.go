@@ -22,9 +22,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui/webwin"
+	"spino24agent/internal/localipc"
+	"spino24agent/internal/ui"
+	"spino24agent/internal/ui/webwin"
 )
 
 // blockController raises and dismisses the full-screen block overlay in step
@@ -67,8 +67,8 @@ func (b *blockController) apply(d *localipc.BlockDirective) {
 }
 
 const (
-	supportURL     = "https://guard.chaqimchi-ai.uz"
-	agentLogPath   = `C:\ProgramData\ChaqimchiFamily\agent.log`
+	supportURL     = "https://guard.spino24.uz"
+	agentLogPath   = `C:\ProgramData\Spino24\agent.log`
 	adultAccessURL = "http://" + localipc.Address + "/v1/adult-access"
 )
 
@@ -102,7 +102,7 @@ func main() {
 	tray.OnLogs = func(logs string) {
 		if err := webwin.ShowInfo("OXIRGI AMALLAR", "So‘nggi hodisalar", logs); err != nil {
 			log.Printf("webview logs fallback: %v", err)
-			ui.ShowError("ChaqimchiAI Guard — Oxirgi amallar", logs) // best-effort; not fatal
+			ui.ShowError("Spino24 Guard — Oxirgi amallar", logs) // best-effort; not fatal
 		}
 	}
 	tray.OnAdultPanel = func() {

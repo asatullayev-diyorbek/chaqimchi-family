@@ -17,7 +17,7 @@ func ShowWelcome() bool {
 	)
 	err := d.Dialog{
 		AssignTo:   &dlg,
-		Title:      "ChaqimchiAI Family — Xush kelibsiz",
+		Title:      "Spino24 — Xush kelibsiz",
 		Icon:       brandIcon(),
 		Background: solid(colorCanvas),
 		FixedSize:  true,
@@ -30,7 +30,7 @@ func ShowWelcome() bool {
 				Layout:     d.VBox{Margins: d.Margins{Left: 24, Top: 20, Right: 24, Bottom: 16}, Spacing: 12},
 				Children: []d.Widget{
 					eyebrow("O‘RNATISH"),
-					titleText("ChaqimchiAI Family’ga xush kelibsiz"),
+					titleText("Spino24’ga xush kelibsiz"),
 					bodyText("Bu dastur farzandingizning kompyuterdan foydalanishini xavfsiz va shaffof tarzda kuzatishga yordam beradi.", 400),
 					card(d.Margins{Left: 16, Top: 14, Right: 16, Bottom: 14}, 6,
 						d.Label{Text: "Nima bo‘ladi", Font: fontOf(8, true), TextColor: colorAccent},
@@ -49,7 +49,7 @@ func ShowWelcome() bool {
 	}.Create(nil)
 	if err != nil {
 		return requireInstallerConsentFallbackYesNo(
-			"ChaqimchiAI Family — Xush kelibsiz",
+			"Spino24 — Xush kelibsiz",
 			"Bu dastur farzandingizning kompyuterdan foydalanishini xavfsiz va shaffof tarzda kuzatishga yordam beradi.\n\nO‘rnatishni boshlaymizmi?")
 	}
 	dlg.Run()
@@ -62,7 +62,7 @@ func ShowComplete() {
 	var dlg *walk.Dialog
 	err := d.Dialog{
 		AssignTo:   &dlg,
-		Title:      "ChaqimchiAI Family — Tayyor",
+		Title:      "Spino24 — Tayyor",
 		Icon:       brandIcon(),
 		Background: solid(colorCanvas),
 		FixedSize:  true,
@@ -75,7 +75,7 @@ func ShowComplete() {
 				Layout:     d.VBox{Margins: d.Margins{Left: 24, Top: 22, Right: 24, Bottom: 16}, Spacing: 12},
 				Children: []d.Widget{
 					d.Label{Text: "✓", Font: d.Font{Family: "Segoe UI", PointSize: 30, Bold: true}, TextColor: colorOK},
-					titleText("Tayyor! ChaqimchiAI Family endi ishlamoqda."),
+					titleText("Tayyor! Spino24 endi ishlamoqda."),
 					bodyText("Bu oynani yopishingiz mumkin — dastur fonda ishlashda davom etadi. Farzandingizning faoliyatini ota-ona ilovasida yoki dashboardda ko‘rasiz.", 380),
 					d.VSpacer{},
 					footerButtons(
@@ -87,7 +87,7 @@ func ShowComplete() {
 		},
 	}.Create(nil)
 	if err != nil {
-		showInfoDialog("ChaqimchiAI Family — Tayyor", "ChaqimchiAI Family endi ishlamoqda. Dastur fonda ishlashda davom etadi.")
+		showInfoDialog("Spino24 — Tayyor", "Spino24 endi ishlamoqda. Dastur fonda ishlashda davom etadi.")
 		return
 	}
 	dlg.Run()

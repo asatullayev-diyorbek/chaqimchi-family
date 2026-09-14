@@ -26,7 +26,7 @@ import (
 // WatchdogTaskName is the Scheduled Task name Task Scheduler shows it
 // under. Not hidden — same "not secret, just resilient" posture as
 // ServiceName.
-const WatchdogTaskName = "ChaqimchiGuardWatchdog"
+const WatchdogTaskName = "Spino24GuardWatchdog"
 
 // RegisterWatchdogTask creates (or replaces) the SYSTEM-run task, firing
 // every 15 minutes. commandLine is the full "<agent exe> -watchdog-check

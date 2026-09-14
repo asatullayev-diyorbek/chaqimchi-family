@@ -1,4 +1,4 @@
-// Package enroll talks to the ChaqimchiAI Family backend to obtain and
+// Package enroll talks to the Spino24 backend to obtain and
 // watch an enrollment code (Bosqich 0). Shared by cmd/installer and,
 // later, cmd/agent for re-enrollment flows.
 package enroll

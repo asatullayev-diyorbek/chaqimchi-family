@@ -19,19 +19,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/endpoint"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/enroll"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/service"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/ui/webwin"
+	"golang.org/x/sys/windows"
+
+	"spino24agent/internal/endpoint"
+	"spino24agent/internal/enroll"
+	"spino24agent/internal/service"
+	"spino24agent/internal/ui"
+	"spino24agent/internal/ui/webwin"
 )
 
-const installDir = `C:\Program Files\ChaqimchiAI`
+const installDir = `C:\Program Files\Spino24`
 
 // defaultServerURL is injected by the release build with -ldflags. The
 // checked-in fallback points at the canonical production API; local builds
 // should override it with -server.
-var defaultServerURL = "https://api.guard.chaqimchi-ai.uz"
+var defaultServerURL = "https://api.guard.spino24.uz"
 
 // embeddedAgent is built into installer.exe, so a parent downloads one file
 // only. The release build script places the freshly cross-compiled agent in
@@ -74,28 +76,71 @@ func serviceArgsCommandLine(args []string) string {
 	return strings.Join(quoted, " ")
 }
 
+// migrateLegacyServiceName carries an already-installed beta tester's
+// machine from the pre-rebrand service name to the current one, in place —
+// same binary path, same enrolled device credentials — before anything
+// else in this run looks at service.ServiceName. Without this, a machine
+// with the old service still running would end up with two services
+// (old + new) both syncing the same enrolled device after a re-install,
+// since Inspect(ServiceName) no longer finds the renamed one. A machine
+// with no legacy service (every install from here on) sees this as a
+// harmless no-op. Best-effort and silent: this is purely a technical
+// rename with no user-visible behavior change, not something worth
+// failing an install over.
+func migrateLegacyServiceName() {
+	legacy, err := service.Inspect(service.LegacyServiceName)
+	if err != nil || !legacy.Installed {
+		return
+	}
+	current, err := service.Inspect(service.ServiceName)
+	if err != nil || current.Installed {
+		return // already migrated, or we can't tell — don't risk a duplicate
+	}
+	if len(legacy.Args) == 0 {
+		log.Printf("legacy xizmat (%s) argumentlarsiz topildi, migratsiya o'tkazib yuborildi", service.LegacyServiceName)
+		return
+	}
+	parts, err := windows.DecomposeCommandLine(legacy.BinaryPath)
+	if err != nil || len(parts) == 0 {
+		log.Printf("legacy xizmat command line'ini ajratib bo'lmadi: %v", err)
+		return
+	}
+	exePath := parts[0]
+	if err := service.Install(service.ServiceName, service.DisplayName, exePath, legacy.Args); err != nil {
+		log.Printf("legacy xizmatni yangi nom bilan ko'chirib bo'lmadi: %v", err)
+		return
+	}
+	if err := service.Delete(service.LegacyServiceName); err != nil {
+		log.Printf("legacy xizmatni o'chirib bo'lmadi: %v", err)
+	}
+	registerUninstaller(exePath)
+	registerWatchdog(exePath, legacy.Args)
+	log.Printf("legacy xizmat (%s) %s nomiga ko'chirildi", service.LegacyServiceName, service.ServiceName)
+}
+
 func fatalInstaller(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
 	log.Print(message)
-	ui.ShowError("ChaqimchiAI Guard — O‘rnatishda xatolik", message)
+	ui.ShowError("Spino24 Guard — O‘rnatishda xatolik", message)
 	os.Exit(1)
 }
 
 func main() {
-	baseURL := flag.String("server", defaultServerURL, "ChaqimchiAI backend base URL")
+	baseURL := flag.String("server", defaultServerURL, "Spino24 backend base URL")
 	agentPath := flag.String("agent-path", "", "development override: agent.exe to embed into the installation")
 	allowInsecureHTTP := flag.Bool("allow-insecure-http", false, "development only: allow a non-HTTPS backend URL")
 	flag.Parse()
 
 	// A windowsgui binary has no console, so route log.* to a file the tester
 	// (and support) can read when the wizard fails partway.
-	logPath := filepath.Join(os.TempDir(), "chaqimchi-installer.log")
+	logPath := filepath.Join(os.TempDir(), "spino24-installer.log")
 	if lf, e := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644); e == nil {
 		log.SetOutput(lf)
 		defer lf.Close()
 	}
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	log.Printf("installer boshlandi (pid %d)", os.Getpid())
+	migrateLegacyServiceName()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer cancel()
@@ -273,7 +318,7 @@ func installAgentBinary(overridePath string) (string, error) {
 		return "", fmt.Errorf("creating install directory: %w", err)
 	}
 
-	target := filepath.Join(installDir, "chaqimchi-agent.exe")
+	target := filepath.Join(installDir, "spino24-agent.exe")
 	tmp, err := os.CreateTemp(installDir, "agent-*.tmp")
 	if err != nil {
 		return "", err

@@ -1,8 +1,9 @@
 //go:build windows
 
-// Package webwin renders the embedded webui/ pages as fixed-size, chromeless
-// WebView2 windows and wires a small JSON bridge to Go. It replaces the
-// hand-built walk dialogs — see docs/webview-ui-plan.md.
+// Package webwin renders the embedded webui/ pages as resizable/maximizable
+// WebView2 windows (a real title bar with minimize/maximize/close — see
+// New()'s use of webview.HintNone) and wires a small JSON bridge to Go. It
+// replaces the hand-built walk dialogs — see docs/webview-ui-plan.md.
 package webwin
 
 import (
@@ -16,7 +17,7 @@ import (
 	"sync"
 	"unsafe"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/webui"
+	"spino24agent/webui"
 	webview "github.com/jchv/go-webview2"
 	"golang.org/x/sys/windows"
 )
@@ -123,7 +124,10 @@ func New(opts Options) (*Window, error) {
 	hwnd := uintptr(wv.Window())
 	scale := dpiScale(hwnd)
 	pw, ph := int(float64(opts.Width)*scale+0.5), int(float64(opts.Height)*scale+0.5)
-	wv.SetSize(pw, ph, webview.HintFixed)
+	// HintNone (not HintFixed) keeps WS_THICKFRAME/WS_MAXIMIZEBOX so the
+	// window can be resized and maximized instead of being locked at its
+	// initial size.
+	wv.SetSize(pw, ph, webview.HintNone)
 	recenter(hwnd)
 	return &Window{wv: wv, base: base, page: opts.Page}, nil
 }
@@ -136,7 +140,7 @@ func webView2DataPath() string {
 	if base == "" {
 		base = os.TempDir()
 	}
-	return filepath.Join(base, "ChaqimchiAI", "WebView2")
+	return filepath.Join(base, "Spino24", "WebView2")
 }
 
 func dpiScale(hwnd uintptr) float64 {

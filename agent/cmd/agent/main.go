@@ -32,17 +32,17 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/endpoint"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/inventory"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/rules"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/screenshot"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/service"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/session"
-	syncpkg "github.com/chaqimchi/chaqimchi-family/agent/internal/sync"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/tracker"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/updater"
+	"spino24agent/internal/buffer"
+	"spino24agent/internal/endpoint"
+	"spino24agent/internal/inventory"
+	"spino24agent/internal/localipc"
+	"spino24agent/internal/rules"
+	"spino24agent/internal/screenshot"
+	"spino24agent/internal/service"
+	"spino24agent/internal/session"
+	syncpkg "spino24agent/internal/sync"
+	"spino24agent/internal/tracker"
+	"spino24agent/internal/updater"
 )
 
 // version is set at build time via -ldflags "-X main.version=0.4.0". Left
@@ -51,10 +51,10 @@ import (
 var version = "0.0.0-dev"
 
 func main() {
-	baseURL := flag.String("server", "http://localhost:8000", "ChaqimchiAI backend base URL")
-	deviceID := flag.String("device-id", os.Getenv("CHAQIMCHI_DEVICE_ID"), "enrolled device id")
-	deviceSecret := flag.String("device-secret", os.Getenv("CHAQIMCHI_DEVICE_SECRET"), "device secret")
-	dataDir := flag.String("data-dir", `C:\ProgramData\ChaqimchiFamily`, "local data directory")
+	baseURL := flag.String("server", "http://localhost:8000", "Spino24 backend base URL")
+	deviceID := flag.String("device-id", os.Getenv("SPINO24_DEVICE_ID"), "enrolled device id")
+	deviceSecret := flag.String("device-secret", os.Getenv("SPINO24_DEVICE_SECRET"), "device secret")
+	dataDir := flag.String("data-dir", `C:\ProgramData\Spino24`, "local data directory")
 	allowInsecureHTTP := flag.Bool("allow-insecure-http", false, "development only: allow a non-HTTPS backend URL")
 	foregroundReporter := flag.Bool("foreground-reporter", false, "internal: run only the session-side foreground probe (launched by the service)")
 	parentPID := flag.Int("parent-pid", 0, "internal: exit when this process id is gone (used with -foreground-reporter)")
@@ -82,7 +82,7 @@ func main() {
 	}
 
 	if *deviceID == "" || *deviceSecret == "" {
-		log.Fatal("device-id and device-secret are required (flags or CHAQIMCHI_DEVICE_ID/CHAQIMCHI_DEVICE_SECRET)")
+		log.Fatal("device-id and device-secret are required (flags or SPINO24_DEVICE_ID/SPINO24_DEVICE_SECRET)")
 	}
 	if err := endpoint.ValidateBackendURL(*baseURL, *allowInsecureHTTP); err != nil {
 		log.Fatalf("backend URL rejected: %v", err)
@@ -388,9 +388,9 @@ func run(ctx context.Context, baseURL, deviceID, deviceSecret, dataDir string, i
 // per-user, always writable, and easy for a parent to find and send back.
 func reporterLogPath() string {
 	if dir, err := os.UserCacheDir(); err == nil {
-		return filepath.Join(dir, "ChaqimchiFamily", "reporter.log")
+		return filepath.Join(dir, "Spino24", "reporter.log")
 	}
-	return filepath.Join(os.TempDir(), "chaqimchi-reporter.log")
+	return filepath.Join(os.TempDir(), "spino24-reporter.log")
 }
 
 // reporterLog appends one timestamped line to the helper's log, truncating

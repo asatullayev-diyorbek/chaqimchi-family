@@ -1,18 +1,22 @@
-/* Overrides for running the child-ui pages as real app windows (fixed-size,
-   chromeless WebView2), rather than as full-page browser mockups. */
+/* Overrides for running the child-ui pages as real app windows (resizable
+   WebView2), rather than as full-page browser mockups. */
 
-html, body { height: 100%; overflow: hidden; }
+html, body { min-height: 100%; }
 body {
   font-family: 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
   user-select: none;
   cursor: default;
+  overflow-y: auto;
 }
 
 /* The whole window is one vertical stack: header row + the card fills the
-   rest. Nothing scrolls the page; overflow is handled inside .form-side. */
+   rest. min-height (not a fixed height) lets the window be resized or
+   maximized without clipping content; overflow inside .form-side handles
+   the common case, and the body-level overflow-y:auto above is the
+   fallback if a maximized/enlarged window still doesn't fit everything. */
 .shell {
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
   margin: 0;
   padding: 0;
   display: flex;

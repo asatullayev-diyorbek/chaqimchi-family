@@ -3,7 +3,7 @@ package inventory
 import (
 	"testing"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/tracker"
+	"spino24agent/internal/tracker"
 )
 
 func TestSnapshotsEqual(t *testing.T) {

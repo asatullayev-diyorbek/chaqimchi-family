@@ -9,7 +9,7 @@ func TestValidateBackendURL(t *testing.T) {
 		allowHTTP bool
 		wantErr   bool
 	}{
-		{"production HTTPS", "https://api.chaqimchiai.uz", false, false},
+		{"production HTTPS", "https://api.spino24ai.uz", false, false},
 		{"local HTTP needs explicit development mode", "http://localhost:8000", false, true},
 		{"explicit development HTTP", "http://localhost:8000", true, false},
 		{"public HTTP rejected", "http://api.example.com", false, true},

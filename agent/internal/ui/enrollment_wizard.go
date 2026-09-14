@@ -48,7 +48,7 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 
 	err = d.Dialog{
 		AssignTo:   &dlg,
-		Title:      "ChaqimchiAI Guard — Qurilmani bog‘lash",
+		Title:      "Spino24 Guard — Qurilmani bog‘lash",
 		Icon:       brandIcon(),
 		Background: solid(colorCanvas),
 		FixedSize:  true,
@@ -62,7 +62,7 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 				Children: []d.Widget{
 					eyebrow("OILAGA  BOG‘LASH"),
 					titleText("Qurilmani hisobingizga bog‘lang"),
-					bodyText("Ota-ona telefonidagi ChaqimchiAI Family ilovasida “Qurilma qo‘shish”ni oching va QR kodni skaner qiling — yoki 6 xonali kodni kiriting.", 380),
+					bodyText("Ota-ona telefonidagi Spino24 ilovasida “Qurilma qo‘shish”ni oching va QR kodni skaner qiling — yoki 6 xonali kodni kiriting.", 380),
 					card(d.Margins{Left: 14, Top: 14, Right: 14, Bottom: 12}, 8,
 						d.Composite{
 							Layout: d.HBox{MarginsZero: true},
@@ -147,7 +147,7 @@ func ShowEnrollment(ctx context.Context, code, qrPayload string, expiresAt time.
 						setStatus("O‘rnatishda xatolik: "+installErr.Error(), colorDanger)
 						return
 					}
-					setStatus("✓ Tayyor. ChaqimchiAI Guard ishlamoqda.", colorOK)
+					setStatus("✓ Tayyor. Spino24 Guard ishlamoqda.", colorOK)
 					time.AfterFunc(1600*time.Millisecond, func() { dlg.Synchronize(func() { dlg.Accept() }) })
 				})
 			}()
@@ -178,7 +178,7 @@ func showEnrollmentFallback(ctx context.Context, code, qrPayload string, expires
 		waitResult <- wait(ctx, func(error) {})
 	}()
 
-	title := "ChaqimchiAI Guard — Qurilmani bog‘lash"
+	title := "Spino24 Guard — Qurilmani bog‘lash"
 	message := fmt.Sprintf(
 		"Ota-ona ilovasida quyidagi 6 xonali kodni kiriting:\n\n        %s\n\n"+
 			"Kod %s gacha amal qiladi. Bu oynani ochiq qoldiring.",

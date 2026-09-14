@@ -34,7 +34,7 @@ import (
 // between stopAndWait writing it and the SCM delivering the Stop control to
 // Execute — ProgramData is used (not the service's configurable data dir)
 // so this file has no dependency on any particular install's flags.
-const authorizedStopMarker = `C:\ProgramData\ChaqimchiFamily\.agent-stop-authorized`
+const authorizedStopMarker = `C:\ProgramData\Spino24\.agent-stop-authorized`
 
 // authorizedStopMaxAge bounds how long a marker stays valid, so one left
 // behind by a crash between being written and the SCM delivering Stop can

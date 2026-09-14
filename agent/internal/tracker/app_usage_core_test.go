@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
+	"spino24agent/internal/buffer"
 )
 
 func openTestStore(t *testing.T) *buffer.Store {

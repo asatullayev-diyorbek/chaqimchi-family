@@ -32,7 +32,7 @@ func AskExistingInstall(running bool) ExistingChoice {
 	)
 	err := d.Dialog{
 		AssignTo:   &dlg,
-		Title:      "ChaqimchiAI Guard — Allaqachon o‘rnatilgan",
+		Title:      "Spino24 Guard — Allaqachon o‘rnatilgan",
 		Icon:       brandIcon(),
 		Background: solid(colorCanvas),
 		FixedSize:  true,
@@ -46,7 +46,7 @@ func AskExistingInstall(running bool) ExistingChoice {
 				Children: []d.Widget{
 					eyebrow("ALLAQACHON O‘RNATILGAN"),
 					titleText("Bu kompyuterda Guard allaqachon bor"),
-					bodyText("ChaqimchiAI Guard xizmati shu kompyuterda topildi. "+state+" Nima qilishni tanlang:", 420),
+					bodyText("Spino24 Guard xizmati shu kompyuterda topildi. "+state+" Nima qilishni tanlang:", 420),
 					card(d.Margins{Left: 16, Top: 12, Right: 16, Bottom: 12}, 8,
 						choiceLine("Yangilash", "Dasturni yangi versiyaga almashtiradi. Qurilma o‘sha oilaga bog‘langan holda qoladi — qayta kod kiritish shart emas."),
 						hairline(),
@@ -67,7 +67,7 @@ func AskExistingInstall(running bool) ExistingChoice {
 		},
 	}.Create(nil)
 	if err != nil {
-		res := walk.MsgBox(nil, "ChaqimchiAI Guard — Allaqachon o‘rnatilgan",
+		res := walk.MsgBox(nil, "Spino24 Guard — Allaqachon o‘rnatilgan",
 			"Guard allaqachon o‘rnatilgan. Yangi versiyaga yangilaymizmi?\n\n"+
 				"Ha — yangilash (qurilma o‘sha hisobda qoladi)\nYo‘q — bekor qilish",
 			walk.MsgBoxYesNo|walk.MsgBoxIconQuestion)

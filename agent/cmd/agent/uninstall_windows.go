@@ -17,11 +17,11 @@ import (
 
 	"github.com/lxn/walk"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/rules"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/service"
+	"spino24agent/internal/rules"
+	"spino24agent/internal/service"
 )
 
-const uninstallTitle = "ChaqimchiAI Guard — O'chirish"
+const uninstallTitle = "Spino24 Guard — O'chirish"
 
 // runUninstall is what Windows runs when the parent clicks "Uninstall" in
 // Apps & Features (see internal/service.RegisterUninstaller — the
@@ -33,7 +33,7 @@ const uninstallTitle = "ChaqimchiAI Guard — O'chirish"
 // whole feature exists to prevent), then deletes the service and the
 // Add/Remove Programs entry itself. Deliberately does not delete the
 // installed files: the exe cannot delete itself while running, and leaving
-// C:\Program Files\ChaqimchiAI behind (now inert — no service, no
+// C:\Program Files\Spino24 behind (now inert — no service, no
 // Add/Remove Programs entry) is a acceptable tradeoff a parent can clean up
 // by hand if they care to.
 func runUninstall() {
@@ -43,13 +43,13 @@ func runUninstall() {
 		return
 	}
 	if !info.Installed {
-		walk.MsgBox(nil, uninstallTitle, "ChaqimchiAI Guard allaqachon o'rnatilmagan.", walk.MsgBoxIconInformation)
+		walk.MsgBox(nil, uninstallTitle, "Spino24 Guard allaqachon o'rnatilmagan.", walk.MsgBoxIconInformation)
 		_ = service.UnregisterUninstaller()
 		return
 	}
 
 	if walk.MsgBox(nil, uninstallTitle,
-		"ChaqimchiAI Guard'ni ushbu qurilmadan butunlay o'chirmoqchimisiz?\n\n"+
+		"Spino24 Guard'ni ushbu qurilmadan butunlay o'chirmoqchimisiz?\n\n"+
 			"Farzandingiz ekran vaqti va faoliyati endi kuzatilmaydi. Ota-onaga bu haqda "+
 			"Telegram orqali xabar boradi.",
 		walk.MsgBoxYesNo|walk.MsgBoxIconWarning|walk.MsgBoxDefButton2,
@@ -77,7 +77,7 @@ func runUninstall() {
 		log.Printf("uninstall: ro'yxatdan o'chirib bo'lmadi: %v", err)
 	}
 
-	walk.MsgBox(nil, uninstallTitle, "ChaqimchiAI Guard o'chirildi.", walk.MsgBoxIconInformation)
+	walk.MsgBox(nil, uninstallTitle, "Spino24 Guard o'chirildi.", walk.MsgBoxIconInformation)
 }
 
 func showUninstallError(message string) {

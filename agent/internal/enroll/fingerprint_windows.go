@@ -29,6 +29,6 @@ func HardwareID() string {
 	if err != nil || guid == "" {
 		return ""
 	}
-	sum := sha256.Sum256([]byte("chaqimchi:" + guid))
+	sum := sha256.Sum256([]byte("spino24:" + guid))
 	return hex.EncodeToString(sum[:])
 }

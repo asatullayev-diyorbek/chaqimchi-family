@@ -18,7 +18,7 @@ import (
 // "Programs and Features" scans for entries to list. The key name (last
 // path segment) just needs to be a unique, stable identifier — it is never
 // shown to the user; DisplayName is.
-const uninstallKeyPath = `SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\ChaqimchiAIGuard`
+const uninstallKeyPath = `SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Spino24Guard`
 
 // RegisterUninstaller writes (or overwrites) the Add/Remove Programs entry.
 // uninstallCommand is the full command line Windows runs when the parent
@@ -33,9 +33,9 @@ func RegisterUninstaller(displayVersion, uninstallCommand, iconPath string) erro
 	defer k.Close()
 
 	for name, value := range map[string]string{
-		"DisplayName":     "ChaqimchiAI Guard",
+		"DisplayName":     "Spino24 Guard",
 		"DisplayVersion":  displayVersion,
-		"Publisher":       "ChaqimchiAI",
+		"Publisher":       "Spino24",
 		"UninstallString": uninstallCommand,
 		"DisplayIcon":     iconPath,
 	} {

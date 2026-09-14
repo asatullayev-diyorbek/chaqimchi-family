@@ -1,4 +1,4 @@
-module github.com/chaqimchi/chaqimchi-family/agent
+module spino24agent
 
 go 1.26.0
 

@@ -13,8 +13,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/rules"
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/service"
+	"spino24agent/internal/rules"
+	"spino24agent/internal/service"
 )
 
 // runWatchdogCheck is a one-shot check-and-fix, not a loop: the Scheduled

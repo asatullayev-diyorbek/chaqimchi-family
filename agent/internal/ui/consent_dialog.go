@@ -22,7 +22,7 @@ func RequireInstallerConsent() (bool, error) {
 
 	err := d.Dialog{
 		AssignTo:   &dlg,
-		Title:      "ChaqimchiAI Guard — Shaffoflik va rozilik",
+		Title:      "Spino24 Guard — Shaffoflik va rozilik",
 		Icon:       brandIcon(),
 		Background: solid(colorCanvas),
 		FixedSize:  true,
@@ -36,7 +36,7 @@ func RequireInstallerConsent() (bool, error) {
 				Children: []d.Widget{
 					eyebrow("SHAFFOFLIK  VA  ROZILIK"),
 					titleText("Nimani ko‘ramiz, nimani ko‘rmaymiz"),
-					bodyText("ChaqimchiAI Family yashirin kuzatuv vositasi emas. Bu qadamni o‘tkazib bo‘lmaydi — barcha ma’lumot ota-ona va bola uchun ochiq.", 420),
+					bodyText("Spino24 yashirin kuzatuv vositasi emas. Bu qadamni o‘tkazib bo‘lmaydi — barcha ma’lumot ota-ona va bola uchun ochiq.", 420),
 					card(d.Margins{Left: 16, Top: 14, Right: 16, Bottom: 14}, 8,
 						d.Label{Text: "OTA-ONA KO‘RADI", Font: fontOf(8, true), TextColor: colorOK},
 						seenRow(true, "Ilova va sayt nomlari", "To‘liq sahifa manzillari emas"),
@@ -110,10 +110,10 @@ func requireInstallerConsentFallback() (bool, error) {
 		mbIcon       = walk.MsgBoxIconInformation
 		mbDefButton2 = walk.MsgBoxDefButton2
 	)
-	text := "ChaqimchiAI Family shaffof ishlaydi.\n\n" +
+	text := "Spino24 shaffof ishlaydi.\n\n" +
 		"Ota-ona ko‘rishi mumkin:\n• ilova va sayt nomlari\n• ekran vaqti\n• qurilma holati\n\n" +
 		"Ota-ona ko‘rmaydi:\n• xabarlar va chatlar\n• parollar\n• kamera yoki mikrofon\n• bosilgan tugmalar\n\n" +
 		"Davom etish uchun roziligingizni tasdiqlang."
-	res := walk.MsgBox(nil, "ChaqimchiAI Family — Shaffoflik va rozilik", text, mbYesNo|mbIcon|mbDefButton2)
+	res := walk.MsgBox(nil, "Spino24 — Shaffoflik va rozilik", text, mbYesNo|mbIcon|mbDefButton2)
 	return res == walk.DlgCmdYes, nil
 }

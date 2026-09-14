@@ -15,7 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
+	"spino24agent/internal/buffer"
 )
 
 // RunAppUsageFromObservations consumes foreground-app names from obs and

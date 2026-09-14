@@ -55,7 +55,7 @@ type InstallHooks struct {
 // ErrCanceled if the operator backed out, ErrUnavailable if WebView2 is
 // missing (caller falls back to walk), or the failing step's error.
 func RunInstaller(ctx context.Context, h InstallHooks) error {
-	w, err := New(Options{Title: "ChaqimchiAI Guard", Width: instW, Height: instH})
+	w, err := New(Options{Title: "Spino24 Guard", Width: instW, Height: instH})
 	if err != nil {
 		return err
 	}

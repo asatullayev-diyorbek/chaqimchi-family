@@ -5,7 +5,7 @@ package ui
 import (
 	"fmt"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
+	"spino24agent/internal/localipc"
 	"github.com/lxn/walk"
 	d "github.com/lxn/walk/declarative"
 )
@@ -66,7 +66,7 @@ func ShowChildStatusWindow(s localipc.Status, tray Status) {
 
 	err := d.Dialog{
 		AssignTo:   &dlg,
-		Title:      "ChaqimchiAI Child — Holat",
+		Title:      "Spino24 Child — Holat",
 		Icon:       brandIcon(),
 		Background: solid(colorCanvas),
 		FixedSize:  true,

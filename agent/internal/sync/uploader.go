@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
+	"spino24agent/internal/buffer"
 )
 
 const defaultBatchSize = 50

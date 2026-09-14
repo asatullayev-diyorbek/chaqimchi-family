@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
+	"spino24agent/internal/localipc"
 )
 
 // fakeBackend records the screenshot-endpoint calls the agent makes.

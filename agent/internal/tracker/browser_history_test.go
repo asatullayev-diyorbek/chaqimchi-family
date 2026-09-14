@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/buffer"
+	"spino24agent/internal/buffer"
 )
 
 func TestHostOf(t *testing.T) {

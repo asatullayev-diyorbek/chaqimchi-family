@@ -5,7 +5,7 @@ package ui
 import (
 	"os/exec"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
+	"spino24agent/internal/localipc"
 	"github.com/lxn/walk"
 	d "github.com/lxn/walk/declarative"
 )
@@ -21,7 +21,7 @@ func ShowAdultAccessGate() bool {
 	)
 	err := d.Dialog{
 		AssignTo:   &dlg,
-		Title:      "ChaqimchiAI Guard — Kattalar uchun",
+		Title:      "Spino24 Guard — Kattalar uchun",
 		Icon:       brandIcon(),
 		Background: solid(colorCanvas),
 		FixedSize:  true,
@@ -51,7 +51,7 @@ func ShowAdultAccessGate() bool {
 		},
 	}.Create(nil)
 	if err != nil {
-		return requireInstallerConsentFallbackYesNo("ChaqimchiAI Guard — Kattalar uchun",
+		return requireInstallerConsentFallbackYesNo("Spino24 Guard — Kattalar uchun",
 			"Bu panel ota-ona paneliga va Telegramga xabar sifatida yuboriladi. Davom etasizmi?")
 	}
 	dlg.Run()
@@ -76,7 +76,7 @@ func ShowAdultPanel(s localipc.Status, supportURL, logPath string) {
 	var dlg *walk.Dialog
 	err := d.Dialog{
 		AssignTo:   &dlg,
-		Title:      "ChaqimchiAI Guard — Kattalar paneli",
+		Title:      "Spino24 Guard — Kattalar paneli",
 		Icon:       brandIcon(),
 		Background: solid(colorCanvas),
 		FixedSize:  true,
@@ -89,7 +89,7 @@ func ShowAdultPanel(s localipc.Status, supportURL, logPath string) {
 				Layout:     d.VBox{Margins: d.Margins{Left: 24, Top: 18, Right: 24, Bottom: 16}, Spacing: 10},
 				Children: []d.Widget{
 					eyebrow("QURILMA HOLATI"),
-					titleText("ChaqimchiAI Guard"),
+					titleText("Spino24 Guard"),
 					card(d.Margins{Left: 16, Top: 12, Right: 16, Bottom: 12}, 6,
 						kvRow("Server bilan aloqa", online, onlineColor),
 						kvRow("Oxirgi sinxronizatsiya", lastSync, colorInk),
@@ -123,7 +123,7 @@ func ShowAdultPanel(s localipc.Status, supportURL, logPath string) {
 		},
 	}.Create(nil)
 	if err != nil {
-		showInfoDialog("ChaqimchiAI Guard — Kattalar paneli",
+		showInfoDialog("Spino24 Guard — Kattalar paneli",
 			"Aloqa: "+online+"\nOxirgi sinxronizatsiya: "+lastSync+"\nVersiya: "+s.Version+"\nDiagnostika jurnali: "+logPath)
 		return
 	}

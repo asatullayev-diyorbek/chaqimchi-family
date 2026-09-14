@@ -249,7 +249,7 @@ func queryFirefox(db *sql.DB, user, browser, profile string, since time.Time) ([
 // temp directory so it can be read while the browser holds the original
 // open. The returned cleanup removes the whole temp dir.
 func snapshotDB(dbPath string) (string, func(), error) {
-	dir, err := os.MkdirTemp("", "chaqimchi-bh-")
+	dir, err := os.MkdirTemp("", "spino24-bh-")
 	if err != nil {
 		return "", func() {}, err
 	}

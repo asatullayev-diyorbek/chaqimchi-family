@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/chaqimchi/chaqimchi-family/agent/internal/localipc"
+	"spino24agent/internal/localipc"
 )
 
 // trayMu serialises the tray-triggered windows (status/privacy/adult
@@ -34,7 +34,7 @@ func withTrayWindow(fn func()) {
 func ShowChildStatus(s localipc.Status, state string) error {
 	var runErr error
 	withTrayWindow(func() {
-		w, err := New(Options{Page: "status.html", Title: "ChaqimchiAI Child — Holat", Width: 400, Height: 520})
+		w, err := New(Options{Page: "status.html", Title: "Spino24 Child — Holat", Width: 400, Height: 520})
 		if err != nil {
 			runErr = err
 			return
@@ -97,7 +97,7 @@ func ShowPrivacy() error {
 
 // showPrivacyInline must be called already holding trayMu / the locked OS thread.
 func showPrivacyInline() error {
-	w, err := New(Options{Page: "privacy.html", Title: "ChaqimchiAI Child — Shaffoflik", Width: 620, Height: 520})
+	w, err := New(Options{Page: "privacy.html", Title: "Spino24 Child — Shaffoflik", Width: 620, Height: 520})
 	if err != nil {
 		return err
 	}
@@ -118,7 +118,7 @@ func ShowAdultAccessGate() (bool, error) {
 		runErr error
 	)
 	withTrayWindow(func() {
-		w, err := New(Options{Page: "adult-gate.html", Title: "ChaqimchiAI Child — Kattalar uchun", Width: 460, Height: 380})
+		w, err := New(Options{Page: "adult-gate.html", Title: "Spino24 Child — Kattalar uchun", Width: 460, Height: 380})
 		if err != nil {
 			runErr = err
 			return
@@ -152,7 +152,7 @@ func ShowAdultPanel(s localipc.Status, logPath string) (AdultPanelAction, error)
 		runErr error
 	)
 	withTrayWindow(func() {
-		w, err := New(Options{Page: "adult-panel.html", Title: "ChaqimchiAI Child — Kattalar paneli", Width: 480, Height: 560})
+		w, err := New(Options{Page: "adult-panel.html", Title: "Spino24 Child — Kattalar paneli", Width: 480, Height: 560})
 		if err != nil {
 			runErr = err
 			return
@@ -182,7 +182,7 @@ func ShowAdultPanel(s localipc.Status, logPath string) (AdultPanelAction, error)
 func ShowInfo(eyebrow, heading, body string) error {
 	var runErr error
 	withTrayWindow(func() {
-		w, err := New(Options{Page: "info.html", Title: "ChaqimchiAI Guard — " + heading, Width: 460, Height: 480})
+		w, err := New(Options{Page: "info.html", Title: "Spino24 Guard — " + heading, Width: 460, Height: 480})
 		if err != nil {
 			runErr = err
 			return
