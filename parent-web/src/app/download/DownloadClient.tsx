@@ -10,6 +10,10 @@ import { useState } from "react";
 import RELEASE from "./release.json";
 import TEST_RELEASE from "./test-release.json";
 
+// Served directly from the VPS (nginx static file, not through Vercel) —
+// large binaries were slow to pull from Vercel's edge from Uzbekistan.
+const DOWNLOADS_BASE = "https://apiguard.spino24.uz/downloads";
+
 const mb = (bytes: number) => (bytes / (1024 * 1024)).toFixed(1);
 
 type Tab = "exe" | "zip";
@@ -91,7 +95,7 @@ function ExePanel() {
   return (
     <div className="tab-content active" style={{ display: "grid", gap: "1.5rem" }}>
       <a
-        href={`/downloads/${RELEASE.file}`}
+        href={`${DOWNLOADS_BASE}/${RELEASE.file}`}
         download
         className="btn-primary auth-submit"
         style={{ textDecoration: "none" }}
@@ -164,7 +168,7 @@ function ZipPanel() {
       </div>
 
       <a
-        href={`/downloads/${TEST_RELEASE.file}`}
+        href={`${DOWNLOADS_BASE}/${TEST_RELEASE.file}`}
         download
         className="btn-primary auth-submit"
         style={{ textDecoration: "none" }}
