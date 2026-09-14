@@ -8,7 +8,7 @@
 import { storageDelete, storageGet, storageSet } from "../platform/storage";
 
 export const API_BASE_URL = (
-  process.env.EXPO_PUBLIC_API_URL ?? "https://api.guard.chaqimchi-ai.uz"
+  process.env.EXPO_PUBLIC_API_URL ?? "https://apiguard.spino24.uz"
 ).replace(/\/$/, "");
 
 const ACCESS_KEY = "spino24_access_token";

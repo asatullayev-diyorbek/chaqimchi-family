@@ -26,7 +26,7 @@ ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "*").split(",")
 CSRF_TRUSTED_ORIGINS = os.environ.get(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
     "https://api.guard.chaqimchi-ai.uz,https://apiguard.pythonanywhere.com,"
-    "https://api.guard.spino24.uz",
+    "https://apiguard.spino24.uz",
 ).split(",")
 
 

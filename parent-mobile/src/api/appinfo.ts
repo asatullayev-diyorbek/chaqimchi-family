@@ -18,7 +18,7 @@ export type AppInfo = {
 };
 
 const RELAY_URL =
-  process.env.EXPO_PUBLIC_APPINFO_RELAY_URL ?? "https://guard.chaqimchi-ai.uz/api/appinfo-relay";
+  process.env.EXPO_PUBLIC_APPINFO_RELAY_URL ?? "https://guard.spino24.uz/api/appinfo-relay";
 
 export function getAppInfo(appName: string): Promise<AppInfo | null> {
   return apiFetch<AppInfo>(`/api/app-info/${encodeURIComponent(appName)}/`).catch((err) => {

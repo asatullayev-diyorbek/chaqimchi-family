@@ -20,7 +20,7 @@ export type WeeklyInsight = {
 };
 
 const RELAY_URL =
-  process.env.EXPO_PUBLIC_GROQ_RELAY_URL ?? "https://guard.chaqimchi-ai.uz/api/groq-relay";
+  process.env.EXPO_PUBLIC_GROQ_RELAY_URL ?? "https://guard.spino24.uz/api/groq-relay";
 
 export function getCachedInsight(
   childId: string,
