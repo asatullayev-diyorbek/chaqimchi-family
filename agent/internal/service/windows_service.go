@@ -14,6 +14,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"syscall"
 	"time"
@@ -61,6 +62,7 @@ func Install(name, displayName, exePath string, args []string) error {
 		if err := restart(s); err != nil {
 			return fmt.Errorf("restarting existing service: %w", err)
 		}
+		registerSafeBootBestEffort(name)
 		return nil
 	}
 
@@ -80,7 +82,18 @@ func Install(name, displayName, exePath string, args []string) error {
 	if err := s.Start(); err != nil {
 		return fmt.Errorf("starting service: %w", err)
 	}
+	registerSafeBootBestEffort(name)
 	return nil
+}
+
+// registerSafeBootBestEffort is not itself fatal to an install: a family
+// stuck without Safe Mode coverage is a real gap, but a strictly worse
+// outcome than "install failed" for a step that's pure hardening on top of
+// an otherwise-working install.
+func registerSafeBootBestEffort(name string) {
+	if err := RegisterSafeBoot(name); err != nil {
+		log.Printf("safe boot registration: %v", err)
+	}
 }
 
 func serviceCommandLine(exePath string, args []string) string {
@@ -98,6 +111,13 @@ func stopAndWait(s *mgr.Service) error {
 	}
 	if status.State == svc.Stopped {
 		return nil
+	}
+	// See authorize_stop_windows.go: Execute refuses an unauthorized Stop
+	// control, so every legitimate internal caller (Stop/Delete/Install's
+	// upgrade path — all of which funnel through this function) must leave
+	// a fresh marker before asking the SCM to deliver one.
+	if err := authorizeNextStop(); err != nil {
+		return fmt.Errorf("authorizing stop: %w", err)
 	}
 	if _, err := s.Control(svc.Stop); err != nil {
 		return fmt.Errorf("stopping service: %w", err)
@@ -189,7 +209,27 @@ func (h *handler) Execute(args []string, r <-chan svc.ChangeRequest, statusChan 
 			switch req.Cmd {
 			case svc.Interrogate:
 				statusChan <- req.CurrentStatus
-			case svc.Stop, svc.Shutdown:
+			case svc.Stop:
+				// See authorize_stop_windows.go: only a stop this
+				// package's own Stop()/Delete()/Install() upgrade path
+				// asked for (via stopAndWait) is honored. An `sc stop` or
+				// services.msc "Stop" typed by anyone else — the exact
+				// thing this exists to resist — finds no marker and is
+				// refused: report "still running" instead of stopping.
+				if !consumeStopAuthorization() {
+					statusChan <- req.CurrentStatus
+					continue
+				}
+				statusChan <- svc.Status{State: svc.StopPending}
+				cancel()
+				<-done
+				statusChan <- svc.Status{State: svc.Stopped}
+				return false, 0
+			case svc.Shutdown:
+				// Always honored, unconditionally — resisting a real system
+				// shutdown/reboot would only make Windows force-kill the
+				// process anyway, with no benefit and a worse shutdown
+				// experience for everyone on the machine.
 				statusChan <- svc.Status{State: svc.StopPending}
 				cancel()
 				<-done

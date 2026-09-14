@@ -59,6 +59,22 @@ class AlertTests(TestCase):
         self.assertIn("Kattalar", text)
 
     @mock.patch("apps.alerts.notifications.send_text")
+    def test_agent_uninstalled_alert_pushes_telegram(self, send_text):
+        self.parent.telegram_id = 777
+        self.parent.save(update_fields=["telegram_id"])
+
+        response = self.client.post(
+            reverse("alerts-report"),
+            {"alert_type": "agent_uninstalled", "payload": {"detected_by": "watchdog"}},
+            format="json",
+            **device_auth_header(self.device),
+        )
+        self.assertEqual(response.status_code, 201)
+        send_text.assert_called_once()
+        _, text = send_text.call_args[0]
+        self.assertIn("o'chirib tashlandi", text)
+
+    @mock.patch("apps.alerts.notifications.send_text")
     def test_every_alert_type_pushes_telegram_by_default(self, send_text):
         self.parent.telegram_id = 999
         self.parent.save(update_fields=["telegram_id"])
@@ -100,7 +116,7 @@ class AlertTests(TestCase):
         self.client.force_authenticate(user=self.parent)
         r = self.client.get(reverse("notification-preferences"))
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.json()["alerts"]), 4)  # 3 alert types + daily_digest
+        self.assertEqual(len(r.json()["alerts"]), 5)  # 4 alert types + daily_digest
         self.assertTrue(all(a["via_telegram"] for a in r.json()["alerts"]))
 
         r = self.client.put(

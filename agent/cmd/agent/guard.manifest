@@ -5,7 +5,16 @@
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
     <security>
       <requestedPrivileges>
-        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+        <!-- requireAdministrator only matters for a direct/shell launch (the
+             UAC consent prompt is an Explorer/AIS concept) — it does not
+             affect the SCM starting this exe as a service (SYSTEM, no UAC
+             involved) or the service spawning -foreground-reporter into the
+             user's session via CreateProcessAsUser (also not a shell
+             launch). It exists so Add/Remove Programs' "Uninstall" button —
+             which runs this exe directly with -uninstall, and needs admin
+             rights to delete the service — gets its UAC prompt automatically
+             instead of failing partway through with an access-denied error. -->
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false"/>
       </requestedPrivileges>
     </security>
   </trustInfo>

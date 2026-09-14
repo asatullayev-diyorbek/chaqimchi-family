@@ -23,6 +23,7 @@ _ALERT_ICON = {
     "limit_reached": ce("shock"),
     "blocked_app_opened": ce("angry"),
     "settings_panel_access": ce("lock"),
+    "agent_uninstalled": "🗑️",
 }
 
 

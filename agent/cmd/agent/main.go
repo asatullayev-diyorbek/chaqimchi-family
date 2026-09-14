@@ -60,6 +60,8 @@ func main() {
 	parentPID := flag.Int("parent-pid", 0, "internal: exit when this process id is gone (used with -foreground-reporter)")
 	selfTest := flag.Bool("selftest", false, "internal: print version and exit 0 (OTA pre-swap smoke test)")
 	showVersion := flag.Bool("version", false, "print version and exit")
+	uninstall := flag.Bool("uninstall", false, "remove the service and this Add/Remove Programs entry (run by Windows when the parent clicks Uninstall)")
+	watchdogCheck := flag.Bool("watchdog-check", false, "internal: one-shot health check run by the scheduled watchdog task")
 	flag.Parse()
 
 	if *selfTest || *showVersion {
@@ -68,6 +70,14 @@ func main() {
 	}
 	if *foregroundReporter {
 		runForegroundReporter(*parentPID)
+		return
+	}
+	if *uninstall {
+		runUninstall()
+		return
+	}
+	if *watchdogCheck {
+		runWatchdogCheck(*baseURL, *deviceID, *deviceSecret)
 		return
 	}
 

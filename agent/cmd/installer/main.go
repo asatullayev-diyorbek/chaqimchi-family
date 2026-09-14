@@ -16,6 +16,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/chaqimchi/chaqimchi-family/agent/internal/endpoint"
@@ -38,6 +39,40 @@ var defaultServerURL = "https://api.guard.chaqimchi-ai.uz"
 //
 //go:embed payload/agent.exe
 var embeddedAgent []byte
+
+// registerUninstaller wires up the Add/Remove Programs entry so the parent
+// always has a normal, discoverable way to remove the agent — every
+// successful service install/upgrade calls this, never just the first one,
+// so a machine upgraded from an older build (before this existed) gets the
+// entry too. Logged, not fatal: a parent who can't find "Uninstall" in
+// Windows Settings is a real but recoverable problem; failing the whole
+// install over it would not be.
+func registerUninstaller(exePath string) {
+	cmd := fmt.Sprintf("%q -uninstall", exePath)
+	if err := service.RegisterUninstaller("", cmd, exePath); err != nil {
+		log.Printf("Add/Remove Programs yozuvini ro'yxatdan o'tkazib bo'lmadi: %v", err)
+	}
+}
+
+// registerWatchdog wires up the periodic Scheduled Task backstop (see
+// internal/service/watchdog_windows.go) with the same credentials the
+// service itself was just configured with, so it can restart the service
+// or report it missing without needing any separately-persisted copy of
+// them. Logged, not fatal — the install itself already succeeded.
+func registerWatchdog(exePath string, args []string) {
+	cmd := fmt.Sprintf("%q -watchdog-check %s", exePath, serviceArgsCommandLine(args))
+	if err := service.RegisterWatchdogTask(cmd); err != nil {
+		log.Printf("Watchdog vazifasini ro'yxatdan o'tkazib bo'lmadi: %v", err)
+	}
+}
+
+func serviceArgsCommandLine(args []string) string {
+	quoted := make([]string, len(args))
+	for i, a := range args {
+		quoted[i] = fmt.Sprintf("%q", a)
+	}
+	return strings.Join(quoted, " ")
+}
 
 func fatalInstaller(format string, args ...any) {
 	message := fmt.Sprintf(format, args...)
@@ -85,6 +120,8 @@ func main() {
 		if err := service.Install(service.ServiceName, service.DisplayName, exePath, args); err != nil {
 			return fmt.Errorf("Windows service o‘rnatishda xatolik: %w", err)
 		}
+		registerUninstaller(exePath)
+		registerWatchdog(exePath, args)
 		progress(4, 92)
 		log.Printf("install: xizmat o‘rnatildi va ishga tushirildi")
 		return nil
@@ -212,6 +249,8 @@ func upgradeInPlace(existing service.Info, agentOverride string) error {
 	if err := service.Install(service.ServiceName, service.DisplayName, exePath, existing.Args); err != nil {
 		return fmt.Errorf("xizmatni qayta ro‘yxatdan o‘tkazish: %w", err)
 	}
+	registerUninstaller(exePath)
+	registerWatchdog(exePath, existing.Args)
 	return nil
 }
 

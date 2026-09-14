@@ -72,3 +72,30 @@ func Stop(name string) error {
 	defer s.Close()
 	return stopAndWait(s)
 }
+
+// Start starts the named service if it exists and isn't already running.
+// A no-op (not an error) if the service doesn't exist — the scheduled
+// watchdog task calls this after its own Inspect already confirmed the
+// service is installed, but re-checking here costs nothing and avoids a
+// confusing error if the two calls ever race with an uninstall.
+func Start(name string) error {
+	m, err := mgr.Connect()
+	if err != nil {
+		return fmt.Errorf("connecting to service control manager: %w", err)
+	}
+	defer m.Disconnect()
+
+	s, err := m.OpenService(name)
+	if err != nil {
+		if errors.Is(err, windows.ERROR_SERVICE_DOES_NOT_EXIST) {
+			return nil
+		}
+		return fmt.Errorf("opening service %q: %w", name, err)
+	}
+	defer s.Close()
+
+	if status, qErr := s.Query(); qErr == nil && status.State != svc.Stopped {
+		return nil
+	}
+	return s.Start()
+}
