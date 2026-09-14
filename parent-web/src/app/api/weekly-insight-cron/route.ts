@@ -10,7 +10,7 @@
 // still owns delivery).
 import { generateWeeklyInsight } from "@/lib/groq";
 
-const API_BASE = process.env.CHAQIMCHI_PUBLIC_API_URL || "https://api.guard.chaqimchi-ai.uz";
+const API_BASE = process.env.CHAQIMCHI_PUBLIC_API_URL || "https://apiguard.spino24.uz";
 
 export async function POST(request: Request) {
   const secret = request.headers.get("x-insights-cron-secret");

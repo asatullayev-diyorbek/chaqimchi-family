@@ -12,10 +12,11 @@
 // CORS: same allowlist as groq-relay — see that route's comment for why.
 import { generateAppInfo } from "@/lib/appinfo";
 
-const API_BASE = process.env.CHAQIMCHI_PUBLIC_API_URL || "https://api.guard.chaqimchi-ai.uz";
+const API_BASE = process.env.CHAQIMCHI_PUBLIC_API_URL || "https://apiguard.spino24.uz";
 
 const ALLOWED_ORIGINS = new Set([
   "https://spino24.chaqimchi-ai.uz",
+  "https://spino24.spino24.uz",
   "http://localhost:8081",
   "http://127.0.0.1:8081",
 ]);
